@@ -704,7 +704,7 @@ const darkMode = theme ? theme.darkMode : false;
       className="form-control bg-gray-50 dark:bg-gray-800"
     />
   );
-};
+
 
   return (
     <div className="space-y-8">
