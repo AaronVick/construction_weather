@@ -6,7 +6,8 @@ import { useTheme } from '../hooks/useTheme';
 import Button from '../components/ui/Button';
 
 const NotFound: React.FC = () => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   const navigate = useNavigate();
   
   const goBack = () => {

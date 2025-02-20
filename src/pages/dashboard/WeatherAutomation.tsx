@@ -6,7 +6,8 @@ import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 
 const WeatherAutomation: React.FC = () => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   const [loading, setLoading] = useState(false);
   
   return (

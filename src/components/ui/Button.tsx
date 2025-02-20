@@ -47,7 +47,8 @@ const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps>(({
   children,
   ...props
 }, ref) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   
   // Determine styles based on variant
   const getVariantClasses = (): string => {

@@ -29,7 +29,8 @@ const PlanCard: React.FC<PlanCardProps> = ({
   isCurrentPlan,
   onSelect,
 }) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   
   const price = billingCycle === 'monthly' 
     ? plan.price.monthly

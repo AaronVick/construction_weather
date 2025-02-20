@@ -61,7 +61,8 @@ const WeatherIcon: React.FC<{ condition: string; className?: string }> = ({ cond
 };
 
 const WeatherWidget: React.FC<WeatherWidgetProps> = ({ current, forecast, zipCode }) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   
   if (!current) {
     return (

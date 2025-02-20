@@ -18,7 +18,8 @@ const SearchInput: React.FC<SearchInputProps> = ({
   className = '',
   debounce = 300,
 }) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   const [inputValue, setInputValue] = useState(value);
 
   // Handle debounced input

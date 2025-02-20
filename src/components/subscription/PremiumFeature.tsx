@@ -23,7 +23,8 @@ const PremiumFeature: React.FC<PremiumFeatureProps> = ({
   showMessage = true,
   className = '',
 }) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   const { subscription } = useSubscription();
   const navigate = useNavigate();
   

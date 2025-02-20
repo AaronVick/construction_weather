@@ -22,7 +22,9 @@ interface ClientFormProps {
 }
 
 const ClientForm: React.FC<ClientFormProps> = ({ clientId, isEdit = false }) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
+
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(isEdit);

@@ -28,7 +28,8 @@ const InsightMetric: React.FC<InsightMetricProps> = ({
   className = '',
   onClick,
 }) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   
   const renderChangeIndicator = () => {
     if (typeof change !== 'number') return null;

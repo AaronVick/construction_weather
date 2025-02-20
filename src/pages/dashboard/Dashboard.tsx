@@ -30,7 +30,8 @@ import {
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   const { user } = useSupabaseAuth();
   const { subscription } = useSubscription();
   const [loading, setLoading] = useState(true);

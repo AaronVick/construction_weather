@@ -20,7 +20,7 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 
 // Dashboard Pages
-import Dashboard from './pages/dashboard/Dashboard';
+import { Dashboard } from './pages/dashboard/Dashboard';
 import Clients from './pages/dashboard/Clients';
 import ClientDetail from './pages/dashboard/ClientDetail';
 import Jobsites from './pages/dashboard/Jobsites';

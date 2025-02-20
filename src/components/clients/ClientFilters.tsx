@@ -9,7 +9,9 @@ interface ClientFiltersProps {
 }
 
 const ClientFilters: React.FC<ClientFiltersProps> = ({ filters, onChange }) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
+
   
   const handleFilterChange = (key: keyof ClientFiltersType, value: string) => {
     onChange({

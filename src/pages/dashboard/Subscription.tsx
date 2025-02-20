@@ -42,7 +42,8 @@ import {
 import { SubscriptionPlan, BillingCycle, BillingHistory as BillingHistoryType } from '../../types/subscription';
 
 const Subscription: React.FC = () => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   const navigate = useNavigate();
   const { subscription, setSubscription } = useSubscription();
   const { showToast } = useToast();

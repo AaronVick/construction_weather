@@ -7,7 +7,8 @@ import { useSupabase } from '../../contexts/SupabaseContext';
 import Button from '../../components/ui/Button';
 
 const ForgotPassword: React.FC = () => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   const { resetPassword } = useSupabase();
   
   const [email, setEmail] = useState('');

@@ -32,7 +32,9 @@ const ClientTable: React.FC<ClientTableProps> = ({
   onSelectAll,
   onDelete
 }) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
+
   const allSelected = clients.length > 0 && selectedClients.length === clients.length;
   const someSelected = selectedClients.length > 0 && selectedClients.length < clients.length;
   

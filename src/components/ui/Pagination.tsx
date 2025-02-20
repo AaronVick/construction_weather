@@ -26,7 +26,8 @@ const Pagination: React.FC<PaginationProps> = ({
   onPageSizeChange,
   className = '',
 }) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   
   // Don't render pagination if there's only one page
   if (totalPages <= 1 && !showPageSizeSelector) {

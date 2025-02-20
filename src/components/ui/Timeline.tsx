@@ -18,7 +18,8 @@ interface TimelineProps {
 }
 
 const Timeline: React.FC<TimelineProps> = ({ items, className = '' }) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   
   const getStatusColor = (status?: TimelineItem['status']) => {
     switch (status) {

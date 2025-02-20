@@ -50,7 +50,8 @@ type TabType = 'overview' | 'jobsites' | 'emails' | 'notes';
 const ClientDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   const { showToast } = useToast();
   const { subscription } = useSubscription();
   const [client, setClient] = useState<ClientWithAssociations | null>(null);

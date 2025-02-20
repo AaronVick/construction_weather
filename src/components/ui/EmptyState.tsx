@@ -24,7 +24,8 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   onSecondaryAction,
   className = '',
 }) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   
   return (
     <div

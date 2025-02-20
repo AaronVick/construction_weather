@@ -31,7 +31,8 @@ const RecentActivityList: React.FC<RecentActivityListProps> = ({
   loading = false,
   className = '',
 }) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   
   const getActivityIcon = (type: string, status: string) => {
     switch (type) {

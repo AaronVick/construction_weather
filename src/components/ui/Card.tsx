@@ -21,7 +21,8 @@ const Card: React.FC<CardProps> = ({
   hoverable = false,
   onClick,
 }) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
 
   const getPaddingClasses = () => {
     switch (padding) {

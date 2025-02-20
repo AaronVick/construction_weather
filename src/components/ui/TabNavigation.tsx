@@ -28,7 +28,8 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
   size = 'md',
   fullWidth = false,
 }) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   
   const getSizeClasses = () => {
     switch (size) {

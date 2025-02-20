@@ -30,7 +30,8 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   loading = false,
   children
 }) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
 
   return (
     <Transition appear show={isOpen} as={Fragment}>

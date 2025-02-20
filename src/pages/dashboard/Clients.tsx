@@ -24,7 +24,8 @@ import { Client } from '../../types/client';
 import { ClientFiltersType } from '../../types/filters';
 
 const Clients: React.FC = () => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);

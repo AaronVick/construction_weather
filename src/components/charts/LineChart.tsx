@@ -60,7 +60,9 @@ const LineChart: React.FC<LineChartProps> = ({
   loading = false,
   className = '',
 }) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
+
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   
   // Colors based on theme

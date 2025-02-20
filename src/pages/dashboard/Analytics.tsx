@@ -10,7 +10,8 @@ import LineChart from '../../components/charts/LineChart';
 import UpgradePrompt from '../../components/subscription/UpgradePrompt';
 
 const Analytics: React.FC = () => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   const { subscription } = useSubscription();
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | 'ytd' | 'custom'>('30d');

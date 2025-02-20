@@ -23,7 +23,8 @@ const UpgradePrompt: React.FC<UpgradePromptProps> = ({
   compact = false,
   className = '',
 }) => {
-  const { darkMode } = useTheme();
+  const theme = useTheme();
+const darkMode = theme ? theme.darkMode : false;
   const navigate = useNavigate();
   const { subscription } = useSubscription();
   
