@@ -10,3 +10,9 @@ export interface Worker {
     created_at: string;
     updated_at: string;
   }
+
+  export interface WorkerStats {
+    total: number;
+    active: number;
+    assigned: number;
+  }

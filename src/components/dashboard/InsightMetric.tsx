@@ -8,6 +8,7 @@ interface InsightMetricProps {
   value: string | number;
   icon: React.ReactNode;
   change?: number;
+  trend?: number;
   changePeriod?: string;
   changeType?: 'positive' | 'negative' | 'neutral';
   description?: string;
@@ -21,6 +22,7 @@ const InsightMetric: React.FC<InsightMetricProps> = ({
   value,
   icon,
   change,
+  trend,
   changePeriod = 'last month',
   changeType = 'neutral',
   description,
@@ -31,6 +33,14 @@ const InsightMetric: React.FC<InsightMetricProps> = ({
   const theme = useTheme();
 const darkMode = theme ? theme.darkMode : false;
   
+// Trend Indicator
+const trendIndicator = trend !== undefined ? (
+  <div className={`flex items-center text-xs font-medium ${trend > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+    {trend > 0 ? <ArrowUp size={14} className="mr-1" /> : <ArrowDown size={14} className="mr-1" />}
+    {`${Math.abs(trend)}%`}
+  </div>
+) : null;
+
   const renderChangeIndicator = () => {
     if (typeof change !== 'number') return null;
     
@@ -93,9 +103,19 @@ const darkMode = theme ? theme.darkMode : false;
                 {value}
               </span>
             </div>
-            
-            {renderChangeIndicator()}
-            
+
+            {/* Render Trend Indicator */}
+            {trendIndicator}
+
+            {/* Render Change Indicator */}
+            {change !== undefined && (
+              <div className={`flex items-center text-xs font-medium ${changeType === 'positive' ? 'text-green-600 dark:text-green-400' : changeType === 'negative' ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                {changeType === 'positive' && <ArrowUp size={14} className="mr-1" />}
+                {changeType === 'negative' && <ArrowDown size={14} className="mr-1" />}
+                {`${Math.abs(change)}% vs ${changePeriod}`}
+              </div>
+            )}
+
             {description && (
               <p className={`mt-2 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 {description}

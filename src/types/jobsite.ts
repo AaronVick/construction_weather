@@ -15,6 +15,7 @@ export interface Jobsite {
     updatedAt?: string;
     weatherMonitoring: WeatherMonitoringSettings;
     assignedWorkers?: string[]; // Worker IDs
+    ocation?: string;  
   }
   
   export interface WeatherMonitoringSettings {
@@ -63,4 +64,10 @@ export interface Jobsite {
     status: 'all' | 'active' | 'inactive';
     weatherMonitoring: 'all' | 'enabled' | 'disabled';
     sortBy: 'nameAsc' | 'nameDesc' | 'dateAsc' | 'dateDesc';
+  }
+
+  export interface JobsiteStats {
+    total: number;
+    withWeatherMonitoring: number;
+    withRecentAlerts: number;
   }

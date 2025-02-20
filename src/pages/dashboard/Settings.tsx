@@ -578,7 +578,8 @@ const Settings: React.FC = () => {
                           ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-2 border-blue-500' 
                           : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-2 border-transparent'
                       }`}
-                      onClick={() => toggleDarkMode && !darkMode ? null : toggleDarkMode()}
+                      onClick={toggleDarkMode}
+
                     >
                       <Sun className="w-6 h-6 mb-1" />
                       <span className="text-xs font-medium">Light</span>
@@ -590,7 +591,8 @@ const Settings: React.FC = () => {
                           ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-2 border-blue-500' 
                           : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-2 border-transparent'
                       }`}
-                      onClick={() => toggleDarkMode && darkMode ? null : toggleDarkMode()}
+                      onClick={toggleDarkMode}
+
                     >
                       <Moon className="w-6 h-6 mb-1" />
                       <span className="text-xs font-medium">Dark</span>

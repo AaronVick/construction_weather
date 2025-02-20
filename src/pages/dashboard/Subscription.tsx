@@ -41,6 +41,8 @@ import {
 // Types
 import { SubscriptionPlan, BillingCycle, BillingHistory as BillingHistoryType } from '../../types/subscription';
 
+
+
 const Subscription: React.FC = () => {
   const theme = useTheme();
 const darkMode = theme ? theme.darkMode : false;
@@ -56,7 +58,8 @@ const darkMode = theme ? theme.darkMode : false;
   const [billingHistory, setBillingHistory] = useState<BillingHistoryType[]>([]);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [activeTab, setActiveTab] = useState<'plans' | 'details' | 'history'>('plans');
-
+  const [user, setUser] = useState<any>(null);
+  
   const plans: Array<{
     id: SubscriptionPlan;
     name: string;
@@ -683,6 +686,26 @@ const darkMode = theme ? theme.darkMode : false;
     );
   }
 
+  useEffect(() => {
+    const getUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (!error && data?.user) {
+        setUser(data.user);
+      }
+    };
+    getUser();
+  }, []);
+
+  return (
+    <input
+      type="email"
+      value={user?.email || ''}
+      readOnly
+      className="form-control bg-gray-50 dark:bg-gray-800"
+    />
+  );
+};
+
   return (
     <div className="space-y-8">
       {/* Upgrade/Downgrade Dialogs */}
@@ -961,7 +984,7 @@ const darkMode = theme ? theme.darkMode : false;
                 <label className="block text-sm font-medium mb-1">Billing Email</label>
                 <input
                   type="email"
-                  value={user?.email}
+                  value={user?.email || ''} 
                   readOnly
                   className="form-control bg-gray-50 dark:bg-gray-800"
                 />

@@ -52,34 +52,34 @@ const darkMode = theme ? theme.darkMode : false;
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        
+  
         // Get user preferences
         const zipCode = localStorage.getItem('userZipCode') || user?.user_metadata?.zip_code || '10001';
-        
-        // Fetch weather data
+  
+        // Fetch dashboard metrics in a single API call
+        const { data, error } = await getDashboardData();
+        if (error) throw error;
+  
+        if (data) {
+          setInsights({
+            activeClients: data.clientStats.active,
+            activeWorkers: data.workerStats.active,
+            pendingEmails: data.notificationStats.last30Days,
+            weatherAlerts: data.jobsiteStats.withRecentAlerts,
+            jobsites: subscription.plan === 'basic' ? 1 : data.jobsiteStats.total,
+            monthlyEmails: data.weatherAlertMetrics
+          });
+  
+          setRecentActivity(data.recentActivity);
+        }
+  
+        // Fetch weather data separately
         const currentWeather = await getCurrentWeather(zipCode);
         const forecast = await fetchWeatherForecast(zipCode, 7);
-        
-        // Fetch metrics
-        const clients = await getActiveClients();
-        const workers = await getActiveWorkers();
-        const emails = await getPendingEmails();
-        
-        // Update state
+  
         setWeatherData(currentWeather);
         setForecastData(forecast);
-        setInsights({
-          activeClients: clients.length,
-          activeWorkers: workers.length,
-          pendingEmails: emails.length,
-          weatherAlerts: countWeatherAlerts(forecast),
-          jobsites: subscription.plan === 'basic' ? 1 : await getJobsitesCount(),
-          monthlyEmails: await getMonthlyEmailStats()
-        });
-        
-        // Fetch recent activity
-        setRecentActivity(await getRecentActivity());
-        
+  
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
         setError('Failed to load dashboard data. Please try again.');
@@ -87,9 +87,10 @@ const darkMode = theme ? theme.darkMode : false;
         setLoading(false);
       }
     };
-    
+  
     fetchDashboardData();
   }, [user, subscription.plan]);
+  
 
   // Helper functions
   const countWeatherAlerts = (forecast: any[]) => {
@@ -227,7 +228,7 @@ const darkMode = theme ? theme.darkMode : false;
           title="Active Clients"
           value={insights.activeClients}
           icon={<Users size={24} />}
-          trend={+8}
+          change={+8}
           linkTo="/clients"
           color="blue"
         />
@@ -235,7 +236,7 @@ const darkMode = theme ? theme.darkMode : false;
           title="Active Workers"
           value={insights.activeWorkers}
           icon={<Briefcase size={24} />}
-          trend={+2}
+          change={+2}
           linkTo="/workers"
           color="green"
         />
@@ -243,7 +244,7 @@ const darkMode = theme ? theme.darkMode : false;
           title="Pending Emails"
           value={insights.pendingEmails}
           icon={<Mail size={24} />}
-          trend={0}
+          change={0}
           linkTo="/email"
           color="purple"
         />
@@ -251,7 +252,7 @@ const darkMode = theme ? theme.darkMode : false;
           title="Weather Alerts"
           value={insights.weatherAlerts}
           icon={<Cloud size={24} />}
-          trend={+1}
+          change={+1}
           linkTo="/weather"
           color={insights.weatherAlerts > 0 ? "red" : "green"}
         />

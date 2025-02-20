@@ -184,7 +184,7 @@ function formatClient(data: any): Client {
     email: data.email,
     phone: data.phone || null,
     address: data.address || null,
-    companyName: data.company_name || null,
+    company: data.company || null,
     notes: data.notes || null,
     isActive: data.is_active,
     createdAt: data.created_at,

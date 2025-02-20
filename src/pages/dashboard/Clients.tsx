@@ -50,7 +50,8 @@ const darkMode = theme ? theme.darkMode : false;
   const fetchClients = async () => {
     try {
       setLoading(true);
-      const fetchedClients = await getClients();
+      const fetchedClientsResponse = await getClients(); // Ensure it returns ClientsResponse
+      const fetchedClients = fetchedClientsResponse.data ?? []; // Extract array or default to empty array
       setClients(fetchedClients);
       applyFilters(fetchedClients, searchTerm, filters);
     } catch (error) {
@@ -60,6 +61,7 @@ const darkMode = theme ? theme.darkMode : false;
       setLoading(false);
     }
   };
+  
 
   // Apply all filters, search, and sorting
   const applyFilters = (clientList: Client[], search: string, filterOptions: ClientFiltersType) => {

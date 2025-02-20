@@ -1,6 +1,7 @@
 // src/pages/dashboard/EmailConfiguration.tsx
 import React, { useState } from 'react';
-import { Mail, Settings, Edit2, Copy, Send, Trash, Plus, FileText, Save } from 'lucide-react';
+import { Mail, Settings, Edit2, Copy, Send, Trash, Plus, FileText, Save, AlertTriangle } from 'lucide-react';
+
 import { useTheme } from '../../hooks/useTheme';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';

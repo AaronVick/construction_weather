@@ -430,9 +430,10 @@ const darkMode = theme ? theme.darkMode : false;
                     description: email.subject,
                     icon: <Mail size={16} />,
                     timestamp: email.sentAt,
-                    status: ['pending', 'error', 'success', 'warning', 'info'].includes(email.status)
+                    status: (['pending', 'error', 'success', 'warning', 'info'] as const).includes(email.status)
                       ? (email.status as 'pending' | 'error' | 'success' | 'warning' | 'info')
                       : 'info',
+
 
 
                   })),
