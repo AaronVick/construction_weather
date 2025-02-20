@@ -1,6 +1,6 @@
 // src/services/subscriptionService.ts
-import { supabase } from '../src/lib/supabaseClient';
-import { Subscription, SubscriptionPlan, BillingCycle, BillingHistory, PlanOption } from '../src/types/subscription';
+import { supabase } from '../lib/supabaseClient';
+import { Subscription, SubscriptionPlan, BillingCycle, BillingHistory, PlanOption } from '../types/subscription';
 
 /**
  * Fetches the current user's subscription details

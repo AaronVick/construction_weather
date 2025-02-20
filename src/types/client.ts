@@ -42,3 +42,12 @@ export interface ClientFilters {
   dateAdded: 'all' | 'last7days' | 'last30days' | 'last90days';
   sortBy: 'nameAsc' | 'nameDesc' | 'dateAsc' | 'dateDesc';
 }
+
+
+
+export interface ClientStats {
+  total: number;
+  active: number;
+  inactive: number;
+  recentlyAdded: number;
+}

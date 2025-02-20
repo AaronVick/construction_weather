@@ -1,6 +1,6 @@
 // src/services/weatherService.ts
 import axios from 'axios';
-import { supabase } from '../src/lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 
 const WEATHER_API_KEY = import.meta.env.VITE_WEATHER_API_KEY;
 const WEATHER_API_URL = 'https://api.weatherapi.com/v1';

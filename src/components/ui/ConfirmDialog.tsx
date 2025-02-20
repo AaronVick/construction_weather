@@ -1,11 +1,11 @@
 // src/components/ui/ConfirmDialog.tsx
-import React, { useEffect, useRef } from 'react';
-import ReactDOM from 'react-dom';
+import React, { Fragment } from 'react';
+import { Dialog, Transition } from '@headlessui/react';
 import { useTheme } from '../../hooks/useTheme';
 import Button from './Button';
-import { AlertTriangle, Info, AlertCircle, X } from 'lucide-react';
+import { XCircle } from 'lucide-react';
 
-interface ConfirmDialogProps {
+export interface ConfirmDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -13,9 +13,9 @@ interface ConfirmDialogProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
-  confirmVariant?: 'primary' | 'danger' | 'warning' | 'success';
-  type?: 'danger' | 'warning' | 'info' | 'confirmation';
+  confirmVariant?: 'primary' | 'danger' | 'warning';
   loading?: boolean;
+  children?: React.ReactNode; // Add support for children
 }
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -27,152 +27,97 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   confirmVariant = 'primary',
-  type = 'confirmation',
   loading = false,
+  children
 }) => {
   const { darkMode } = useTheme();
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const confirmButtonRef = useRef<HTMLButtonElement>(null);
-  
-  // Focus the confirm button when the dialog opens
-  useEffect(() => {
-    if (isOpen && confirmButtonRef.current) {
-      setTimeout(() => {
-        confirmButtonRef.current?.focus();
-      }, 50);
-    }
-  }, [isOpen]);
-  
-  // Handle escape key press to close dialog
-  useEffect(() => {
-    const handleEsc = (event: KeyboardEvent) => {
-      if (isOpen && event.key === 'Escape') {
-        onClose();
-      }
-    };
-    
-    window.addEventListener('keydown', handleEsc);
-    
-    return () => {
-      window.removeEventListener('keydown', handleEsc);
-    };
-  }, [isOpen, onClose]);
-  
-  // Handle click outside the dialog to close it
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dialogRef.current && !dialogRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-    
-    if (isOpen) {
-      // Add a small delay to prevent the dialog from closing immediately when it's opened
-      setTimeout(() => {
-        document.addEventListener('mousedown', handleClickOutside);
-      }, 10);
-    }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen, onClose]);
-  
-  // Prevent scrolling when the dialog is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
-  
-  const getIcon = () => {
-    switch (type) {
-      case 'danger':
-        return <AlertCircle className="w-10 h-10 text-red-500" />;
-      case 'warning':
-        return <AlertTriangle className="w-10 h-10 text-amber-500" />;
-      case 'info':
-        return <Info className="w-10 h-10 text-blue-500" />;
-      default:
-        return <AlertTriangle className="w-10 h-10 text-blue-500" />;
-    }
-  };
-  
-  if (!isOpen) return null;
-  
-  return ReactDOM.createPortal(
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop */}
-      <div className={`fixed inset-0 ${darkMode ? 'bg-black bg-opacity-75' : 'bg-gray-500 bg-opacity-75'} transition-opacity`} />
-      
-      {/* Dialog positioning */}
-      <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-        {/* Dialog panel */}
-        <div
-          ref={dialogRef}
-          className={`relative transform overflow-hidden rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-white'} text-left shadow-xl transition-all sm:my-8 sm:max-w-lg w-full`}
+
+  return (
+    <Transition appear show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={loading ? () => {} : onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
         >
-          {/* Close button */}
-          <button
-            type="button"
-            className={`absolute right-2 top-2 p-1 rounded-full ${darkMode ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' : 'text-gray-400 hover:text-gray-500 hover:bg-gray-100'}`}
-            onClick={onClose}
-          >
-            <X size={20} />
-          </button>
-          
-          <div className="p-6">
-            <div className="sm:flex sm:items-start">
-              {/* Icon */}
-              <div className={`mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} sm:mx-0 sm:h-10 sm:w-10`}>
-                {getIcon()}
-              </div>
-              
-              {/* Content */}
-              <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-                <h3 className={`text-lg font-medium leading-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  {title}
-                </h3>
-                <div className="mt-2">
-                  <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
-                    {message}
-                  </p>
+          <div className="fixed inset-0 bg-black bg-opacity-25" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4 text-center">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <Dialog.Panel
+                className={`w-full max-w-md transform overflow-hidden rounded-lg ${
+                  darkMode ? 'bg-gray-800' : 'bg-white'
+                } p-6 text-left align-middle shadow-xl transition-all`}
+              >
+                <div className="absolute top-4 right-4">
+                  <button
+                    type="button"
+                    className={`text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400`}
+                    onClick={onClose}
+                    disabled={loading}
+                  >
+                    <span className="sr-only">Close</span>
+                    <XCircle size={24} />
+                  </button>
                 </div>
-              </div>
-            </div>
-            
-            {/* Actions */}
-            <div className="mt-6 sm:mt-6 sm:flex sm:flex-row-reverse">
-              <Button
-                variant={confirmVariant}
-                onClick={onConfirm}
-                className="w-full sm:w-auto sm:ml-3"
-                loading={loading}
-                disabled={loading}
-                ref={confirmButtonRef as React.RefObject<HTMLButtonElement>}
-              >
-                {confirmText}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={onClose}
-                className="mt-3 w-full sm:mt-0 sm:w-auto"
-                disabled={loading}
-              >
-                {cancelText}
-              </Button>
-            </div>
+
+                <Dialog.Title
+                  as="h3"
+                  className={`text-lg font-semibold leading-6 ${
+                    darkMode ? 'text-white' : 'text-gray-900'
+                  }`}
+                >
+                  {title}
+                </Dialog.Title>
+
+                {/* Show message if provided and no children */}
+                {message && !children && (
+                  <div className="mt-2">
+                    <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
+                      {message}
+                    </p>
+                  </div>
+                )}
+
+                {/* Render children if provided */}
+                {children && <div className="mt-2">{children}</div>}
+
+                <div className="mt-6 flex justify-end space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={onClose}
+                    disabled={loading}
+                  >
+                    {cancelText}
+                  </Button>
+                  <Button
+                    variant={confirmVariant}
+                    onClick={onConfirm}
+                    loading={loading}
+                  >
+                    {confirmText}
+                  </Button>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
           </div>
         </div>
-      </div>
-    </div>,
-    document.body
+      </Dialog>
+    </Transition>
   );
 };
 

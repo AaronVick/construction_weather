@@ -46,11 +46,11 @@ export interface SubscriptionFeatures {
 export interface BillingHistory {
   id: string;
   date: string;
-  amount: number;
   description: string;
+  amount: number;
   status: 'paid' | 'pending' | 'failed' | 'refunded';
+  invoice?: string;
   invoiceUrl?: string;
-  receiptUrl?: string;
 }
 
 export interface PlanOption {

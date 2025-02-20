@@ -1,8 +1,8 @@
 // src/services/emailService.ts
 import axios from 'axios';
-import { supabase } from '../src/lib/supabaseClient';
-import { EmailFormData, EmailLog, EmailTemplate } from '../src/types/email';
-import { Client } from '../src/types/client';
+import { supabase } from '../lib/supabaseClient';
+import { EmailFormData, EmailLog, EmailTemplate } from '../types/email';
+import { Client } from '../types/client';
 import { Worker } from '../types/worker';
 
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
@@ -27,6 +27,26 @@ export async function getClientEmails(clientId: string): Promise<EmailLog[]> {
     throw new Error('Failed to fetch email history');
   }
 }
+
+/**
+ * Extracts variable placeholders from an email template string
+ * For example: "Hello {name}, the weather at {jobsite} is {condition}"
+ * would extract ["name", "jobsite", "condition"]
+ */
+function extractTemplateVariables(text: string): string[] {
+  const regex = /\{([a-zA-Z0-9_]+)\}/g;
+  const variables: string[] = [];
+  let match;
+  
+  while ((match = regex.exec(text)) !== null) {
+    if (!variables.includes(match[1])) {
+      variables.push(match[1]);
+    }
+  }
+  
+  return variables;
+}
+
 
 /**
  * Fetches email templates
