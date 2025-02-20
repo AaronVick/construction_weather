@@ -1,14 +1,112 @@
-import React from 'react';
+// src/pages/LandingPage.tsx
+
+import React, { useState } from 'react';
 import '../styles/LandingPage.css'; // Import the CSS
 import heroImage from '../assets/images/hero-image.jpg'; // Example image
 import featureIcon1 from '../assets/icons/cloud-lightning.svg'; // Example icon
 import featureIcon2 from '../assets/icons/email.svg'; // Example icon
 import featureIcon3 from '../assets/icons/settings.svg'; // Example icon
 import testimonialImage1 from '../assets/images/user1.jpg'; // Example testimonial image
+import { supabase } from '../lib/supabaseClient'; // Supabase client
 
 const LandingPage: React.FC = () => {
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [error, setError] = useState('');
+
+  // Handle login
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setError(error.message);
+    } else {
+      setIsLoginModalOpen(false); // Close modal on successful login
+      window.location.href = '/dashboard'; // Redirect to dashboard
+    }
+  };
+
+  // Handle forgot password
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+
+    if (error) {
+      setError(error.message);
+    } else {
+      alert('Password reset email sent! Check your inbox.');
+      setIsForgotPassword(false); // Reset to login form
+    }
+  };
+
   return (
     <div className="landing-page">
+      {/* Login Button */}
+      <button
+        className="login-button"
+        onClick={() => setIsLoginModalOpen(true)}
+      >
+        Login
+      </button>
+
+      {/* Login Modal */}
+      {isLoginModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2>{isForgotPassword ? 'Reset Password' : 'Login'}</h2>
+            {error && <p className="error-message">{error}</p>}
+            <form onSubmit={isForgotPassword ? handleForgotPassword : handleLogin}>
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              {!isForgotPassword && (
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              )}
+              <button type="submit">
+                {isForgotPassword ? 'Send Reset Link' : 'Login'}
+              </button>
+            </form>
+            <p>
+              {isForgotPassword ? (
+                <span onClick={() => setIsForgotPassword(false)}>
+                  Back to Login
+                </span>
+              ) : (
+                <span onClick={() => setIsForgotPassword(true)}>
+                  Forgot Password?
+                </span>
+              )}
+            </p>
+            <button
+              className="close-modal"
+              onClick={() => setIsLoginModalOpen(false)}
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-content">
