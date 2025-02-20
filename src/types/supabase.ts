@@ -1,69 +1,54 @@
 // src/types/supabase.ts
-import { SupabaseClient } from '@supabase/supabase-js';
 
-export interface SupabaseClientOptions {
-  auth?: {
-    autoRefreshToken?: boolean;
-    persistSession?: boolean;
-    detectSessionInUrl?: boolean;
+export type Database = {
+  auth: {
+    Tables: {
+      audit_log_entries: {};
+      flow_state: {};
+      identities: {};
+      instances: {};
+      mfa_amr_claims: {};
+      mfa_challenges: {};
+      mfa_factors: {};
+      one_time_tokens: {};
+      refresh_tokens: {};
+      saml_providers: {};
+      saml_relay_states: {};
+      schema_migrations: {};
+      sessions: {};
+      sso_domains: {};
+      sso_providers: {};
+      users: {};
+    };
   };
-  global?: {
-    headers?: Record<string, string>;
-    fetch?: typeof fetch;
+  extensions: {
+    Tables: {
+      pg_stat_statements: {};
+      pg_stat_statements_info: {};
+    };
   };
-  realtime?: {
-    eventsPerSecond?: number;
-    timeout?: number;
+  pgsodium: {
+    Tables: {
+      decrypted_key: {};
+      key: {};
+      mask_columns: {};
+      masking_rule: {};
+      valid_key: {};
+    };
   };
-  db?: {
-    schema?: string;
-  };
-}
-
-export interface Database extends SupabaseDatabase {
   public: {
     Tables: {
-      clients: {
-        Row: {
-          id: string;
-          name: string;
-          email: string;
-          phone: string | null;
-          address: string | null;
-          company_name: string | null;
-          notes: string | null;
-          is_active: boolean;
-          created_at: string;
-          updated_at: string;
-          user_id: string;
-        };
-        Insert: {
-          id?: string;
-          name: string;
-          email: string;
-          phone?: string | null;
-          address?: string | null;
-          company_name?: string | null;
-          notes?: string | null;
-          is_active?: boolean;
-          created_at?: string;
-          updated_at?: string;
-          user_id: string;
-        };
-        Update: {
-          id?: string;
-          name?: string;
-          email?: string;
-          phone?: string | null;
-          address?: string | null;
-          company_name?: string | null;
-          notes?: string | null;
-          is_active?: boolean;
-          created_at?: string;
-          updated_at?: string;
-          user_id?: string;
-        };
-      };
+      analytics_data: {};
+      billing_history: {};
+      clients: {};
+      email_logs: {};
+      geography_columns: {};
+      geometry_columns: {};
+      spatial_ref_sys: {};
+      user_profiles: {};
+      weather_checks: {};
+
+      // ✅ Workers Table
       workers: {
         Row: {
           id: string;
@@ -99,6 +84,8 @@ export interface Database extends SupabaseDatabase {
           user_id?: string;
         };
       };
+
+      // ✅ Jobsites Table
       jobsites: {
         Row: {
           id: string;
@@ -161,6 +148,8 @@ export interface Database extends SupabaseDatabase {
           user_id?: string;
         };
       };
+
+      // ✅ Worker-Jobsite Relationship Table
       worker_jobsites: {
         Row: {
           worker_id: string;
@@ -178,56 +167,8 @@ export interface Database extends SupabaseDatabase {
           created_at?: string;
         };
       };
-      email_logs: {
-        Row: {
-          id: string;
-          client_id: string | null;
-          worker_id: string | null;
-          subject: string;
-          body: string;
-          recipient_email: string;
-          recipient_name: string;
-          status: string;
-          trigger: string;
-          weather_condition: string | null;
-          error_message: string | null;
-          scheduled_for: string | null;
-          sent_at: string;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          client_id?: string | null;
-          worker_id?: string | null;
-          subject: string;
-          body: string;
-          recipient_email: string;
-          recipient_name: string;
-          status: string;
-          trigger: string;
-          weather_condition?: string | null;
-          error_message?: string | null;
-          scheduled_for?: string | null;
-          sent_at: string;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          client_id?: string | null;
-          worker_id?: string | null;
-          subject?: string;
-          body?: string;
-          recipient_email?: string;
-          recipient_name?: string;
-          status?: string;
-          trigger?: string;
-          weather_condition?: string | null;
-          error_message?: string | null;
-          scheduled_for?: string | null;
-          sent_at?: string;
-          created_at?: string;
-        };
-      };
+
+      // ✅ Email Templates Table
       email_templates: {
         Row: {
           id: string;
@@ -260,94 +201,8 @@ export interface Database extends SupabaseDatabase {
           user_id?: string;
         };
       };
-      subscriptions: {
-        Row: {
-          id: string;
-          user_id: string;
-          plan: string;
-          status: string;
-          billing_cycle: string;
-          price_id: string | null;
-          customer_id: string | null;
-          start_date: string;
-          end_date: string | null;
-          trial_end: string | null;
-          next_billing_date: string;
-          cancellation_date: string | null;
-          payment_method: any | null;
-          updated_at: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          plan: string;
-          status: string;
-          billing_cycle: string;
-          price_id?: string | null;
-          customer_id?: string | null;
-          start_date?: string;
-          end_date?: string | null;
-          trial_end?: string | null;
-          next_billing_date: string;
-          cancellation_date?: string | null;
-          payment_method?: any | null;
-          updated_at?: string | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          plan?: string;
-          status?: string;
-          billing_cycle?: string;
-          price_id?: string | null;
-          customer_id?: string | null;
-          start_date?: string;
-          end_date?: string | null;
-          trial_end?: string | null;
-          next_billing_date?: string;
-          cancellation_date?: string | null;
-          payment_method?: any | null;
-          updated_at?: string | null;
-          created_at?: string;
-        };
-      };
-      billing_history: {
-        Row: {
-          id: string;
-          user_id: string;
-          date: string;
-          description: string;
-          amount: number;
-          status: string;
-          invoice_url: string | null;
-          receipt_url: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          date: string;
-          description: string;
-          amount: number;
-          status: string;
-          invoice_url?: string | null;
-          receipt_url?: string | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          date?: string;
-          description?: string;
-          amount?: number;
-          status?: string;
-          invoice_url?: string | null;
-          receipt_url?: string | null;
-          created_at?: string;
-        };
-      };
+
+      // ✅ System Settings Table
       system_settings: {
         Row: {
           id: string;
@@ -401,6 +256,61 @@ export interface Database extends SupabaseDatabase {
           updated_at?: string | null;
         };
       };
+
+      // ✅ Subscriptions Table
+      subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          plan: string;
+          status: string;
+          billing_cycle: string;
+          price_id: string | null;
+          customer_id: string | null;
+          start_date: string;
+          end_date: string | null;
+          trial_end: string | null;
+          next_billing_date: string;
+          cancellation_date: string | null;
+          payment_method: any | null;
+          updated_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          plan: string;
+          status: string;
+          billing_cycle: string;
+          price_id?: string | null;
+          customer_id?: string | null;
+          start_date?: string;
+          end_date?: string | null;
+          trial_end?: string | null;
+          next_billing_date: string;
+          cancellation_date?: string | null;
+          payment_method?: any | null;
+          updated_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          plan?: string;
+          status?: string;
+          billing_cycle?: string;
+          price_id?: string | null;
+          customer_id?: string | null;
+          start_date?: string;
+          end_date?: string | null;
+          trial_end?: string | null;
+          next_billing_date?: string;
+          cancellation_date?: string | null;
+          payment_method?: any | null;
+          updated_at?: string | null;
+          created_at?: string;
+        };
+      };
     };
   };
-}
+};

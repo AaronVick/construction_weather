@@ -144,9 +144,10 @@ const darkMode = theme ? theme.darkMode : false;
       disabled: !isPremium,
       tooltip: !isPremium ? 'Premium feature' : undefined
     },
-    { id: 'emails', label: 'Email History', icon: <Mail size={16} /> },
+    { id: 'emails', label: 'Email History', icon: <Mail size={16} /> }, // Missing closing bracket fixed
     { id: 'notes', label: 'Notes', icon: <FileText size={16} /> }
   ];
+  
 
   if (loading) {
     return (
@@ -430,9 +431,10 @@ const darkMode = theme ? theme.darkMode : false;
                     description: email.subject,
                     icon: <Mail size={16} />,
                     timestamp: email.sentAt,
-                    status: (['pending', 'error', 'success', 'warning', 'info'] as const).includes(email.status)
-                      ? (email.status as 'pending' | 'error' | 'success' | 'warning' | 'info')
-                      : 'info',
+                    status: ['pending', 'error', 'success', 'warning', 'info'].includes(email.status as any)
+                    ? (email.status as 'pending' | 'error' | 'success' | 'warning' | 'info')
+                    : 'info',
+
 
 
 

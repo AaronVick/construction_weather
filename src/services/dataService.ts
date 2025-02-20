@@ -116,6 +116,25 @@ async function getClientStats(userId: string): Promise<ClientStats> {
   };
 }
 
+// get active clients
+export async function getActiveClients(userId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('clients')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('is_active', true);
+
+  if (error) {
+    console.error('Error fetching active clients:', error);
+    return 0;
+  }
+
+  return count || 0;
+}
+
+
+
+
 /**
  * Gets jobsite statistics
  */
@@ -159,22 +178,43 @@ async function getWorkerStats(userId: string): Promise<WorkerStats> {
     .from('workers')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId);
-  
+
   // Get active workers
   const { count: active } = await supabase
     .from('workers')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
     .eq('is_active', true);
-  
-  // Get assigned workers
-  const { count: assigned } = await supabase
-    .from('worker_jobsites')
-    .select('worker_id', { count: 'exact', head: true })
-    .in('jobsite_id', (sb) => 
-      sb.from('jobsites').select('id').eq('user_id', userId)
-    );
-  
+
+  // Fetch jobsite IDs first
+  const { data: jobsiteIds, error: jobsiteError } = await supabase
+    .from('jobsites')
+    .select('id')
+    .eq('user_id', userId);
+
+  if (jobsiteError || !jobsiteIds) {
+    console.error('Error fetching jobsites:', jobsiteError);
+    return { total: total || 0, active: active || 0, assigned: 0 };
+  }
+
+  // Extract jobsite IDs
+  const jobsiteIdList = jobsiteIds.map(j => j.id);
+
+  // Get assigned workers (Only if there are jobsites)
+  let assigned = 0;
+  if (jobsiteIdList.length > 0) {
+    const { count: assignedCount, error: assignedError } = await supabase
+      .from('worker_jobsites')
+      .select('worker_id', { count: 'exact', head: true })
+      .in('jobsite_id', jobsiteIdList);
+
+    if (assignedError) {
+      console.error('Error fetching assigned workers:', assignedError);
+    } else {
+      assigned = assignedCount || 0;
+    }
+  }
+
   return {
     total: total || 0,
     active: active || 0,
@@ -182,54 +222,134 @@ async function getWorkerStats(userId: string): Promise<WorkerStats> {
   };
 }
 
+
+
+// get active work
+export async function getActiveWorkers(userId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('workers')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('is_active', true);
+
+  if (error) {
+    console.error('Error fetching active workers:', error);
+    return 0;
+  }
+
+  return count || 0;
+}
+
+
+
 /**
  * Gets notification statistics
  */
 async function getNotificationStats(userId: string): Promise<NotificationStats> {
-  // Get total notifications sent
-  const { count: totalSent } = await supabase
-    .from('email_logs')
-    .select('*', { count: 'exact', head: true })
-    .in('client_id', (sb) =>
-      sb.from('clients').select('id').eq('user_id', userId)
-    )
-    .or(`worker_id.in.(${
-      supabase.from('workers').select('id').eq('user_id', userId).toString()
-    })`);
-  
-  // Get weather notifications sent
-  const { count: weatherNotifications } = await supabase
-    .from('email_logs')
-    .select('*', { count: 'exact', head: true })
-    .in('client_id', (sb) =>
-      sb.from('clients').select('id').eq('user_id', userId)
-    )
-    .or(`worker_id.in.(${
-      supabase.from('workers').select('id').eq('user_id', userId).toString()
-    })`)
-    .eq('trigger', 'weather');
-  
-  // Get notifications sent in last 30 days
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
-  const { count: last30Days } = await supabase
-    .from('email_logs')
-    .select('*', { count: 'exact', head: true })
-    .in('client_id', (sb) =>
-      sb.from('clients').select('id').eq('user_id', userId)
-    )
-    .or(`worker_id.in.(${
-      supabase.from('workers').select('id').eq('user_id', userId).toString()
-    })`)
-    .gte('sent_at', thirtyDaysAgo.toISOString());
-  
+  // Fetch client IDs
+  const { data: clientIds, error: clientError } = await supabase
+    .from('clients')
+    .select('id')
+    .eq('user_id', userId);
+
+  if (clientError || !clientIds) {
+    console.error('Error fetching client IDs:', clientError);
+    return { totalSent: 0, weatherNotifications: 0, last30Days: 0 };
+  }
+
+  // Fetch worker IDs
+  const { data: workerIds, error: workerError } = await supabase
+    .from('workers')
+    .select('id')
+    .eq('user_id', userId);
+
+  if (workerError || !workerIds) {
+    console.error('Error fetching worker IDs:', workerError);
+    return { totalSent: 0, weatherNotifications: 0, last30Days: 0 };
+  }
+
+  // Extract IDs into arrays
+  const clientIdList = clientIds.map(c => c.id);
+  const workerIdList = workerIds.map(w => w.id);
+
+  // Fetch total notifications sent
+  let totalSent = 0;
+  if (clientIdList.length > 0 || workerIdList.length > 0) {
+    const { count, error } = await supabase
+      .from('email_logs')
+      .select('*', { count: 'exact', head: true })
+      .or(clientIdList.length > 0 ? `client_id.in.(${clientIdList.join(',')})` : '')
+      .or(workerIdList.length > 0 ? `worker_id.in.(${workerIdList.join(',')})` : '');
+
+    if (error) {
+      console.error('Error fetching total notifications:', error);
+    } else {
+      totalSent = count || 0;
+    }
+  }
+
+  // Fetch weather notifications sent
+  let weatherNotifications = 0;
+  if (clientIdList.length > 0 || workerIdList.length > 0) {
+    const { count, error } = await supabase
+      .from('email_logs')
+      .select('*', { count: 'exact', head: true })
+      .or(clientIdList.length > 0 ? `client_id.in.(${clientIdList.join(',')})` : '')
+      .or(workerIdList.length > 0 ? `worker_id.in.(${workerIdList.join(',')})` : '')
+      .eq('trigger', 'weather');
+
+    if (error) {
+      console.error('Error fetching weather notifications:', error);
+    } else {
+      weatherNotifications = count || 0;
+    }
+  }
+
+  // Fetch notifications sent in last 30 days
+  let last30Days = 0;
+  if (clientIdList.length > 0 || workerIdList.length > 0) {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const { count, error } = await supabase
+      .from('email_logs')
+      .select('*', { count: 'exact', head: true })
+      .or(clientIdList.length > 0 ? `client_id.in.(${clientIdList.join(',')})` : '')
+      .or(workerIdList.length > 0 ? `worker_id.in.(${workerIdList.join(',')})` : '')
+      .gte('sent_at', thirtyDaysAgo.toISOString());
+
+    if (error) {
+      console.error('Error fetching notifications in last 30 days:', error);
+    } else {
+      last30Days = count || 0;
+    }
+  }
+
   return {
-    totalSent: totalSent || 0,
-    weatherNotifications: weatherNotifications || 0,
-    last30Days: last30Days || 0,
+    totalSent,
+    weatherNotifications,
+    last30Days,
   };
 }
+
+
+// get pendingEmails
+
+export async function getPendingEmails(userId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('email_logs')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'pending');
+
+  if (error) {
+    console.error('Error fetching pending emails:', error);
+    return 0;
+  }
+
+  return count || 0;
+}
+
 
 /**
  * Gets recent activity
@@ -364,3 +484,12 @@ function getSampleWeatherMetrics(): Array<{
     count: Math.floor(Math.random() * 10) + 1, // Random count between 1-10
   }));
 }
+
+export {
+  getClientStats,
+  getJobsiteStats,
+  getWorkerStats,
+  getNotificationStats,
+  getRecentActivity,
+  getWeatherAlertMetrics   
+};

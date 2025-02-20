@@ -11,6 +11,7 @@ interface InsightMetricProps {
   trend?: number;
   changePeriod?: string;
   changeType?: 'positive' | 'negative' | 'neutral';
+  linkTo?: string;
   description?: string;
   loading?: boolean;
   className?: string;

@@ -43,6 +43,7 @@ const darkMode = theme ? theme.darkMode : false;
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
 
+
   useEffect(() => {
     fetchClients();
   }, []);
@@ -347,6 +348,7 @@ const darkMode = theme ? theme.darkMode : false;
               : () => { window.location.href = '/clients/new'; }
             }
           />
+
         ) : (
           <>
             {/* Bulk actions */}

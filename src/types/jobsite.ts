@@ -15,7 +15,7 @@ export interface Jobsite {
     updatedAt?: string;
     weatherMonitoring: WeatherMonitoringSettings;
     assignedWorkers?: string[]; // Worker IDs
-    ocation?: string;  
+    location?: string;  
   }
   
   export interface WeatherMonitoringSettings {

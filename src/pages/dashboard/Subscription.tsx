@@ -5,6 +5,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useSubscription } from '../../hooks/useSubscription';
 import { useToast } from '../../hooks/useToast';
 import { getSubscriptionDetails, updateSubscription, getBillingHistory } from '../../services/subscriptionService';
+import { supabase } from '../../lib/supabaseClient';
 
 // Components
 import Card from '../../components/ui/Card';
@@ -704,6 +705,7 @@ const darkMode = theme ? theme.darkMode : false;
       className="form-control bg-gray-50 dark:bg-gray-800"
     />
   );
+}
 
 
   return (
