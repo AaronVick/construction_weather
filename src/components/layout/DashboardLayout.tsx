@@ -5,6 +5,8 @@ import { useTheme } from '../../hooks/useTheme';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
 import { getCurrentWeather } from '../../services/weatherService';
+import { ChevronLeft } from "lucide-react";
+
 
 // Icons
 import {

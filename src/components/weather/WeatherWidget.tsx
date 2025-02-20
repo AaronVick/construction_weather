@@ -102,7 +102,7 @@ const darkMode = theme ? theme.darkMode : false;
         <div>
           <div className="text-right font-medium">{current.condition}</div>
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            {formatDate(new Date(), 'EEE, MMM d')}
+          formatDate(new Date()) 
           </div>
         </div>
       </div>
@@ -138,7 +138,7 @@ const darkMode = theme ? theme.darkMode : false;
                   className="w-8 h-8 text-gray-500" 
                 />
                 <span className="ml-2 text-sm">
-                  {formatDate(new Date(day.date), 'EEE')}
+                  {formatDate(new Date(day.date))}
                 </span>
               </div>
               <div className="flex items-center">

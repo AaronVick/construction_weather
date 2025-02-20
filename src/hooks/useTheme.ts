@@ -9,7 +9,7 @@ export interface ThemeContextType {
 
 export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
-  if (context === undefined) {
+  if (!context) {  // This checks for both null and undefined
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;

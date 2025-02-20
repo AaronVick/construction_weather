@@ -6,7 +6,12 @@ import { useTheme } from '../../hooks/useTheme';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 
-const WorkerDetail: React.FC = () => {
+interface WorkerDetailProps {
+  isEdit?: boolean;
+}
+
+const WorkerDetail: React.FC<WorkerDetailProps> = ({ isEdit = false }) => {
+
   const theme = useTheme();
 const darkMode = theme ? theme.darkMode : false;
   const { id } = useParams<{ id: string }>();

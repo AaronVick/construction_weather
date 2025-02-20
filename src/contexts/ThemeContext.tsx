@@ -6,10 +6,11 @@ interface ThemeContextType {
   toggleDarkMode: () => void;
 }
 
-const ThemeContext = createContext<ThemeContextType>({
+export const ThemeContext = createContext<ThemeContextType>({
   darkMode: false,
   toggleDarkMode: () => {},
 });
+
 
 interface ThemeProviderProps {
   children: React.ReactNode;

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { useToast } from '../../hooks/useToast';
-import { createClient, updateClient, getClient } from '../../services/clientService';
+import { createClient, updateClient, getClients } from '../../services/clientService';
 
 // Components
 import Card from '../ui/Card';

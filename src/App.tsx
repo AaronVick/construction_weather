@@ -20,7 +20,7 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 
 // Dashboard Pages
-import { Dashboard } from './pages/dashboard/Dashboard';
+import Dashboard from './pages/dashboard/Dashboard';
 import Clients from './pages/dashboard/Clients';
 import ClientDetail from './pages/dashboard/ClientDetail';
 import Jobsites from './pages/dashboard/Jobsites';
@@ -58,43 +58,65 @@ const AppRoutes: React.FC = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       
       {/* Dashboard Routes - Protected */}
-      <Route element={<ProtectedRoute />}>
-        <Route element={<DashboardLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/clients" element={<Clients />} />
-          <Route path="/clients/:id" element={<ClientDetail />} />
-          <Route path="/clients/new" element={<ClientDetail />} />
-          <Route path="/clients/:id/edit" element={<ClientDetail isEdit={true} />} />
-          <Route path="/jobsites" element={
-            <PremiumFeature fallbackUrl="/subscription">
-              <Jobsites />
-            </PremiumFeature>
-          } />
-          <Route path="/jobsites/:id" element={
-            <PremiumFeature fallbackUrl="/subscription">
-              <JobsiteDetail />
-            </PremiumFeature>
-          } />
-          <Route path="/jobsites/new" element={
-            <PremiumFeature fallbackUrl="/subscription">
-              <JobsiteDetail />
-            </PremiumFeature>
-          } />
-          <Route path="/workers" element={<Workers />} />
-          <Route path="/workers/:id" element={<WorkerDetail />} />
-          <Route path="/workers/new" element={<WorkerDetail />} />
-          <Route path="/workers/:id/edit" element={<WorkerDetail isEdit={true} />} />
-          <Route path="/weather" element={<WeatherAutomation />} />
-          <Route path="/email" element={<EmailConfiguration />} />
-          <Route path="/analytics" element={
-            <PremiumFeature fallbackUrl="/subscription">
-              <Analytics />
-            </PremiumFeature>
-          } />
-          <Route path="/subscription" element={<Subscription />} />
-          <Route path="/settings" element={<Settings />} />
-        </Route>
-      </Route>
+      <Route
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Routes>
+                {/* Main Dashboard */}
+                <Route path="/dashboard" element={<Dashboard />} />
+
+                {/* Clients Management */}
+                <Route path="/clients" element={<Clients />} />
+                <Route path="/clients/:id" element={<ClientDetail />} />
+                <Route path="/clients/new" element={<ClientDetail />} />
+                <Route path="/clients/:id/edit" element={<ClientDetail isEdit={true} />} />
+
+                {/* Jobsites - Premium Feature */}
+                <Route path="/jobsites" element={
+                  <PremiumFeature fallback="/subscription">
+                    <Jobsites />
+                  </PremiumFeature>
+                } />
+                <Route path="/jobsites/:id" element={
+                  <PremiumFeature fallback="/subscription">
+                    <JobsiteDetail />
+                  </PremiumFeature>
+                } />
+                <Route path="/jobsites/new" element={
+                  <PremiumFeature fallback="/subscription">
+                    <JobsiteDetail />
+                  </PremiumFeature>
+                } />
+
+                {/* Workers Management */}
+                <Route path="/workers" element={<Workers />} />
+                <Route path="/workers/:id" element={<WorkerDetail />} />
+                <Route path="/workers/new" element={<WorkerDetail />} />
+                <Route path="/workers/:id/edit" element={<WorkerDetail isEdit={true} />} />
+
+                {/* Weather Automation */}
+                <Route path="/weather" element={<WeatherAutomation />} />
+
+                {/* Email Configuration */}
+                <Route path="/email" element={<EmailConfiguration />} />
+
+                {/* Analytics - Premium Feature */}
+                <Route path="/analytics" element={
+                  <PremiumFeature fallback="/subscription">
+                    <Analytics />
+                  </PremiumFeature>
+                } />
+
+                {/* Subscription & Settings */}
+                <Route path="/subscription" element={<Subscription />} />
+                <Route path="/settings" element={<Settings />} />
+              </Routes>
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
       
       {/* 404 Route */}
       <Route path="*" element={<NotFound />} />

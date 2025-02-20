@@ -47,7 +47,12 @@ import { EmailLog } from '../../types/email';
 
 type TabType = 'overview' | 'jobsites' | 'emails' | 'notes';
 
-const ClientDetail: React.FC = () => {
+interface ClientDetailProps {
+  isEdit?: boolean;
+}
+
+const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
+
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const theme = useTheme();
@@ -425,7 +430,10 @@ const darkMode = theme ? theme.darkMode : false;
                     description: email.subject,
                     icon: <Mail size={16} />,
                     timestamp: email.sentAt,
-                    status: email.status
+                    status: ['pending', 'error', 'success', 'warning', 'info'].includes(email.status)
+                      ? (email.status as 'pending' | 'error' | 'success' | 'warning' | 'info')
+                      : 'info',
+
                   })),
                   {
                     id: 'client-created',

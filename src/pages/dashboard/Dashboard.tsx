@@ -349,3 +349,5 @@ const darkMode = theme ? theme.darkMode : false;
     </div>
   );
 };
+
+export default Dashboard;
