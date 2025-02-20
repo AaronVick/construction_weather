@@ -1,4 +1,5 @@
 // src/App.tsx
+
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { SupabaseProvider } from './contexts/SupabaseContext';
@@ -74,17 +75,18 @@ const AppRoutes: React.FC = () => {
 
                 {/* Jobsites - Premium Feature */}
                 <Route path="/jobsites" element={
-                  <PremiumFeature fallback="/subscription">
-                    <Jobsites />
-                  </PremiumFeature>
+                  <PremiumFeature requiredPlan="premium" fallback="/subscription">
+                  <Jobsites />
+                </PremiumFeature>
+                
                 } />
                 <Route path="/jobsites/:id" element={
-                  <PremiumFeature fallback="/subscription">
+                  <PremiumFeature requiredPlan="premium" fallback="/subscription">
                     <JobsiteDetail />
                   </PremiumFeature>
                 } />
                 <Route path="/jobsites/new" element={
-                  <PremiumFeature fallback="/subscription">
+                  <PremiumFeature requiredPlan="premium" fallback="/subscription">
                     <JobsiteDetail />
                   </PremiumFeature>
                 } />
@@ -103,7 +105,7 @@ const AppRoutes: React.FC = () => {
 
                 {/* Analytics - Premium Feature */}
                 <Route path="/analytics" element={
-                  <PremiumFeature fallback="/subscription">
+                  <PremiumFeature requiredPlan="premium" fallback="/subscription">
                     <Analytics />
                   </PremiumFeature>
                 } />

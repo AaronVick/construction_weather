@@ -153,6 +153,27 @@ export async function deleteClient(id: string): Promise<void> {
   }
 }
 
+export async function updateClient(
+  id: string,
+  updates: Partial<Omit<Client, 'id' | 'createdAt' | 'updatedAt'>>
+): Promise<Client | null> {
+  try {
+    const { data, error } = await supabase
+      .from('clients')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error updating client:', error);
+    return null;
+  }
+}
+
+
 /**
  * Helper function to format client data
  */

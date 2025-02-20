@@ -434,6 +434,7 @@ const darkMode = theme ? theme.darkMode : false;
                       ? (email.status as 'pending' | 'error' | 'success' | 'warning' | 'info')
                       : 'info',
 
+
                   })),
                   {
                     id: 'client-created',

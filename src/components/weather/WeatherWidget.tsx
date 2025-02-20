@@ -1,4 +1,5 @@
 // src/components/weather/WeatherWidget.tsx
+
 import React from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import { formatDate } from '../../utils/dateUtils';
@@ -102,7 +103,7 @@ const darkMode = theme ? theme.darkMode : false;
         <div>
           <div className="text-right font-medium">{current.condition}</div>
           <div className="text-sm text-gray-500 dark:text-gray-400">
-          formatDate(new Date()) 
+          formatDate(new Date().toISOString());
           </div>
         </div>
       </div>
@@ -138,7 +139,7 @@ const darkMode = theme ? theme.darkMode : false;
                   className="w-8 h-8 text-gray-500" 
                 />
                 <span className="ml-2 text-sm">
-                  {formatDate(new Date(day.date))}
+                formatDate(new Date(date).toISOString());
                 </span>
               </div>
               <div className="flex items-center">
