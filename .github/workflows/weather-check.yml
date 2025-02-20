@@ -1,0 +1,48 @@
+# .github/workflows/weather-check.yml
+name: Weather Check Automation
+
+on:
+  schedule:
+    # Run every hour from 4am to 8am Eastern Time (adjust as needed)
+    - cron: '0 9-13 * * *'  # UTC time (corresponds to 4am-8am EST)
+  
+  # Allow manual trigger from GitHub
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Run in debug mode'
+        required: false
+        default: 'false'
+
+jobs:
+  check-weather:
+    name: Check Weather Conditions
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run weather check
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DEBUG_MODE: ${{ github.event.inputs.debug == 'true' }}
+        run: node scripts/check-weather.js
+      
+      - name: Report results
+        if: always()
+        run: |
+          echo "Weather check completed at $(date)"
+          echo "See logs for details"

@@ -1,0 +1,57 @@
+# .github/workflows/send-notifications.yml
+name: Send Weather Notifications
+
+on:
+  # Run after weather check workflow
+  workflow_run:
+    workflows: ["Weather Check Automation"]
+    types:
+      - completed
+  
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      test-email:
+        description: 'Send test email'
+        required: false
+        default: 'false'
+      recipient:
+        description: 'Test recipient email (if test-email is true)'
+        required: false
+        default: ''
+
+jobs:
+  send-notifications:
+    name: Send Email Notifications
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Send notifications
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          TEST_EMAIL: ${{ github.event.inputs.test-email == 'true' }}
+          TEST_RECIPIENT: ${{ github.event.inputs.recipient }}
+        run: node scripts/send-notifications.js
+      
+      - name: Upload email logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: email-logs
+          path: logs/email-logs.json
+          retention-days: 7
