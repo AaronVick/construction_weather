@@ -449,28 +449,26 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
             {/* Recent Activity Card */}
             <Card>
               <h2 className="text-lg font-medium mb-4">Recent Activity</h2>
-              const timelineItems: TimelineItem[] = [
-  ...emailHistory.slice(0, 3).map(email => ({
-    id: email.id,
-    title: 'Email Sent',
-    description: email.subject,
-    icon: <Mail size={16} />,
-    timestamp: email.sentAt,
-    status: mapEmailStatusToTimelineStatus(email.status) // Using our helper function here
-  })),
-  {
-    id: 'client-created',
-    title: 'Client Created',
-    description: 'Added to the system',
-    icon: <User size={16} />,
-    timestamp: client.createdAt,
-    status: 'success'
-  }
-].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
-// Then use it in the Timeline component
-<Timeline items={timelineItems} />
-
+              <Timeline 
+                items={[
+                  ...emailHistory.slice(0, 3).map(email => ({
+                    id: email.id,
+                    title: 'Email Sent',
+                    description: email.subject,
+                    icon: <Mail size={16} />,
+                    timestamp: email.sentAt,
+                    status: mapEmailStatusToTimelineStatus(email.status)
+                  })),
+                  {
+                    id: 'client-created',
+                    title: 'Client Created',
+                    description: 'Added to the system',
+                    icon: <User size={16} />,
+                    timestamp: client.createdAt,
+                    status: 'success'
+                  }
+                ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())}
+              />
               <div className="mt-4 text-center">
                 <Button
                   variant="ghost"
