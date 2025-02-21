@@ -692,7 +692,6 @@ const Subscription: React.FC = () => {
   }, []);
 
 
-
   return (
     <div className="space-y-8">
       {/* Upgrade/Downgrade Dialogs */}
@@ -709,7 +708,7 @@ const Subscription: React.FC = () => {
       >
         {renderUpgradeDialogContent()}
       </ConfirmDialog>
-      
+
       <ConfirmDialog
         isOpen={downgradeDialogOpen}
         onClose={() => setDowngradeDialogOpen(false)}
@@ -723,7 +722,7 @@ const Subscription: React.FC = () => {
       >
         {renderDowngradeDialogContent()}
       </ConfirmDialog>
-      
+
       <ConfirmDialog
         isOpen={cancelDialogOpen}
         onClose={() => setCancelDialogOpen(false)}
@@ -737,7 +736,7 @@ const Subscription: React.FC = () => {
       >
         {renderCancelDialogContent()}
       </ConfirmDialog>
-      
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold">Subscription & Billing</h1>
@@ -745,12 +744,14 @@ const Subscription: React.FC = () => {
           Manage your subscription plan and billing information
         </p>
       </div>
-      
+
       {/* Subscription Status Card */}
       <Card>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h2 className="text-lg font-medium mb-1">Current Plan: {subscription?.plan.charAt(0).toUpperCase() + subscription?.plan.slice(1)}</h2>
+            <h2 className="text-lg font-medium mb-1">
+              Current Plan: {subscription?.plan.charAt(0).toUpperCase() + subscription?.plan.slice(1)}
+            </h2>
             <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               {subscription?.status === 'active' ? (
                 <>
@@ -790,32 +791,25 @@ const Subscription: React.FC = () => {
           </div>
           <div className="flex gap-2">
             {subscription?.status === 'active' && (
-              <Button
-                variant="danger"
-                onClick={handleCancelSubscription}
-              >
+              <Button variant="danger" onClick={handleCancelSubscription}>
                 Cancel Subscription
               </Button>
             )}
-            <Button
-              variant="primary"
-              onClick={() => setActiveTab('plans')}
-            >
+            <Button variant="primary" onClick={() => setActiveTab('plans')}>
               {subscription?.status === 'active' ? 'Change Plan' : 'View Plans'}
             </Button>
           </div>
         </div>
       </Card>
-      
+
       {/* Tabs */}
       <div className="border-b dark:border-gray-700 mb-6">
         <div className="flex space-x-6">
           <button
             onClick={() => setActiveTab('plans')}
             className={`py-3 border-b-2 font-medium ${
-              activeTab === 'plans'
-                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
+              activeTab === 'plans' ? 'border-blue-500 text-blue-600 dark:text-blue-400' 
+              : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
             Subscription Plans
@@ -823,9 +817,8 @@ const Subscription: React.FC = () => {
           <button
             onClick={() => setActiveTab('details')}
             className={`py-3 border-b-2 font-medium ${
-              activeTab === 'details'
-                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
+              activeTab === 'details' ? 'border-blue-500 text-blue-600 dark:text-blue-400' 
+              : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
             Billing Details
@@ -833,226 +826,35 @@ const Subscription: React.FC = () => {
           <button
             onClick={() => setActiveTab('history')}
             className={`py-3 border-b-2 font-medium ${
-              activeTab === 'history'
-                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
+              activeTab === 'history' ? 'border-blue-500 text-blue-600 dark:text-blue-400' 
+              : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
             Billing History
           </button>
         </div>
       </div>
-      
-      {/* Plans Tab */}
-      {activeTab === 'plans' && (
-        <div className="space-y-8">
-          {/* Billing Cycle Toggle */}
-          <div className="flex justify-center">
-            <div className="inline-flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-              <button
-                onClick={() => setBillingCycle('monthly')}
-                className={`px-4 py-2 text-sm font-medium rounded-md ${
-                  billingCycle === 'monthly'
-                    ? 'bg-white dark:bg-gray-700 shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setBillingCycle('annually')}
-                className={`px-4 py-2 text-sm font-medium rounded-md flex items-center ${
-                  billingCycle === 'annually'
-                    ? 'bg-white dark:bg-gray-700 shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}
-              >
-                Annually
-                <span className="ml-1 px-1.5 py-0.5 text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded-full">
-                  Save 20%
-                </span>
-              </button>
+
+      {/* Billing History Tab */}
+      {activeTab === 'history' && (
+        <Card>
+          <h2 className="text-lg font-medium mb-4">Billing History</h2>
+          {loading ? (
+            <div className="py-12 flex justify-center">
+              <LoadingSpinner size="md" />
             </div>
-          </div>
-          
-          {/* Plan Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {plans.map((plan) => (
-              <PlanCard
-                key={plan.id}
-                plan={plan}
-                billingCycle={billingCycle}
-                isCurrentPlan={subscription?.plan === plan.id}
-                onSelect={() => handlePlanSelect(plan.id)}
-              />
-            ))}
-          </div>
-          
-          {/* Features Comparison */}
-          <div className="mt-12">
-            <h2 className="text-xl font-semibold mb-6 text-center">Compare Plan Features</h2>
-            <FeatureComparison features={featureComparison} />
-          </div>
-        </div>
-      )}
-      
-      {/* Billing Details Tab */}
-{activeTab === 'details' && (
-  <div className="space-y-6">
-    {/* Payment Method */}
-    <Card>
-      <h2 className="text-lg font-medium mb-4">Payment Method</h2>
-
-      {subscription?.payment_method?.brand ? (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            {/* Show brand logo if available */}
-            {subscription.payment_method.brand === 'visa' ? (
-              <img 
-                src="/assets/visa-logo.svg" 
-                alt="Visa" 
-                className="h-8 w-auto mr-3" 
-              />
-            ) : subscription.payment_method.brand === 'mastercard' ? (
-              <img 
-                src="/assets/mastercard-logo.svg" 
-                alt="Mastercard" 
-                className="h-8 w-auto mr-3" 
-              />
-            ) : (
-              <CreditCard size={24} className="mr-3" />
-            )}
-
-            {/* Payment Method Details */}
-            <div>
-              <div className="font-medium">
-                {subscription.payment_method.brand?.charAt(0).toUpperCase()}
-                {subscription.payment_method.brand?.slice(1)} 
-                ending in {subscription.payment_method.last4}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                Expires {subscription.payment_method.expMonth}/{subscription.payment_method.expYear}
-              </div>
+          ) : billingHistory?.length > 0 ? (
+            <BillingHistory items={billingHistory} />
+          ) : (
+            <div className="text-center text-gray-500 dark:text-gray-400 py-6">
+              No billing history available.
             </div>
-          </div>
-          
-          {/* Update Payment Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowPaymentForm(true)}
-          >
-            Update
-          </Button>
-        </div>
-      ) : (
-        // No payment method on file
-        <div className="flex flex-col items-center justify-center py-6">
-          <CreditCard size={48} className="text-gray-400 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400 mb-4">No payment method on file</p>
-          <Button
-            variant="primary"
-            onClick={() => setShowPaymentForm(true)}
-          >
-            Add Payment Method
-          </Button>
-        </div>
+          )}
+        </Card>
       )}
-
-      {/* Show Payment Form if the user chooses to update/add */}
-      {showPaymentForm && (
-        <PaymentMethodForm 
-          onSubmit={() => setShowPaymentForm(false)}
-          onCancel={() => setShowPaymentForm(false)}
-        />
-      )}
-    </Card>
-  </div>
-
-         {/* Billing Information */}
-<Card>
-  <h2 className="text-lg font-medium mb-4">Billing Information</h2>
-  <div className="space-y-4">
-    
-    {/* Billing Email */}
-    <div>
-      <label className="block text-sm font-medium mb-1">Billing Email</label>
-      <input
-        type="email"
-        value={user?.email || ''} 
-        readOnly
-        className="form-control bg-gray-50 dark:bg-gray-800"
-      />
     </div>
-    
-    {/* Company Name & Tax ID */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label className="block text-sm font-medium mb-1">Company Name (Optional)</label>
-        <input
-          type="text"
-          value={billingInfo.companyName}
-          onChange={(e) => setBillingInfo({ ...billingInfo, companyName: e.target.value })}
-          placeholder="Your company name"
-          className="form-control"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Tax ID (Optional)</label>
-        <input
-          type="text"
-          value={billingInfo.taxId}
-          onChange={(e) => setBillingInfo({ ...billingInfo, taxId: e.target.value })}
-          placeholder="VAT or tax identification number"
-          className="form-control"
-        />
-      </div>
-    </div>
-    
-    {/* Billing Address */}
-    <div>
-      <label className="block text-sm font-medium mb-1">Billing Address</label>
-      <textarea
-        rows={3}
-        value={billingInfo.address}
-        onChange={(e) => setBillingInfo({ ...billingInfo, address: e.target.value })}
-        placeholder="Enter your billing address"
-        className="form-control"
-      />
-    </div>
-    
-    {/* Save Button */}
-    <div className="flex justify-end">
-      <Button
-        variant="primary"
-        onClick={handleSaveBillingInfo}
-      >
-        Save Billing Information
-      </Button>
-    </div>
-  </div>
-</Card>
-
-{/* Billing History Tab */}
-{activeTab === 'history' && (
-  <Card>
-    <h2 className="text-lg font-medium mb-4">Billing History</h2>
-    
-    {loading ? (
-      <div className="py-12 flex justify-center">
-        <LoadingSpinner size="md" />
-      </div>
-    ) : billingHistory.length > 0 ? (
-      <BillingHistory items={billingHistory} />
-    ) : (
-      <div className="text-center text-gray-500 dark:text-gray-400 py-6">
-        No billing history available.
-      </div>
-    )}
-  </Card>
-)}
-</div>
-);
+  );
 };
 
 export default Subscription;
+
