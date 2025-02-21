@@ -5,7 +5,12 @@ import { useTheme } from '../../hooks/useTheme';
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
 import { useSubscription } from '../../hooks/useSubscription';
 import { fetchWeatherForecast, getCurrentWeather } from '../../services/weatherService';
-import { getActiveClients, getActiveWorkers, getPendingEmails } from '../../services/dataService';
+import { 
+  getActiveClients, 
+  getActiveWorkers, 
+  getPendingEmails,
+  getDashboardData 
+} from '../../services/dataService';
 
 // Components
 import Card from '../../components/ui/Card';
@@ -14,7 +19,7 @@ import InsightMetric from '../../components/dashboard/InsightMetric';
 import LineChart from '../../components/charts/LineChart';
 import RecentActivityList from '../../components/dashboard/RecentActivityList';
 import UpgradePrompt from '../../components/subscription/UpgradePrompt';
-import { getDashboardData } from '../../services/dataService';
+
 
 // Icons
 import {
@@ -39,16 +44,33 @@ const darkMode = theme ? theme.darkMode : false;
   const [error, setError] = useState<string | null>(null);
   const [weatherData, setWeatherData] = useState<any>(null);
   const [forecastData, setForecastData] = useState<any[]>([]);
-  const [insights, setInsights] = useState({
+  const [insights, setInsights] = useState<{
+    activeClients: number;
+    activeWorkers: number;
+    pendingEmails: number;
+    weatherAlerts: number;
+    jobsites: number;
+    monthlyEmails: Array<{
+      month: string;
+      count: number;
+    }>;
+  }>({
     activeClients: 0,
     activeWorkers: 0,
     pendingEmails: 0,
     weatherAlerts: 0,
     jobsites: 0,
-    monthlyEmails: []
+    monthlyEmails: [],
   });
-  const [recentActivity, setRecentActivity] = useState([]);
-
+  
+  const [recentActivity, setRecentActivity] = useState<Array<{
+    id: number;
+    type: string;
+    message: string;
+    timestamp: string;
+    status: string;
+  }>>([]);
+  
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
