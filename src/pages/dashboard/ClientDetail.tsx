@@ -47,6 +47,15 @@ import { EmailLog } from '../../types/email';
 
 type TabType = 'overview' | 'jobsites' | 'emails' | 'notes';
 
+interface TimelineItem {
+  id: string | number;
+  title: string;
+  description: string;
+  icon: JSX.Element;
+  timestamp: string;
+  status?: 'pending' | 'error' | 'success' | 'warning' | 'info';
+}
+
 interface ClientDetailProps {
   isEdit?: boolean;
 }
@@ -431,15 +440,15 @@ const darkMode = theme ? theme.darkMode : false;
       description: email.subject,
       icon: <Mail size={16} />,
       timestamp: email.sentAt,
-      status: (['pending', 'error', 'success', 'warning', 'info'].includes(email.status) ? email.status : 'info') as 'pending' | 'error' | 'success' | 'warning' | 'info',
+      status: (email.status as TimelineItem['status']) || 'info'
     })),
     {
       id: 'client-created',
       title: 'Client Created',
-      description: `Added to the system`,
+      description: 'Added to the system',
       icon: <User size={16} />,
       timestamp: client.createdAt,
-      status: 'success',
+      status: 'success'
     }
   ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())}
 />

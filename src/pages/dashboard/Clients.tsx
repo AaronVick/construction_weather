@@ -23,6 +23,14 @@ import { Plus, UserPlus, FileCog, Upload, Download, Trash2, Users, Filter } from
 import { Client } from '../../types/client';
 import { ClientFiltersType } from '../../types/filters';
 
+interface EmptyStateProps {
+  icon: JSX.Element;
+  title: string;
+  description: string;
+  actionText: string;
+  onAction: () => void;
+}
+
 const Clients: React.FC = () => {
   const theme = useTheme();
 const darkMode = theme ? theme.darkMode : false;
@@ -322,32 +330,31 @@ const darkMode = theme ? theme.darkMode : false;
           </div>
         ) : filteredClients.length === 0 ? (
           <EmptyState
-            icon={<Users size={48} />}
-            title="No clients found"
-            description={
-              searchTerm || Object.values(filters).some(v => v !== 'all')
-                ? "Try adjusting your search or filters"
-                : "Get started by adding your first client"
-            }
-            actionText={searchTerm || Object.values(filters).some(v => v !== 'all') ? "Clear filters" : "Add client"}
-            actionIcon={searchTerm || Object.values(filters).some(v => v !== 'all') ? <Filter size={16} /> : <Plus size={16} />}
-            onAction={searchTerm || Object.values(filters).some(v => v !== 'all')
-              ? () => {
-                  setSearchTerm('');
-                  setFilters({
-                    status: 'all',
-                    dateAdded: 'all',
-                    sortBy: 'nameAsc'
-                  });
-                  applyFilters(clients, '', {
-                    status: 'all',
-                    dateAdded: 'all',
-                    sortBy: 'nameAsc'
-                  });
-                }
-              : () => { window.location.href = '/clients/new'; }
-            }
-          />
+  icon={<Users size={48} />}
+  title="No clients found"
+  description={
+    searchTerm || Object.values(filters).some(v => v !== 'all')
+      ? "Try adjusting your search or filters"
+      : "Get started by adding your first client"
+  }
+  actionText={searchTerm || Object.values(filters).some(v => v !== 'all') ? "Clear filters" : "Add client"}
+  onAction={searchTerm || Object.values(filters).some(v => v !== 'all')
+    ? () => {
+        setSearchTerm('');
+        setFilters({
+          status: 'all',
+          dateAdded: 'all',
+          sortBy: 'nameAsc'
+        });
+        applyFilters(clients, '', {
+          status: 'all',
+          dateAdded: 'all',
+          sortBy: 'nameAsc'
+        });
+      }
+    : () => { window.location.href = '/clients/new'; }
+  }
+/>
 
         ) : (
           <>

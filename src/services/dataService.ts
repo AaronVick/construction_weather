@@ -5,6 +5,25 @@ import { JobsiteStats } from '../types/jobsite';
 import { WorkerStats } from '../types/worker';
 import { NotificationStats } from '../types/notification';
 
+
+interface EmailLog {
+  id: number;
+  trigger: string;
+  subject: string;
+  recipient_name: string;
+  sent_at: string;
+  status: string;
+}
+
+interface ActivityItem {
+  id: number;
+  type: string;
+  message: string;
+  timestamp: string;
+  status: string;
+}
+
+
 export interface DashboardData {
   clientStats: ClientStats;
   jobsiteStats: JobsiteStats;
@@ -360,15 +379,7 @@ export async function getPendingEmails(userId: string): Promise<number> {
 /**
  * Fetches the recent activity of email notifications for a given user.
  */
-export async function getRecentActivity(userId: string): Promise<
-  Array<{
-    id: number;
-    type: string;
-    message: string;
-    timestamp: string;
-    status: string;
-  }>
-> {
+export async function getRecentActivity(userId: string): Promise<ActivityItem[]> {
   try {
     // Fetch client IDs associated with the user
     const { data: clientData, error: clientError } = await supabase
@@ -397,7 +408,7 @@ export async function getRecentActivity(userId: string): Promise<
     const workerIds = workerData?.map(worker => worker.id) || [];
 
     // Construct email log query
-    let query = supabase
+    const query = supabase
       .from('email_logs')
       .select(`
         id,
@@ -412,11 +423,12 @@ export async function getRecentActivity(userId: string): Promise<
 
     // Apply filters based on user-related clients/workers
     if (clientIds.length > 0) {
-      query = query.in('client_id', clientIds);
+      query.in('client_id', clientIds);
     }
 
+    // Use a type-safe approach for filtering worker IDs
     if (workerIds.length > 0) {
-      query = query.or(`worker_id.in.(${workerIds.join(',')})`);
+      query.or(`worker_id.in.(${workerIds.join(',')})`);
     }
 
     // Fetch the email logs
@@ -432,8 +444,8 @@ export async function getRecentActivity(userId: string): Promise<
     }
 
     // Transform the data into the expected format
-    return data.map((log) => ({
-      id: log.id, // Use the actual ID from the log
+    return (data as EmailLog[]).map((log) => ({
+      id: log.id,
       type: log.trigger === 'weather' ? 'weather_alert' : 'email_notification',
       message: `${log.trigger === 'weather' ? 'Weather alert' : 'Email'} sent to ${log.recipient_name}: ${log.subject}`,
       timestamp: log.sent_at,
@@ -444,6 +456,7 @@ export async function getRecentActivity(userId: string): Promise<
     return [];
   }
 }
+
 
 /**
  * Gets weather alert metrics over time
@@ -541,6 +554,5 @@ export {
   getJobsiteStats,
   getWorkerStats,
   getNotificationStats,
-  getRecentActivity,
-  getWeatherAlertMetrics   
+  getWeatherAlertMetrics
 };
