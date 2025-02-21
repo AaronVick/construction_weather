@@ -13,14 +13,22 @@ type SubscriptionContextType = {
 
 const defaultSubscription: Subscription = {
   id: '',
-  user_id: '', // Ensure this matches the Subscription type
+  user_id: '',
   plan: 'basic',
-  status: 'active', // Using 'active' instead of 'inactive' to match SubscriptionStatus type
-  billing_cycle: 'monthly',
+  status: 'active',
+  billing_cycle: 'monthly',  // Ensure this exists
   start_date: '',
-  next_billing_date: '',
-  created_at: new Date().toISOString(), // Default to current timestamp
-  features: {
+  next_billing_date: '',  // Ensure this exists
+  trial_end: '',
+  end_date: '',
+  created_at: new Date().toISOString(),
+  payment_method: {
+    brand: '',
+    last4: '',
+    expMonth: null,
+    expYear: null
+  },
+  features: { 
     maxJobsites: 0,
     maxEmailTemplates: 0,
     advancedAnalytics: false,

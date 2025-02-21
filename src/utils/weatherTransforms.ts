@@ -1,4 +1,3 @@
-// src/utils/weatherTransforms.ts
 import { ForecastDay, WeatherWidgetForecast } from '../types/weather';
 
 export function transformForecastForWidget(forecast: ForecastDay[]): WeatherWidgetForecast[] {
@@ -13,3 +12,6 @@ export function transformForecastForWidget(forecast: ForecastDay[]): WeatherWidg
     icon: day.icon,
   }));
 }
+
+// ✅ Ensure this line is present
+export type { WeatherWidgetForecast };

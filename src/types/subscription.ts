@@ -7,20 +7,32 @@ export type BillingCycle = 'monthly' | 'annually';
 export interface Subscription {
   id: string;
   user_id: string;
-  plan: SubscriptionPlan;
-  status: SubscriptionStatus;
-  billing_cycle: BillingCycle; // ✅ Ensure this exists
-  price_id?: string | null;
-  customer_id?: string | null;
-  start_date: string;
-  end_date?: string | null; // ✅ Allow null
-  trial_end?: string | null; // ✅ Allow null
-  next_billing_date?: string | null; // ✅ Allow null
-  cancellation_date?: string | null; // ✅ Allow null
-  payment_method?: PaymentMethod | null; // ✅ Ensure it's nullable
-  created_at: string;
-  updated_at?: string | null;
-  features?: SubscriptionFeatures; // ✅ Make optional if it’s not always returned
+  plan: string;
+  status: string;
+  billing_cycle?: 'monthly' | 'annually'; 
+  start_date?: string;
+  next_billing_date?: string;
+  trial_end?: string;
+  end_date?: string;
+  created_at?: string;
+  payment_method?: {
+    brand?: string;
+    last4?: string;
+    expMonth?: number;
+    expYear?: number;
+  };
+  features?: {
+    maxJobsites?: number;
+    maxEmailTemplates?: number;
+    advancedAnalytics?: boolean;
+    customEmails?: boolean;
+    prioritySupport?: boolean;
+    smsNotifications?: boolean;
+    customReports?: boolean;
+    apiAccess?: boolean;
+    whiteLabeling?: boolean;
+    singleSignOn?: boolean;
+  };
 }
 
 export interface PaymentMethod {

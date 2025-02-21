@@ -897,141 +897,162 @@ const Subscription: React.FC = () => {
       )}
       
       {/* Billing Details Tab */}
-      {activeTab === 'details' && (
-        <div className="space-y-6">
-          {/* Payment Method */}
-          <Card>
-            <h2 className="text-lg font-medium mb-4">Payment Method</h2>
-            
-            {subscription?.payment_method ? (
-              <div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    {subscription.payment_method.brand === 'visa' ? (
-                      <img 
-                        src="/assets/visa-logo.svg" 
-                        alt="Visa" 
-                        className="h-8 w-auto mr-3" 
-                      />
-                    ) : subscription.payment_method.brand === 'mastercard' ? (
-                      <img 
-                        src="/assets/mastercard-logo.svg" 
-                        alt="Mastercard" 
-                        className="h-8 w-auto mr-3" 
-                      />
-                    ) : (
-                      <CreditCard size={24} className="mr-3" />
-                    )}
-                    <div>
-                      <div className="font-medium">
-                        {subscription.payment_method.brand?.charAt(0).toUpperCase()}{subscription.payment_method.brand?.slice(1)} ending in {subscription.payment_method.last4}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Expires {subscription.payment_method.expMonth}/{subscription.payment_method.expYear}
-                      </div>
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowPaymentForm(true)}
-                  >
-                    Update
-                  </Button>
-                </div>
-              </div>
+{activeTab === 'details' && (
+  <div className="space-y-6">
+    {/* Payment Method */}
+    <Card>
+      <h2 className="text-lg font-medium mb-4">Payment Method</h2>
+
+      {subscription?.payment_method?.brand ? (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            {/* Show brand logo if available */}
+            {subscription.payment_method.brand === 'visa' ? (
+              <img 
+                src="/assets/visa-logo.svg" 
+                alt="Visa" 
+                className="h-8 w-auto mr-3" 
+              />
+            ) : subscription.payment_method.brand === 'mastercard' ? (
+              <img 
+                src="/assets/mastercard-logo.svg" 
+                alt="Mastercard" 
+                className="h-8 w-auto mr-3" 
+              />
             ) : (
-              <div>
-                {showPaymentForm ? (
-                  <PaymentMethodForm 
-                    onSubmit={() => setShowPaymentForm(false)}
-                    onCancel={() => setShowPaymentForm(false)}
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-6">
-                    <CreditCard size={48} className="text-gray-400 mb-3" />
-                    <p className="text-gray-500 dark:text-gray-400 mb-4">No payment method on file</p>
-                    <Button
-                      variant="primary"
-                      onClick={() => setShowPaymentForm(true)}
-                    >
-                      Add Payment Method
-                    </Button>
-                  </div>
-                )}
-              </div>
+              <CreditCard size={24} className="mr-3" />
             )}
-          </Card>
-          
-          {/* Billing Information */}
-          <Card>
-            <h2 className="text-lg font-medium mb-4">Billing Information</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Billing Email</label>
-                <input
-                  type="email"
-                  value={user?.email || ''} 
-                  readOnly
-                  className="form-control bg-gray-50 dark:bg-gray-800"
-                />
+
+            {/* Payment Method Details */}
+            <div>
+              <div className="font-medium">
+                {subscription.payment_method.brand?.charAt(0).toUpperCase()}
+                {subscription.payment_method.brand?.slice(1)} 
+                ending in {subscription.payment_method.last4}
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Company Name (Optional)</label>
-                  <input
-                    type="text"
-                    placeholder="Your company name"
-                    className="form-control"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Tax ID (Optional)</label>
-                  <input
-                    type="text"
-                    placeholder="VAT or tax identification number"
-                    className="form-control"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Billing Address</label>
-                <textarea
-                  rows={3}
-                  placeholder="Enter your billing address"
-                  className="form-control"
-                />
-              </div>
-              
-              <div className="flex justify-end">
-                <Button
-                  variant="primary"
-                >
-                  Save Billing Information
-                </Button>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                Expires {subscription.payment_method.expMonth}/{subscription.payment_method.expYear}
               </div>
             </div>
-          </Card>
+          </div>
+          
+          {/* Update Payment Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowPaymentForm(true)}
+          >
+            Update
+          </Button>
+        </div>
+      ) : (
+        // No payment method on file
+        <div className="flex flex-col items-center justify-center py-6">
+          <CreditCard size={48} className="text-gray-400 mb-3" />
+          <p className="text-gray-500 dark:text-gray-400 mb-4">No payment method on file</p>
+          <Button
+            variant="primary"
+            onClick={() => setShowPaymentForm(true)}
+          >
+            Add Payment Method
+          </Button>
         </div>
       )}
-      
-      {/* Billing History Tab */}
-      {activeTab === 'history' && (
-        <Card>
-          <h2 className="text-lg font-medium mb-4">Billing History</h2>
-          {loading ? (
-            <div className="py-12 flex justify-center">
-              <LoadingSpinner size="md" />
-            </div>
-          ) : (
-            <BillingHistory items={billingHistory} />
-          )}
-        </Card>
+
+      {/* Show Payment Form if the user chooses to update/add */}
+      {showPaymentForm && (
+        <PaymentMethodForm 
+          onSubmit={() => setShowPaymentForm(false)}
+          onCancel={() => setShowPaymentForm(false)}
+        />
       )}
+    </Card>
+  </div>
+
+         {/* Billing Information */}
+<Card>
+  <h2 className="text-lg font-medium mb-4">Billing Information</h2>
+  <div className="space-y-4">
+    
+    {/* Billing Email */}
+    <div>
+      <label className="block text-sm font-medium mb-1">Billing Email</label>
+      <input
+        type="email"
+        value={user?.email || ''} 
+        readOnly
+        className="form-control bg-gray-50 dark:bg-gray-800"
+      />
     </div>
-  );
+    
+    {/* Company Name & Tax ID */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label className="block text-sm font-medium mb-1">Company Name (Optional)</label>
+        <input
+          type="text"
+          value={billingInfo.companyName}
+          onChange={(e) => setBillingInfo({ ...billingInfo, companyName: e.target.value })}
+          placeholder="Your company name"
+          className="form-control"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">Tax ID (Optional)</label>
+        <input
+          type="text"
+          value={billingInfo.taxId}
+          onChange={(e) => setBillingInfo({ ...billingInfo, taxId: e.target.value })}
+          placeholder="VAT or tax identification number"
+          className="form-control"
+        />
+      </div>
+    </div>
+    
+    {/* Billing Address */}
+    <div>
+      <label className="block text-sm font-medium mb-1">Billing Address</label>
+      <textarea
+        rows={3}
+        value={billingInfo.address}
+        onChange={(e) => setBillingInfo({ ...billingInfo, address: e.target.value })}
+        placeholder="Enter your billing address"
+        className="form-control"
+      />
+    </div>
+    
+    {/* Save Button */}
+    <div className="flex justify-end">
+      <Button
+        variant="primary"
+        onClick={handleSaveBillingInfo}
+      >
+        Save Billing Information
+      </Button>
+    </div>
+  </div>
+</Card>
+
+{/* Billing History Tab */}
+{activeTab === 'history' && (
+  <Card>
+    <h2 className="text-lg font-medium mb-4">Billing History</h2>
+    
+    {loading ? (
+      <div className="py-12 flex justify-center">
+        <LoadingSpinner size="md" />
+      </div>
+    ) : billingHistory.length > 0 ? (
+      <BillingHistory items={billingHistory} />
+    ) : (
+      <div className="text-center text-gray-500 dark:text-gray-400 py-6">
+        No billing history available.
+      </div>
+    )}
+  </Card>
+)}
+</div>
+);
 };
 
 export default Subscription;
