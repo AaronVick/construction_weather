@@ -6,18 +6,20 @@ export type BillingCycle = 'monthly' | 'annually';
 
 export interface Subscription {
   id: string;
+  user_id: string;
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
-  billingCycle: BillingCycle;
-  priceId?: string;
-  customerId?: string;
-  startDate: string;
-  endDate?: string;
-  trialEnd?: string;
-  nextBillingDate: string;
-  cancellationDate?: string;
-  paymentMethod?: PaymentMethod;
-  features: SubscriptionFeatures;
+  billing_cycle: BillingCycle;
+  price_id?: string;
+  customer_id?: string;
+  start_date: string;
+  end_date?: string;
+  trial_end?: string;
+  next_billing_date: string;
+  cancellation_date?: string;
+  payment_method?: PaymentMethod;
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface PaymentMethod {

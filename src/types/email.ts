@@ -22,6 +22,7 @@ export interface EmailLog {
   trigger: 'manual' | 'weather' | 'scheduled';
   weatherCondition?: string;
   errorMessage?: string;
+  user_id: string;
 }
    
 export interface EmailConfig {

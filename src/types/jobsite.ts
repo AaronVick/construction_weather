@@ -1,22 +1,21 @@
 // src/types/jobsite.ts
 
 export interface Jobsite {
-    id: string;
-    name: string;
-    clientId: string;
-    clientName?: string;
-    address?: string;
-    city?: string;
-    state?: string;
-    zipCode: string; // Required for weather monitoring
-    isActive: boolean;
-    notes?: string;
-    createdAt: string;
-    updatedAt?: string;
-    weatherMonitoring: WeatherMonitoringSettings;
-    assignedWorkers?: string[]; // Worker IDs
-    location?: string;  
-  }
+  id: string;
+  name: string;
+  client_id: string; 
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code: string;  
+  is_active: boolean;
+  weather_monitoring: any; // Schema shows this as JSON
+  location?: string;
+  notes?: string;
+  created_at: string;
+  updated_at?: string;
+  user_id: string;   
+}
   
   export interface WeatherMonitoringSettings {
     isEnabled: boolean;

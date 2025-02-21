@@ -5,18 +5,19 @@ import { EmailLog } from './email';
 
 export interface Client {
   id: string;
-  name: string;
-  email: string;
+  name: string;       // Required in schema
+  email: string;      // Required in schema
   phone?: string;
   company?: string;
   address?: string;
   city?: string;
   state?: string;
-  zipCode?: string;
-  isActive: boolean;
+  zip_code?: string;  
+  is_active: boolean; // Required in schema
   notes?: string;
-  createdAt: string;
-  updatedAt?: string;
+  created_at: string; 
+  updated_at?: string; 
+  user_id: string;    
 }
 
 export interface ClientWithAssociations extends Client {
