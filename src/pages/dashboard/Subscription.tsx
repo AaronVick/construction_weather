@@ -322,22 +322,16 @@ const darkMode = theme ? theme.darkMode : false;
   };
 
   const handlePlanSelect = (plan: SubscriptionPlan) => {
-    // If selecting current plan, do nothing
-    if (plan === subscription.plan) {
-      return;
-    }
-    
-    // Determine if upgrade or downgrade
-    const currentPlanIndex = plans.findIndex(p => p.id === subscription.plan);
-    const newPlanIndex = plans.findIndex(p => p.id === plan);
-    
+    if (plan === subscription.plan) return;
+
+    const currentPlanIndex = plans.findIndex((p) => p.id === subscription.plan);
+    const newPlanIndex = plans.findIndex((p) => p.id === plan);
+
     setSelectedPlan(plan);
-    
+
     if (newPlanIndex > currentPlanIndex) {
-      // Upgrading
       setUpgradeDialogOpen(true);
     } else {
-      // Downgrading
       setDowngradeDialogOpen(true);
     }
   };
@@ -348,26 +342,21 @@ const darkMode = theme ? theme.darkMode : false;
 
   const confirmPlanChange = async () => {
     if (!selectedPlan) return;
-    
+
     try {
       setLoading(true);
       await updateSubscription(selectedPlan, billingCycle);
-      
-      // Update local state
+
       setSubscription({
         ...subscription,
         plan: selectedPlan,
         billingCycle,
-        nextBillingDate: getNextBillingDate(billingCycle)
+        nextBillingDate: getNextBillingDate(billingCycle),
       });
-      
+
       showToast(`Successfully updated to ${selectedPlan} plan`, 'success');
-      
-      // Close dialogs
       setUpgradeDialogOpen(false);
       setDowngradeDialogOpen(false);
-      
-      // Redirect to dashboard
       navigate('/dashboard');
     } catch (error) {
       console.error('Failed to update subscription:', error);
@@ -380,17 +369,15 @@ const darkMode = theme ? theme.darkMode : false;
   const confirmCancelSubscription = async () => {
     try {
       setLoading(true);
-      // API call to cancel subscription
       await updateSubscription('none', 'monthly');
-      
-      // Update local state
+
       setSubscription({
         ...subscription,
         plan: 'none',
         status: 'canceled',
-        endDate: getEndOfCurrentBillingPeriod()
+        endDate: getEndOfCurrentBillingPeriod(),
       });
-      
+
       showToast('Your subscription has been canceled', 'success');
       setCancelDialogOpen(false);
     } catch (error) {
@@ -401,7 +388,6 @@ const darkMode = theme ? theme.darkMode : false;
     }
   };
 
-  // Helper function to calculate next billing date
   const getNextBillingDate = (cycle: BillingCycle): string => {
     const today = new Date();
     if (cycle === 'monthly') {
@@ -412,64 +398,71 @@ const darkMode = theme ? theme.darkMode : false;
     return today.toISOString();
   };
 
-  // Helper function to get end of current billing period
   const getEndOfCurrentBillingPeriod = (): string => {
     const currentBillingEndDate = new Date(subscription.nextBillingDate);
     return currentBillingEndDate.toISOString();
   };
 
-  // Helper function to calculate prorated credit
   const calculateProratedCredit = (): number => {
     if (!selectedPlan) return 0;
-    
+
     const currentPlanPrice = getCurrentPlanPrice();
     const daysLeft = getDaysLeftInBillingCycle();
     const totalDays = getTotalDaysInBillingCycle();
-    
+
     return parseFloat((currentPlanPrice * (daysLeft / totalDays)).toFixed(2));
   };
-  
-  // Helper function to calculate today's charge
+
   const calculateTodaysCharge = (): number => {
     if (!selectedPlan) return 0;
-    
-    const planDetails = plans.find(p => p.id === selectedPlan);
+
+    const planDetails = plans.find((p) => p.id === selectedPlan);
     if (!planDetails) return 0;
-    
-    const newPlanPrice = billingCycle === 'monthly' ? 
-      planDetails.price.monthly : 
-      planDetails.price.annually;
-      
+
+    const newPlanPrice = billingCycle === 'monthly' ? planDetails.price.monthly : planDetails.price.annually;
     const proratedCredit = calculateProratedCredit();
     const charge = Math.max(0, newPlanPrice - proratedCredit);
-    
+
     return parseFloat(charge.toFixed(2));
   };
 
-  // Helper function to get current plan price
   const getCurrentPlanPrice = (): number => {
-    const currentPlan = plans.find(p => p.id === subscription.plan);
+    const currentPlan = plans.find((p) => p.id === subscription.plan);
     if (!currentPlan) return 0;
-    
-    return subscription.billingCycle === 'monthly' ?
-      currentPlan.price.monthly :
-      currentPlan.price.annually;
+
+    return subscription.billingCycle === 'monthly' ? currentPlan.price.monthly : currentPlan.price.annually;
   };
-  
-  // Helper function to get days left in billing cycle
+
   const getDaysLeftInBillingCycle = (): number => {
     const today = new Date();
     const nextBilling = new Date(subscription.nextBillingDate);
     const diffTime = nextBilling.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     return Math.max(0, diffDays);
   };
-  
-  // Helper function to get total days in billing cycle
+
   const getTotalDaysInBillingCycle = (): number => {
     return subscription.billingCycle === 'monthly' ? 30 : 365;
   };
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (!error && data?.user) {
+        setUser(data.user);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  if (loading && !subscription) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
   const renderUpgradeDialogContent = () => {
     if (!selectedPlan) return null;
@@ -697,15 +690,6 @@ const darkMode = theme ? theme.darkMode : false;
     getUser();
   }, []);
 
-  return (
-    <input
-      type="email"
-      value={user?.email || ''}
-      readOnly
-      className="form-control bg-gray-50 dark:bg-gray-800"
-    />
-  );
-}
 
 
   return (
