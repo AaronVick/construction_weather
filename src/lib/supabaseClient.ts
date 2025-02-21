@@ -5,6 +5,10 @@ import type { Database } from '../types/supabase';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_API;
 
+// Add debug logging
+console.log('Supabase URL:', !!supabaseUrl); // Don't log actual value for security
+console.log('Supabase Key:', !!supabaseAnonKey); // Don't log actual value for security
+
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Check your .env file.');
 }

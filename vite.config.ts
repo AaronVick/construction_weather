@@ -59,7 +59,11 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: process.env.NODE_ENV !== 'production',
+    assetsDir: 'assets',
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+      },
       output: {
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom'],
@@ -71,16 +75,18 @@ export default defineConfig({
           state: ['zustand', 'swr'],
         },
         assetFileNames: (assetInfo) => {
-          if (assetInfo.name?.endsWith('.woff2')) {
-            return 'assets/fonts/[name][extname]';
+          const info = assetInfo.name.split('.');
+          const ext = info[info.length - 1];
+          if (/\.(woff2?|eot|ttf|otf)$/i.test(assetInfo.name)) {
+            return `fonts/[name].[hash].[ext]`;
           }
-          if (assetInfo.name?.endsWith('.svg')) {
-            return 'assets/icons/[name][extname]';
+          if (/\.(png|jpe?g|gif|svg|ico|webp)$/i.test(assetInfo.name)) {
+            return `images/[name].[hash].[ext]`;
           }
-          return 'assets/[name]-[hash][extname]';
+          return `assets/[name].[hash].[ext]`;
         },
-        chunkFileNames: 'assets/js/[name]-[hash].js',
-        entryFileNames: 'assets/js/[name]-[hash].js',
+        chunkFileNames: 'js/[name].[hash].js',
+        entryFileNames: 'js/[name].[hash].js',
       },
     },
     assetsInlineLimit: 4096,
