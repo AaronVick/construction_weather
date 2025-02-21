@@ -5,10 +5,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
 import { getCurrentWeather } from '../../services/weatherService';
-import { ChevronLeft } from "lucide-react";
-import { Outlet } from 'react-router-dom';
-// Icons
-import {
+import { 
   Home,
   Users,
   Briefcase,
@@ -23,12 +20,12 @@ import {
   MapPin,
   CreditCard,
   BarChart2,
-  LogOut,
-  ChevronDown,
+  ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import { Outlet } from 'react-router-dom';
 
-const DashboardLayout: React.FC = () => {  
+const DashboardLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [weatherData, setWeatherData] = useState<any>(null);
   const location = useLocation();
@@ -36,7 +33,6 @@ const DashboardLayout: React.FC = () => {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const { user, signOut } = useSupabaseAuth();
 
-  // Close sidebar on mobile by default
   useEffect(() => {
     if (isMobile) {
       setIsSidebarOpen(false);
@@ -45,22 +41,21 @@ const DashboardLayout: React.FC = () => {
     }
   }, [isMobile]);
 
-  // Fetch current weather for the dashboard
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        const zipCode = localStorage.getItem('userZipCode') || '10001';
+        const zipCode = localStorage.getItem('userZipCode') || user?.user_metadata?.zip_code || '10001';
         const data = await getCurrentWeather(zipCode);
         setWeatherData(data);
       } catch (error) {
-        console.error('Failed to fetch weather data', error);
+        console.error('Failed to fetch weather data:', error);
       }
     };
 
     if (location.pathname === '/dashboard') {
       fetchWeather();
     }
-  }, [location.pathname]);
+  }, [location.pathname, user?.user_metadata?.zip_code]);
 
   const navItems = [
     { name: 'Dashboard', icon: <Home size={20} />, path: '/dashboard' },
@@ -89,7 +84,7 @@ const DashboardLayout: React.FC = () => {
   };
 
   return (
-    <div className="h-screen flex overflow-hidden bg-gray-100 dark:bg-gray-900">
+    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
       {/* Mobile Sidebar Overlay */}
       {isMobile && isSidebarOpen && (
         <div 
@@ -100,29 +95,29 @@ const DashboardLayout: React.FC = () => {
       )}
 
       {/* Sidebar */}
-      <aside 
+      <div 
         className={`
           fixed inset-y-0 left-0 z-30
-          transform transition-transform duration-300 ease-in-out
+          flex flex-col
+          bg-white dark:bg-gray-800
+          transition-all duration-300 ease-in-out
           ${isMobile ? (isSidebarOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'}
           ${isSidebarOpen ? 'w-64' : 'w-20'}
-          bg-white dark:bg-gray-800
           border-r border-gray-200 dark:border-gray-700
-          flex flex-col
         `}
       >
         {/* Sidebar Header */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700">
           {isSidebarOpen ? (
             <>
-              <span className="text-xl font-bold dark:text-white">WeatherCrew</span>
+              <span className="text-xl font-bold text-gray-900 dark:text-white">WeatherCrew</span>
               {!isMobile && (
                 <button 
                   onClick={toggleSidebar}
                   className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
                   aria-label="Collapse sidebar"
                 >
-                  <ChevronLeft size={20} />
+                  <ChevronLeft className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 </button>
               )}
             </>
@@ -132,13 +127,13 @@ const DashboardLayout: React.FC = () => {
               className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 mx-auto"
               aria-label="Expand sidebar"
             >
-              <ChevronRight size={20} />
+              <ChevronRight className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             </button>
           )}
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4" aria-label="Sidebar">
+        <nav className="flex-1 overflow-y-auto py-4">
           <ul className="space-y-1 px-3">
             {navItems.map((item) => (
               <li key={item.path}>
@@ -147,10 +142,11 @@ const DashboardLayout: React.FC = () => {
                   className={`
                     flex items-center px-2 py-2 rounded-md
                     ${location.pathname === item.path
-                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
-                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }
                     ${isSidebarOpen ? '' : 'justify-center'}
+                    transition-colors duration-200
                   `}
                   aria-current={location.pathname === item.path ? 'page' : undefined}
                 >
@@ -158,8 +154,8 @@ const DashboardLayout: React.FC = () => {
                     {item.icon}
                     {item.premium && (
                       <span className="flex h-2 w-2 relative -mt-2 -mr-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500" />
                       </span>
                     )}
                   </span>
@@ -175,7 +171,7 @@ const DashboardLayout: React.FC = () => {
           {isSidebarOpen ? (
             <div className="flex items-center">
               <img
-                className="h-8 w-8 rounded-full"
+                className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700"
                 src={user?.user_metadata?.avatar_url || '/default-avatar.png'}
                 alt="User avatar"
               />
@@ -194,43 +190,39 @@ const DashboardLayout: React.FC = () => {
           ) : (
             <div className="flex justify-center">
               <img
-                className="h-8 w-8 rounded-full"
+                className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700"
                 src={user?.user_metadata?.avatar_url || '/default-avatar.png'}
                 alt="User avatar"
               />
             </div>
           )}
         </div>
-      </aside>
+      </div>
 
       {/* Main Content */}
       <div 
         className={`
           flex-1 flex flex-col
-          ${isSidebarOpen ? 'md:ml-64' : 'md:ml-20'} 
+          ${isSidebarOpen ? 'md:ml-64' : 'md:ml-20'}
           min-h-screen
-          transition-all duration-300 ease-in-out
+          transition-all duration-300
         `}
       >
         {/* Top Navigation */}
-        <header className={`
-          h-16 flex items-center justify-between px-4 sm:px-6
-          ${darkMode ? 'bg-gray-800 text-white border-gray-700' : 'bg-white text-gray-800 border-gray-200'}
-          border-b
-        `}>
+        <header className="h-16 flex items-center justify-between px-4 sm:px-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center">
             {/* Mobile menu button */}
             {isMobile && (
               <button
                 onClick={toggleSidebar}
-                className={`mr-4 p-2 rounded-md ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
-                aria-label="Toggle sidebar"
+                className="mr-4 p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                aria-label="Toggle menu"
               >
                 {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             )}
             
-            <h1 className="text-xl font-semibold hidden sm:block">
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white hidden sm:block">
               {navItems.find(item => item.path === location.pathname)?.name || 'Dashboard'}
             </h1>
           </div>
@@ -241,27 +233,28 @@ const DashboardLayout: React.FC = () => {
                 <Cloud 
                   className={weatherData.isRainy ? 'text-blue-500' : 'text-yellow-500'} 
                   size={20} 
-                  aria-hidden="true"
                 />
-                <span className="ml-2">{weatherData.temperature}°F, {weatherData.condition}</span>
+                <span className="ml-2 text-gray-700 dark:text-gray-200">
+                  {weatherData.temperature}°F, {weatherData.condition}
+                </span>
               </div>
             )}
             
             <button
               onClick={toggleDarkMode}
-              className={`p-2 rounded-md ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+              className="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
               aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {darkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
             
             <button 
-              className={`p-2 rounded-md ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} relative`}
+              className="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 relative"
               aria-label="View notifications"
             >
               <Bell size={20} />
               <span 
-                className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"
+                className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500"
                 aria-hidden="true"
               />
             </button>
@@ -269,8 +262,10 @@ const DashboardLayout: React.FC = () => {
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <Outlet />
+        <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+          <div className="py-6 px-4 sm:px-6 lg:px-8">
+            <Outlet />
+          </div>
         </div>
       </div>
     </div>

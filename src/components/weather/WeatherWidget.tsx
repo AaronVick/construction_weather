@@ -1,8 +1,8 @@
 // src/components/weather/WeatherWidget.tsx
-
 import React from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import { formatDate } from '../../utils/dateUtils';
+import { WeatherWidgetForecast } from '../../utils/weatherTransforms';
 import { 
   Cloud, 
   CloudRain, 
@@ -11,7 +11,6 @@ import {
   CloudLightning, 
   CloudFog,
   Wind,
-  Thermometer,
   Droplets,
   MapPin
 } from 'lucide-react';
@@ -28,16 +27,7 @@ interface WeatherWidgetProps {
     isSnowy: boolean;
     icon: string;
   } | null;
-  forecast: Array<{
-    date: string;
-    temperature: {
-      min: number;
-      max: number;
-    };
-    condition: string;
-    precipitation: number;
-    icon: string;
-  }>;
+  forecast: WeatherWidgetForecast[];
   zipCode: string;
 }
 
@@ -63,7 +53,7 @@ const WeatherIcon: React.FC<{ condition: string; className?: string }> = ({ cond
 
 const WeatherWidget: React.FC<WeatherWidgetProps> = ({ current, forecast, zipCode }) => {
   const theme = useTheme();
-const darkMode = theme ? theme.darkMode : false;
+  const darkMode = theme ? theme.darkMode : false;
   
   if (!current) {
     return (
@@ -103,7 +93,7 @@ const darkMode = theme ? theme.darkMode : false;
         <div>
           <div className="text-right font-medium">{current.condition}</div>
           <div className="text-sm text-gray-500 dark:text-gray-400">
-          formatDate(new Date().toISOString());
+            {formatDate(new Date().toISOString())}
           </div>
         </div>
       </div>
@@ -139,7 +129,7 @@ const darkMode = theme ? theme.darkMode : false;
                   className="w-8 h-8 text-gray-500" 
                 />
                 <span className="ml-2 text-sm">
-                formatDate(new Date(date).toISOString());
+                  {formatDate(day.date)}
                 </span>
               </div>
               <div className="flex items-center">

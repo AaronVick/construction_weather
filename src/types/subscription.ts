@@ -9,28 +9,27 @@ export interface Subscription {
   user_id: string;
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
-  billing_cycle: BillingCycle; // ✅ Ensure this matches exactly
-  price_id?: string;
-  customer_id?: string;
+  billing_cycle: BillingCycle; // ✅ Ensure this exists
+  price_id?: string | null;
+  customer_id?: string | null;
   start_date: string;
-  end_date?: string;
-  trial_end?: string;
-  next_billing_date: string;
-  cancellation_date?: string;
-  payment_method?: PaymentMethod;
+  end_date?: string | null; // ✅ Allow null
+  trial_end?: string | null; // ✅ Allow null
+  next_billing_date?: string | null; // ✅ Allow null
+  cancellation_date?: string | null; // ✅ Allow null
+  payment_method?: PaymentMethod | null; // ✅ Ensure it's nullable
   created_at: string;
-  updated_at?: string;
-  features: SubscriptionFeatures;
+  updated_at?: string | null;
+  features?: SubscriptionFeatures; // ✅ Make optional if it’s not always returned
 }
-
 
 export interface PaymentMethod {
   id: string;
   type: 'card' | 'paypal' | 'bank_transfer';
-  last4?: string;
-  brand?: string;
-  expMonth?: number;
-  expYear?: number;
+  last4?: string | null;
+  brand?: string | null;
+  expMonth?: number | null;
+  expYear?: number | null;
   isDefault: boolean;
 }
 
@@ -65,6 +64,6 @@ export interface PlanOption {
     monthly: number;
     annually: number;
   };
-  features: string[]; // ✅ Keep this as `string[]` for plan descriptions
+  features: string[];
   limitations?: string[];
 }

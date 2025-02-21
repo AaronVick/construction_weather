@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
 import { useSubscription } from '../../hooks/useSubscription';
-import { fetchWeatherForecast, getCurrentWeather } from '../../services/weatherService';
+import WeatherWidgetContainer from '../../components/weather/WeatherWidgetContainer';
 import { 
   getActiveClients, 
   getActiveWorkers, 
@@ -42,8 +42,6 @@ const darkMode = theme ? theme.darkMode : false;
   const { subscription } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [weatherData, setWeatherData] = useState<any>(null);
-  const [forecastData, setForecastData] = useState<any[]>([]);
   const [insights, setInsights] = useState<{
     activeClients: number;
     activeWorkers: number;
@@ -99,12 +97,6 @@ const darkMode = theme ? theme.darkMode : false;
           setRecentActivity(data.recentActivity);
         }
         
-        // Fetch weather data separately
-        const currentWeather = await getCurrentWeather(zipCode);
-        const forecast = await fetchWeatherForecast(zipCode, 7);
-        
-        setWeatherData(currentWeather);
-        setForecastData(forecast);
         
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -207,46 +199,53 @@ const darkMode = theme ? theme.darkMode : false;
   return (
     <div className="space-y-6">
       {/* Welcome & Weather Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="md:col-span-2">
-          <div className="flex flex-col h-full justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold mb-2">
-                Welcome back, {user?.user_metadata?.full_name?.split(' ')[0] || 'there'}!
-              </h2>
-              <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-4`}>
-                Here's what's happening with your crews today
-              </p>
-            </div>
-            
-            {weatherData?.condition && (
-              <div className={`mt-4 p-4 rounded-lg ${weatherData.isRainy || weatherData.isSnowy ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'}`}>
-                <div className="flex items-center">
-                  {weatherData.isRainy || weatherData.isSnowy ? (
-                    <AlertTriangle size={20} className="text-red-500 dark:text-red-400 mr-2" />
-                  ) : (
-                    <CheckCircle size={20} className="text-green-500 dark:text-green-400 mr-2" />
-                  )}
-                  <span className="font-medium">
-                    {weatherData.isRainy || weatherData.isSnowy 
-                      ? `Weather Alert: ${weatherData.condition} today. Consider notifying crews.`
-                      : `All clear: Weather conditions look good for outdoor work today.`
-                    }
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        </Card>
-        
-        <Card>
-          <WeatherWidget
-            current={weatherData}
-            forecast={forecastData.slice(0, 3)}
-            zipCode={localStorage.getItem('userZipCode') || user?.user_metadata?.zip_code || '10001'}
-          />
-        </Card>
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <Card className="md:col-span-2">
+    <div className="flex flex-col h-full justify-between">
+      <div>
+        <h2 className="text-2xl font-semibold mb-2">
+          Welcome back, {user?.user_metadata?.full_name?.split(' ')[0] || 'there'}!
+        </h2>
+        <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-4`}>
+          Here's what's happening with your crews today
+        </p>
       </div>
+      
+      <WeatherWidgetContainer
+        zipCode={localStorage.getItem('userZipCode') || user?.user_metadata?.zip_code || '10001'}
+        onWeatherUpdate={(weather) => (
+          weather?.current && (
+            <div className={`mt-4 p-4 rounded-lg ${
+              weather.current.isRainy || weather.current.isSnowy 
+                ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' 
+                : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
+            }`}>
+              <div className="flex items-center">
+                {weather.current.isRainy || weather.current.isSnowy ? (
+                  <AlertTriangle size={20} className="text-red-500 dark:text-red-400 mr-2" />
+                ) : (
+                  <CheckCircle size={20} className="text-green-500 dark:text-green-400 mr-2" />
+                )}
+                <span className="font-medium">
+                  {weather.current.isRainy || weather.current.isSnowy 
+                    ? `Weather Alert: ${weather.current.condition} today. Consider notifying crews.`
+                    : `All clear: Weather conditions look good for outdoor work today.`
+                  }
+                </span>
+              </div>
+            </div>
+          )
+        )}
+      />
+    </div>
+  </Card>
+  
+  <Card>
+    <WeatherWidgetContainer
+      zipCode={localStorage.getItem('userZipCode') || user?.user_metadata?.zip_code || '10001'}
+    />
+  </Card>
+</div>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

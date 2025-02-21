@@ -1,4 +1,6 @@
 // src/hooks/useSupabaseAuth.ts
+
+// src/hooks/useSupabaseAuth.ts
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
@@ -22,19 +24,36 @@ export function useSupabaseAuth() {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           throw error;
         }
 
-        setAuthState({
-          user: data?.session?.user ?? null,
-          session: data?.session,
-          loading: false,
-          error: null,
-        });
+        if (session) {
+          // Ensure we have fresh session data
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          
+          if (userError) {
+            throw userError;
+          }
+
+          setAuthState({
+            user: user,
+            session: session,
+            loading: false,
+            error: null,
+          });
+        } else {
+          setAuthState({
+            user: null,
+            session: null,
+            loading: false,
+            error: null,
+          });
+        }
       } catch (error) {
+        console.error('Auth error:', error);
         setAuthState({
           user: null,
           session: null,
@@ -49,11 +68,14 @@ export function useSupabaseAuth() {
     // Listen for auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        // Get fresh user data on auth state change
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
         setAuthState({
-          user: session?.user ?? null,
+          user: error ? null : user,
           session,
           loading: false,
-          error: null,
+          error: error || null,
         });
       }
     );
@@ -63,6 +85,7 @@ export function useSupabaseAuth() {
     };
   }, []);
 
+  
   const signIn = async (email: string, password: string) => {
     try {
       setAuthState(prev => ({ ...prev, loading: true, error: null }));
@@ -87,6 +110,8 @@ export function useSupabaseAuth() {
       setAuthState(prev => ({ ...prev, loading: false }));
     }
   };
+
+
 
   const signUp = async (email: string, password: string, metadata?: any) => {
     try {
