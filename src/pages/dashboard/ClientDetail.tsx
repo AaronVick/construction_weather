@@ -142,27 +142,28 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
 
   const toggleClientStatus = async () => {
     if (!client || !id) return;
-
+  
     try {
-        setStatusUpdateLoading(true);
-        const newStatus = !client.is_active;
-        
-        // Ensure 'id' is a string and 'newStatus' is explicitly a boolean
-        await updateClientStatus(String(id), Boolean(newStatus));
-
-        setClient({
-            ...client,
-            is_active: newStatus
-        });
-
-        showToast(`Client ${newStatus ? 'activated' : 'deactivated'} successfully`, 'success');
+      setStatusUpdateLoading(true);
+      const newStatus = !client.is_active;
+      
+      // Ensure 'id' is a string and 'newStatus' is explicitly a boolean
+      console.log('Updating client status:', { id, newStatus }); // Log for debugging
+      await updateClientStatus(String(id), Boolean(newStatus));
+  
+      setClient({
+        ...client,
+        is_active: newStatus
+      });
+  
+      showToast(`Client ${newStatus ? 'activated' : 'deactivated'} successfully`, 'success');
     } catch (error) {
-        console.error('Failed to update client status:', error);
-        showToast('Failed to update client status', 'error');
+      console.error('Failed to update client status:', error);
+      showToast('Failed to update client status', 'error');
     } finally {
-        setStatusUpdateLoading(false);
+      setStatusUpdateLoading(false);
     }
-};
+  };
 
 
   const tabs = [
