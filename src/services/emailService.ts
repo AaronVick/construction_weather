@@ -83,6 +83,7 @@ export async function createEmailTemplate(template: {
       .from('email_templates')
       .insert({
         name: template.name,
+        user_id: user.id,
         subject: template.subject,
         body: template.body,
         variables,
