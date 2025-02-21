@@ -163,7 +163,7 @@ const darkMode = theme ? theme.darkMode : false;
       // Ensure user_id is added before saving
       const userId = await getCurrentUserId() ?? undefined; // Function to fetch current user ID
   
-      const clientData = { ...formData, user_id: userId };
+      const clientData = { ...formData, user_id: userId ?? ''};
   
       if (isEdit && clientId) {
         await updateClient(clientId, clientData);

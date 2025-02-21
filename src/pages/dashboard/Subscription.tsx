@@ -929,10 +929,10 @@ const darkMode = theme ? theme.darkMode : false;
                     )}
                     <div>
                       <div className="font-medium">
-                        {subscription.payment_method.brand?.charAt(0).toUpperCase()}{subscription.paymentMethod.brand?.slice(1)} ending in {subscription.paymentMethod.last4}
+                        {subscription.payment_method.brand?.charAt(0).toUpperCase()}{subscription.payment_method.brand?.slice(1)} ending in {subscription.payment_method.last4}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Expires {subscription.payment_method.expMonth}/{subscription.paymentMethod.expYear}
+                        Expires {subscription.payment_method.expMonth}/{subscription.payment_method.expYear}
                       </div>
                     </div>
                   </div>

@@ -16,6 +16,7 @@ export interface ClientsResponse {
 
 /**
  * Fetch all clients with optional filters
+ * 
  */
 export async function getClients(
   filters: ClientFilters = {},
@@ -56,6 +57,27 @@ export async function getClients(
     return { data: [], count: 0, error: error as Error };
   }
 }
+
+/**
+ * Update client status (active/inactive)
+ */
+export async function updateClientStatus(id: string, isActive: boolean): Promise<Client | null> {
+  try {
+    const { data, error } = await supabase
+      .from('clients')
+      .update({ is_active: isActive, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error(`Error updating client status for ${id}:`, error);
+    return null;
+  }
+}
+
 
 /**
  * Fetch a single client by ID

@@ -133,7 +133,7 @@ function formatSubscription(data: any): Subscription {
     trial_end: data.trial_end || '',
     next_billing_date: data.next_billing_date,
     cancellation_date: data.cancellation_date || '',
-    payment_method: data.payment_method ? formatPaymentMethod(data.payment_method) : null,
+    payment_method: data.payment_method ? formatPaymentMethod(data.payment_method) : undefined,
     created_at: data.created_at,
     updated_at: data.updated_at || '',
     features: typeof data.features === 'string' ? parseSubscriptionFeatures(data.features) : data.features,
