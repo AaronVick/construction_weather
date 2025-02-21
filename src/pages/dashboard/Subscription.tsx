@@ -350,8 +350,8 @@ const darkMode = theme ? theme.darkMode : false;
       setSubscription({
         ...subscription,
         plan: selectedPlan,
-        billingCycle,
-        nextBillingDate: getNextBillingDate(billingCycle),
+        billing_cycle,
+        next_billing_date: getNextBillingDate(billingCycle),
       });
 
       showToast(`Successfully updated to ${selectedPlan} plan`, 'success');
@@ -375,7 +375,7 @@ const darkMode = theme ? theme.darkMode : false;
         ...subscription,
         plan: 'none',
         status: 'canceled',
-        endDate: getEndOfCurrentBillingPeriod(),
+        end_date: getEndOfCurrentBillingPeriod(),
       });
 
       showToast('Your subscription has been canceled', 'success');
@@ -399,7 +399,7 @@ const darkMode = theme ? theme.darkMode : false;
   };
 
   const getEndOfCurrentBillingPeriod = (): string => {
-    const currentBillingEndDate = new Date(subscription.nextBillingDate);
+    const currentBillingEndDate = new Date(subscription.next_billing_date);
     return currentBillingEndDate.toISOString();
   };
 
@@ -430,12 +430,12 @@ const darkMode = theme ? theme.darkMode : false;
     const currentPlan = plans.find((p) => p.id === subscription.plan);
     if (!currentPlan) return 0;
 
-    return subscription.billingCycle === 'monthly' ? currentPlan.price.monthly : currentPlan.price.annually;
+    return subscription.billing_cycle === 'monthly' ? currentPlan.price.monthly : currentPlan.price.annually;
   };
 
   const getDaysLeftInBillingCycle = (): number => {
     const today = new Date();
-    const nextBilling = new Date(subscription.nextBillingDate);
+    const nextBilling = new Date(subscription.next_billing_date);
     const diffTime = nextBilling.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -443,7 +443,7 @@ const darkMode = theme ? theme.darkMode : false;
   };
 
   const getTotalDaysInBillingCycle = (): number => {
-    return subscription.billingCycle === 'monthly' ? 30 : 365;
+    return subscription.billing_cycle === 'monthly' ? 30 : 365;
   };
 
   useEffect(() => {
@@ -611,7 +611,7 @@ const darkMode = theme ? theme.darkMode : false;
           <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md">
             <div className="flex justify-between mb-2">
               <span>Current plan: {subscription.plan}</span>
-              <span>Active until: {new Date(subscription.nextBillingDate).toLocaleDateString()}</span>
+              <span>Active until: {new Date(subscription.next_billing_date).toLocaleDateString()}</span>
             </div>
             <div className="flex justify-between mb-2">
               <span>New plan: {planDetails.name} ({billingCycle})</span>
@@ -620,7 +620,7 @@ const darkMode = theme ? theme.darkMode : false;
               </span>
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-              Your plan will change on {new Date(subscription.nextBillingDate).toLocaleDateString()}.
+              Your plan will change on {new Date(subscription.next_billing_date).toLocaleDateString()}.
               You'll continue to have access to your current features until then.
             </div>
           </div>
@@ -660,7 +660,7 @@ const darkMode = theme ? theme.darkMode : false;
           <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md">
             <div className="flex justify-between mb-2">
               <span>Current plan: {subscription.plan}</span>
-              <span>Active until: {new Date(subscription.nextBillingDate).toLocaleDateString()}</span>
+              <span>Active until: {new Date(subscription.next_billing_date).toLocaleDateString()}</span>
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
               Your subscription will remain active until the end of your current billing period. 
@@ -769,7 +769,7 @@ const darkMode = theme ? theme.darkMode : false;
                     Trial
                   </span>
                   <span>
-                    Trial ends on {new Date(subscription.trialEnd!).toLocaleDateString()}
+                    Trial ends on {new Date(subscription.trial_end!).toLocaleDateString()}
                   </span>
                 </>
               ) : (
@@ -778,9 +778,9 @@ const darkMode = theme ? theme.darkMode : false;
                     <AlertTriangle size={16} className="text-red-500 mr-1" />
                     {subscription.status === 'canceled' ? 'Canceled' : 'Inactive'}
                   </span>
-                  {subscription.endDate && (
+                  {subscription.end_date && (
                     <span>
-                      Active until {new Date(subscription.endDate).toLocaleDateString()}
+                      Active until {new Date(subscription.end_date).toLocaleDateString()}
                     </span>
                   )}
                 </>
@@ -902,17 +902,17 @@ const darkMode = theme ? theme.darkMode : false;
           <Card>
             <h2 className="text-lg font-medium mb-4">Payment Method</h2>
             
-            {subscription.paymentMethod ? (
+            {subscription.payment_method ? (
               <div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    {subscription.paymentMethod.brand === 'visa' ? (
+                    {subscription.payment_method.brand === 'visa' ? (
                       <img 
                         src="/assets/visa-logo.svg" 
                         alt="Visa" 
                         className="h-8 w-auto mr-3" 
                       />
-                    ) : subscription.paymentMethod.brand === 'mastercard' ? (
+                    ) : subscription.payment_method.brand === 'mastercard' ? (
                       <img 
                         src="/assets/mastercard-logo.svg" 
                         alt="Mastercard" 
@@ -923,10 +923,10 @@ const darkMode = theme ? theme.darkMode : false;
                     )}
                     <div>
                       <div className="font-medium">
-                        {subscription.paymentMethod.brand?.charAt(0).toUpperCase()}{subscription.paymentMethod.brand?.slice(1)} ending in {subscription.paymentMethod.last4}
+                        {subscription.payment_method.brand?.charAt(0).toUpperCase()}{subscription.paymentMethod.brand?.slice(1)} ending in {subscription.paymentMethod.last4}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Expires {subscription.paymentMethod.expMonth}/{subscription.paymentMethod.expYear}
+                        Expires {subscription.payment_method.expMonth}/{subscription.paymentMethod.expYear}
                       </div>
                     </div>
                   </div>

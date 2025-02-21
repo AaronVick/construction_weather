@@ -20,6 +20,7 @@ export interface Subscription {
   payment_method?: PaymentMethod;
   created_at: string;
   updated_at?: string;
+  features: string[];
 }
 
 export interface PaymentMethod {

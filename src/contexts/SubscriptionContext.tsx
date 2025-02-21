@@ -15,7 +15,7 @@ const defaultSubscription: Subscription = {
   id: '',
   plan: 'basic',
   status: 'active', // Using 'active' instead of 'inactive' to match SubscriptionStatus type
-  billingCycle: 'monthly',
+  billing_cycle: 'monthly',
   startDate: '',
   nextBillingDate: '',
   features: {

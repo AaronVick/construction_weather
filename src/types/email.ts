@@ -1,4 +1,3 @@
-// src/types/email.ts  
 export interface EmailTemplate {
   id: string;
   name: string;
@@ -7,14 +6,15 @@ export interface EmailTemplate {
   variables: string[];
   createdAt: string;
   updatedAt?: string;
+  user_id: string; // Added to link templates to the logged-in user
 }
-   
+
 export interface EmailLog {
   id: string;
   clientId?: string | null;
   clientName?: string | null;
-  workerId?: string | null;  // Added to support worker emails
-  workerName?: string | null; // Added to support worker emails
+  workerId?: string | null;
+  workerName?: string | null;
   subject: string;
   body: string;
   sentAt: string;
@@ -22,9 +22,9 @@ export interface EmailLog {
   trigger: 'manual' | 'weather' | 'scheduled';
   weatherCondition?: string;
   errorMessage?: string;
-  user_id: string;
+  user_id: string; // Added to link email logs to the logged-in user
 }
-   
+
 export interface EmailConfig {
   senderName: string;
   senderEmail: string;
@@ -35,8 +35,9 @@ export interface EmailConfig {
   temperature: number; // ChatGPT temperature (0-1)
   maxTokens: number;
   additionalInstructions: string;
+  user_id: string; // Added to link email config to the logged-in user
 }
-   
+
 export interface EmailFormData {
   recipients: {
     type: 'clients' | 'workers';
@@ -49,4 +50,5 @@ export interface EmailFormData {
   scheduledFor?: string;
   saveAsTemplate?: boolean;
   templateName?: string;
+  user_id: string; // Added to link form data to the logged-in user
 }

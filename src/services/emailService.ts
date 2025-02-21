@@ -1,7 +1,7 @@
 // src/services/emailService.ts
 import axios from 'axios';
 import { supabase } from '../lib/supabaseClient';
-import { EmailFormData, EmailLog, EmailTemplate } from '../types/email';
+import { EmailFormData, EmailLog, EmailTemplate, EmailConfig } from '../types/email';
 import { Client } from '../types/client';
 import { Worker } from '../types/worker';
 
@@ -11,12 +11,13 @@ const OPENAI_API_URL = 'https://api.openai.com/v1';
 /**
  * Fetches email logs for a specific client
  */
-export async function getClientEmails(clientId: string): Promise<EmailLog[]> {
+export async function getClientEmails(clientId: string, userId: string): Promise<EmailLog[]> {
   try {
     const { data, error } = await supabase
       .from('email_logs')
       .select('*')
       .eq('client_id', clientId)
+      .eq('user_id', userId) // Filter by user_id
       .order('sent_at', { ascending: false });
 
     if (error) throw error;
@@ -47,15 +48,15 @@ function extractTemplateVariables(text: string): string[] {
   return variables;
 }
 
-
 /**
- * Fetches email templates
+ * Fetches email templates for the logged-in user
  */
-export async function getEmailTemplates(): Promise<EmailTemplate[]> {
+export async function getEmailTemplates(userId: string): Promise<EmailTemplate[]> {
   try {
     const { data, error } = await supabase
       .from('email_templates')
       .select('*')
+      .eq('user_id', userId) // Filter by user_id
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -68,12 +69,13 @@ export async function getEmailTemplates(): Promise<EmailTemplate[]> {
 }
 
 /**
- * Creates a new email template
+ * Creates a new email template for the logged-in user
  */
 export async function createEmailTemplate(template: {
   name: string;
   subject: string;
   body: string;
+  user_id: string; // Added user_id
 }): Promise<EmailTemplate> {
   try {
     // Extract variables from template
@@ -83,7 +85,7 @@ export async function createEmailTemplate(template: {
       .from('email_templates')
       .insert({
         name: template.name,
-        user_id: user.id,
+        user_id: template.user_id, // Added user_id
         subject: template.subject,
         body: template.body,
         variables,
@@ -101,7 +103,7 @@ export async function createEmailTemplate(template: {
 }
 
 /**
- * Sends emails based on form data
+ * Sends emails based on form data for the logged-in user
  */
 export async function sendEmails(formData: EmailFormData): Promise<{
   successful: number;
@@ -136,10 +138,11 @@ export async function sendEmails(formData: EmailFormData): Promise<{
       throw new Error('No active recipients found');
     }
     
-    // Get email configuration
+    // Get email configuration for the logged-in user
     const { data: config, error: configError } = await supabase
       .from('system_settings')
       .select('email_config')
+      .eq('user_id', formData.user_id) // Filter by user_id
       .single();
       
     if (configError) throw configError;
@@ -169,7 +172,8 @@ export async function sendEmails(formData: EmailFormData): Promise<{
         body,
         formData.recipients.type,
         emailConfig,
-        formData.scheduledFor
+        formData.scheduledFor,
+        formData.user_id // Pass user_id
       ))
     );
     
@@ -197,6 +201,7 @@ export async function sendEmails(formData: EmailFormData): Promise<{
             status: 'failed',
             trigger: 'manual',
             errorMessage: result.reason?.message || 'Failed to send email',
+            user_id: formData.user_id, // Added user_id
           };
         }
       });
@@ -213,178 +218,30 @@ export async function sendEmails(formData: EmailFormData): Promise<{
 }
 
 /**
- * Sends weather notification emails based on jobsite check
- */
-export async function sendWeatherNotifications(
-  jobsiteId: string,
-  conditions: string[],
-  weatherDescription: string
-): Promise<{
-  clientsNotified: number;
-  workersNotified: number;
-  logs: EmailLog[];
-}> {
-  try {
-    // Get jobsite data with client and workers
-    const { data: jobsite, error: jobsiteError } = await supabase
-      .from('jobsites')
-      .select(`
-        *,
-        clients:client_id (id, name, email, is_active),
-        assigned_workers:worker_jobsites (
-          workers:worker_id (id, name, email, is_active)
-        )
-      `)
-      .eq('id', jobsiteId)
-      .single();
-      
-    if (jobsiteError) throw jobsiteError;
-    
-    // Check if notification settings are enabled
-    const notificationSettings = jobsite.weather_monitoring.notification_settings;
-    if (!notificationSettings.notify_client && !notificationSettings.notify_workers) {
-      return { clientsNotified: 0, workersNotified: 0, logs: [] };
-    }
-    
-    // Get email configuration
-    const { data: config, error: configError } = await supabase
-      .from('system_settings')
-      .select('email_config')
-      .single();
-      
-    if (configError) throw configError;
-    
-    const emailConfig = config.email_config;
-    
-    // Generate email content
-    const emailContent = await generateWeatherNotificationEmail(
-      jobsite.name,
-      conditions,
-      weatherDescription,
-      emailConfig
-    );
-    
-    const logs: EmailLog[] = [];
-    let clientsNotified = 0;
-    let workersNotified = 0;
-    
-    // Send to client if active and notification enabled
-    if (
-      notificationSettings.notify_client &&
-      jobsite.clients.is_active
-    ) {
-      try {
-        const log = await sendSingleEmail(
-          {
-            id: jobsite.clients.id,
-            name: jobsite.clients.name,
-            email: jobsite.clients.email,
-          },
-          emailContent.subject,
-          emailContent.body,
-          'clients',
-          emailConfig
-        );
-        
-        logs.push(log);
-        clientsNotified++;
-      } catch (error) {
-        console.error('Error sending client notification:', error);
-        // Add failed log
-        logs.push({
-          id: `failed-client-${Date.now()}`,
-          clientId: jobsite.clients.id,
-          clientName: jobsite.clients.name,
-          subject: emailContent.subject,
-          body: emailContent.body,
-          sentAt: new Date().toISOString(),
-          status: 'failed',
-          trigger: 'weather',
-          weatherCondition: conditions.join(', '),
-          errorMessage: (error as Error).message,
-        });
-      }
-    }
-    
-    // Send to workers if active and notification enabled
-    if (notificationSettings.notify_workers) {
-      const activeWorkers = jobsite.assigned_workers
-        .map((assignment: any) => assignment.workers)
-        .filter((worker: Worker) => worker.is_active);
-        
-      for (const worker of activeWorkers) {
-        try {
-          const log = await sendSingleEmail(
-            {
-              id: worker.id,
-              name: worker.name,
-              email: worker.email,
-            },
-            emailContent.subject,
-            emailContent.body,
-            'workers',
-            emailConfig
-          );
-          
-          logs.push(log);
-          workersNotified++;
-        } catch (error) {
-          console.error('Error sending worker notification:', error);
-          // Add failed log
-          logs.push({
-            id: `failed-worker-${Date.now()}-${worker.id}`,
-            workerId: worker.id,
-            workerName: worker.name,
-            subject: emailContent.subject,
-            body: emailContent.body,
-            sentAt: new Date().toISOString(),
-            status: 'failed',
-            trigger: 'weather',
-            weatherCondition: conditions.join(', '),
-            errorMessage: (error as Error).message,
-          });
-        }
-      }
-    }
-    
-    return {
-      clientsNotified,
-      workersNotified,
-      logs,
-    };
-  } catch (error) {
-    console.error('Error sending weather notifications:', error);
-    throw new Error('Failed to send weather notifications');
-  }
-}
-
-/**
- * Sends a single email and logs it
+ * Sends a single email and logs it for the logged-in user
  */
 async function sendSingleEmail(
   recipient: {id: string; email: string; name: string},
   subject: string,
   body: string,
   recipientType: 'clients' | 'workers',
-  emailConfig: any,
-  scheduledFor?: string
+  emailConfig: EmailConfig,
+  scheduledFor?: string,
+  userId?: string // Added user_id
 ): Promise<EmailLog> {
   try {
     // Replace variables in subject and body
     const personalizedSubject = replaceEmailVariables(subject, {
       name: recipient.name,
       date: new Date().toLocaleDateString(),
-      company_name: emailConfig.sender_name,
+      company_name: emailConfig.senderName,
     });
     
     const personalizedBody = replaceEmailVariables(body, {
       name: recipient.name,
       date: new Date().toLocaleDateString(),
-      company_name: emailConfig.sender_name,
+      company_name: emailConfig.senderName,
     });
-    
-    // Send email logic would go here (using a service like SendGrid, Mailgun, etc.)
-    // For now, we'll just simulate sending and log it
     
     // Create log entry
     const logEntry = {
@@ -398,6 +255,7 @@ async function sendSingleEmail(
       scheduled_for: scheduledFor,
       trigger: 'manual',
       sent_at: scheduledFor || new Date().toISOString(),
+      user_id: userId, // Added user_id
     };
     
     const { data, error } = await supabase
@@ -493,91 +351,6 @@ async function enhanceEmailContent(
 }
 
 /**
- * Generates weather notification email
- */
-async function generateWeatherNotificationEmail(
-  jobsiteName: string,
-  conditions: string[],
-  weatherDescription: string,
-  emailConfig: any
-): Promise<{ subject: string; body: string }> {
-  try {
-    const conditionsText = conditions.join(', ');
-    const date = new Date().toLocaleDateString();
-    
-    const prompt = `
-      Create a professional email notifying recipients that outdoor work at the ${jobsiteName} jobsite 
-      has been canceled due to ${conditionsText} weather conditions on ${date}.
-      
-      Weather description:
-      ${weatherDescription}
-      
-      The email should:
-      1. Have a clear subject line
-      2. Briefly explain why work is canceled
-      3. Include the weather description
-      4. Mention that recipients will be notified when work resumes
-      5. Use a ${emailConfig.tone} tone
-      6. Be concise and professional
-      7. Sign off as ${emailConfig.sender_name}
-      
-      ${emailConfig.additional_instructions}
-      
-      Respond in JSON format with 'subject' and 'body' keys.
-    `;
-
-    const response = await axios.post(
-      `${OPENAI_API_URL}/chat/completions`,
-      {
-        model: 'gpt-4',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert at writing clear, professional workplace communications.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 500,
-        response_format: { type: "json_object" }
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
-      }
-    );
-
-    const emailContent = JSON.parse(response.data.choices[0].message.content);
-    return {
-      subject: emailContent.subject,
-      body: emailContent.body,
-    };
-  } catch (error) {
-    console.error('Error generating weather notification email:', error);
-    
-    // Fallback if API call fails
-    const subject = `Weather Alert: Work Canceled at ${jobsiteName} for ${new Date().toLocaleDateString()}`;
-    const body = `
-      Due to ${conditions.join(', ')} conditions, all work at ${jobsiteName} has been canceled for today.
-      
-      ${weatherDescription}
-      
-      You will be notified when work resumes. Please contact your supervisor if you have any questions.
-      
-      Stay safe,
-      ${emailConfig.sender_name}
-    `;
-    
-    return { subject, body };
-  }
-}
-
-/**
  * Formats email log data from database
  */
 function formatEmailLog(data: any): EmailLog {
@@ -594,6 +367,7 @@ function formatEmailLog(data: any): EmailLog {
     trigger: data.trigger,
     weatherCondition: data.weather_condition,
     errorMessage: data.error_message,
+    user_id: data.user_id, // Added user_id
   };
 }
 
@@ -609,5 +383,6 @@ function formatEmailTemplate(data: any): EmailTemplate {
     variables: data.variables || [],
     createdAt: data.created_at,
     updatedAt: data.updated_at,
+    user_id: data.user_id, // Added user_id
   };
 }

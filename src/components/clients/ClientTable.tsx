@@ -132,11 +132,11 @@ const darkMode = theme ? theme.darkMode : false;
               <td className="px-4 py-4 whitespace-nowrap">
                 <span className={`
                   inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                  ${client.isActive 
+                  ${client.is_active 
                     ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
                     : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}
                 `}>
-                  {client.isActive ? (
+                  {client.is_active ? (
                     <>
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Active
@@ -185,7 +185,7 @@ const darkMode = theme ? theme.darkMode : false;
                 )}
               </td>
               <td className="hidden lg:table-cell px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                {formatDistanceToNow(new Date(client.createdAt), { addSuffix: true })}
+                {formatDistanceToNow(new Date(client.created_at), { addSuffix: true })}
               </td>
               <td className="px-4 py-4 whitespace-nowrap text-right text-sm">
                 <div className="flex items-center justify-end space-x-2">

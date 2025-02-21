@@ -144,12 +144,12 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
     
     try {
       setStatusUpdateLoading(true);
-      const newStatus = !client.isActive;
+      const newStatus = !client.is_active;
       await updateClientStatus(id, newStatus);
       
       setClient({
         ...client,
-        isActive: newStatus
+        is_active: newStatus
       });
       
       showToast(`Client ${newStatus ? 'activated' : 'deactivated'} successfully`, 'success');
@@ -249,11 +249,11 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
               <h1 className="text-2xl font-semibold">{client.name}</h1>
               <span className={`
                 ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                ${client.isActive 
+                ${client.is_active 
                   ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
                   : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}
               `}>
-                {client.isActive ? (
+                {client.is_active ? (
                   <>
                     <CheckCircle className="h-3 w-3 mr-1" />
                     Active
@@ -284,13 +284,13 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
             Send Email
           </Button>
           <Button
-            variant={client.isActive ? 'danger' : 'success'}
-            icon={client.isActive ? <XCircle size={16} /> : <CheckCircle size={16} />}
+            variant={client.is_active ? 'danger' : 'success'}
+            icon={client.is_active ? <XCircle size={16} /> : <CheckCircle size={16} />}
             onClick={toggleClientStatus}
             loading={statusUpdateLoading}
             disabled={statusUpdateLoading}
           >
-            {client.isActive ? 'Deactivate' : 'Activate'}
+            {client.is_active ? 'Deactivate' : 'Activate'}
           </Button>
           <Button
             variant="primary"
@@ -394,7 +394,7 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
                     <div className="flex items-start">
                       <Calendar className={`h-4 w-4 mt-0.5 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                       <div className="text-sm">
-                        Added: {new Date(client.createdAt).toLocaleDateString()}
+                        Added: {new Date(client.created_at).toLocaleDateString()}
                       </div>
                     </div>
                     
@@ -420,20 +420,20 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
                   <h3 className="text-sm font-medium mb-1">Status</h3>
                   <div className="space-y-2">
                     <div className="flex items-start">
-                      {client.isActive ? (
+                      {client.is_active ? (
                         <CheckCircle className="h-4 w-4 mt-0.5 mr-2 text-green-500" />
                       ) : (
                         <XCircle className="h-4 w-4 mt-0.5 mr-2 text-red-500" />
                       )}
                       <div className="text-sm">
-                        {client.isActive 
+                        {client.is_active 
                           ? 'Active - Will receive notifications' 
                           : 'Inactive - Notifications disabled'
                         }
                       </div>
                     </div>
                     
-                    {client.updatedAt && (
+                    {client.updated_at && (
                       <div className="flex items-start">
                         <Clock className={`h-4 w-4 mt-0.5 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                         <div className="text-sm">
@@ -467,7 +467,7 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
         title: 'Client Created',
         description: 'Added to the system',
         icon: <User size={16} />,
-        timestamp: client.createdAt,
+        timestamp: client.created_at,
         status: 'success' as const // Use const assertion to narrow the type
       }
     ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())}

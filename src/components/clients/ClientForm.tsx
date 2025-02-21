@@ -38,8 +38,8 @@ const darkMode = theme ? theme.darkMode : false;
     address: '',
     city: '',
     state: '',
-    zipCode: '',
-    isActive: true,
+    zip_code: '',
+    is_active: true,
     notes: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -64,8 +64,8 @@ const darkMode = theme ? theme.darkMode : false;
           address: client.address || '',
           city: client.city || '',
           state: client.state || '',
-          zipCode: client.zipCode || '',
-          isActive: client.isActive,
+          zip_code: client.zip_code || '',
+          is_active: client.is_active,
           notes: client.notes || ''
         });
       } else {
@@ -125,8 +125,8 @@ const darkMode = theme ? theme.darkMode : false;
       newErrors.phone = 'Phone number is invalid';
     }
     
-    if (formData.zipCode && !/^\d{5}(-\d{4})?$/.test(formData.zipCode)) {
-      newErrors.zipCode = 'Zip code is invalid';
+    if (formData.zip_code && !/^\d{5}(-\d{4})?$/.test(formData.zip_code)) {
+      newErrors.zip_code = 'Zip code is invalid';
     }
     
     setErrors(newErrors);
@@ -427,22 +427,22 @@ const darkMode = theme ? theme.darkMode : false;
                       </div>
                       <input
                         type="text"
-                        id="zipCode"
+                        id="zip_code"
                         name="zipCode"
-                        value={formData.zipCode}
+                        value={formData.zip_code}
                         onChange={handleInputChange}
                         className={`
                           block w-full pl-10 rounded-md shadow-sm text-sm
                           ${darkMode 
                             ? 'bg-gray-800 border-gray-700 text-white' 
                             : 'bg-white border-gray-300 text-gray-900'}
-                          ${errors.zipCode ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'focus:ring-blue-500 focus:border-blue-500'}
+                          ${errors.zip_code ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'focus:ring-blue-500 focus:border-blue-500'}
                         `}
                         placeholder="10001"
                       />
                     </div>
-                    {errors.zipCode && (
-                      <p className="mt-1 text-sm text-red-500">{errors.zipCode}</p>
+                    {errors.zip_code && (
+                      <p className="mt-1 text-sm text-red-500">{errors.zip_code}</p>
                     )}
                   </div>
                 </div>
