@@ -1,55 +1,30 @@
 // src/types/subscription.ts
 
+// Base types that match the database constraints
 export type SubscriptionPlan = 'none' | 'basic' | 'premium' | 'enterprise';
 export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trial' | 'incomplete';
 export type BillingCycle = 'monthly' | 'annually';
 
-export interface Subscription {
-  id: string;
-  user_id: string;
-  plan: SubscriptionPlan;
-  status: SubscriptionStatus;
-  billing_cycle: BillingCycle;
-  start_date: string;
-  next_billing_date: string;
-  trial_end?: string;
-  end_date?: string;
-  created_at: string;
-  updated_at?: string;
-  cancellation_date?: string;
-  price_id?: string;
-  customer_id?: string;
-  currentPeriodEnd: string; // Make this required
-  payment_method?: {
-    brand?: string;
-    last4?: string;
-    expMonth?: number;
-    expYear?: number;
-  };
-  features?: {
-    maxJobsites?: number;
-    maxEmailTemplates?: number;
-    advancedAnalytics?: boolean;
-    customEmails?: boolean;
-    prioritySupport?: boolean;
-    smsNotifications?: boolean;
-    customReports?: boolean;
-    apiAccess?: boolean;
-    whiteLabeling?: boolean;
-    singleSignOn?: boolean;
-  };
-}
-
+// Payment method types
 export interface PaymentMethod {
   id: string;
   type: 'card' | 'paypal' | 'bank_transfer';
-  last4?: string | null;
-  brand?: string | null;
-  expMonth?: number | null;
-  expYear?: number | null;
+  last4: string | null;
+  brand: string | null;
+  expMonth: number | null;
+  expYear: number | null;
   isDefault: boolean;
 }
 
+// Compact payment method type for subscription context
+export interface SubscriptionPaymentMethod {
+  brand: string | null;
+  last4: string | null;
+  expMonth: number | null;
+  expYear: number | null;
+}
+
+// Subscription features
 export interface SubscriptionFeatures {
   maxJobsites: number;
   maxEmailTemplates: number;
@@ -63,16 +38,39 @@ export interface SubscriptionFeatures {
   singleSignOn: boolean;
 }
 
+// Main subscription interface that matches database schema
+export interface Subscription {
+  id: string;
+  user_id: string;
+  plan: SubscriptionPlan;
+  status: SubscriptionStatus;
+  billing_cycle: BillingCycle;
+  price_id: string | null;
+  customer_id: string | null;
+  start_date: string;
+  end_date: string | null;
+  trial_end: string | null;
+  next_billing_date: string;
+  cancellation_date: string | null;
+  payment_method: SubscriptionPaymentMethod | null;
+  features: SubscriptionFeatures;
+  created_at: string;
+  updated_at: string | null;
+  currentPeriodEnd: string;
+}
+
+// Billing history interface
 export interface BillingHistory {
   id: string;
   date: string;
   description: string;
   amount: number;
   status: 'paid' | 'pending' | 'failed' | 'refunded';
-  invoice?: string;
-  invoiceUrl?: string;
+  invoice: string | null;
+  invoiceUrl: string | null;
 }
 
+// Plan option interface for UI
 export interface PlanOption {
   id: SubscriptionPlan;
   name: string;
@@ -83,4 +81,43 @@ export interface PlanOption {
   };
   features: string[];
   limitations?: string[];
+  icon?: React.ReactNode;
+  recommendedFor?: string;
 }
+
+// Default subscription for initialization
+export const defaultSubscription: Subscription = {
+  id: '',
+  user_id: '',
+  plan: 'basic',
+  status: 'active',
+  billing_cycle: 'monthly',
+  price_id: null,
+  customer_id: null,
+  start_date: new Date().toISOString(),
+  end_date: null,
+  trial_end: null,
+  next_billing_date: new Date().toISOString(),
+  cancellation_date: null,
+  payment_method: {
+    brand: null,
+    last4: null,
+    expMonth: null,
+    expYear: null
+  },
+  features: {
+    maxJobsites: 0,
+    maxEmailTemplates: 0,
+    advancedAnalytics: false,
+    customEmails: false,
+    prioritySupport: false,
+    smsNotifications: false,
+    customReports: false,
+    apiAccess: false,
+    whiteLabeling: false,
+    singleSignOn: false
+  },
+  created_at: new Date().toISOString(),
+  updated_at: null,
+  currentPeriodEnd: new Date().toISOString()
+};
