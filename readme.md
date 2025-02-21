@@ -56,7 +56,7 @@ A multi-modal admin dashboard for weather-based crew management, with secure Sup
 3. Create a `.env` file in the root directory with the following variables:
    ```
    VITE_SUPABASE_URL=your_supabase_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   VITE_SUPABASE_ANON_API=your_supabase_anon_key
    VITE_OPENAI_API_KEY=your_openai_api_key
    VITE_WEATHER_API_KEY=your_weather_api_key
    VITE_STRIPE_PUBLIC_KEY=your_stripe_public_key

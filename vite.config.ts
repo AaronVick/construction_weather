@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
@@ -71,6 +70,26 @@ export default defineConfig({
           utils: ['date-fns', 'lodash', 'zod', 'axios'],
           state: ['zustand', 'swr'],
         },
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name?.endsWith('.woff2')) {
+            return 'assets/fonts/[name][extname]';
+          }
+          if (assetInfo.name?.endsWith('.svg')) {
+            return 'assets/icons/[name][extname]';
+          }
+          return 'assets/[name]-[hash][extname]';
+        },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+      },
+    },
+    assetsInlineLimit: 4096,
+    cssCodeSplit: true,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: process.env.NODE_ENV === 'production',
+        drop_debugger: process.env.NODE_ENV === 'production',
       },
     },
   },
@@ -83,5 +102,16 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
     css: true,
+  },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@supabase/supabase-js',
+      'recharts',
+      'date-fns',
+      'lodash',
+    ],
   },
 });
