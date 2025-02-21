@@ -57,21 +57,21 @@ const darkMode = theme ? theme.darkMode : false;
         const zipCode = localStorage.getItem('userZipCode') || user?.user_metadata?.zip_code || '10001';
         
         // Fetch dashboard metrics
-        const { data, error } = await fetchDashboardData();
+        const dashboardResult = await getDashboardData();
         
-        if (error) throw error;
+        if (dashboardResult.error) throw dashboardResult.error;
         
-        if (data) {
+        if (dashboardResult.data) {
           setInsights({
-            activeClients: data.clientStats.active,
-            activeWorkers: data.workerStats.active,
-            pendingEmails: data.notificationStats.last30Days,
-            weatherAlerts: data.jobsiteStats.withRecentAlerts,
-            jobsites: subscription.plan === 'basic' ? 1 : data.jobsiteStats.total,
-            monthlyEmails: data.weatherAlertMetrics
+            activeClients: dashboardResult.data.clientStats.active,
+            activeWorkers: dashboardResult.data.workerStats.active,
+            pendingEmails: dashboardResult.data.notificationStats.last30Days,
+            weatherAlerts: dashboardResult.data.jobsiteStats.withRecentAlerts,
+            jobsites: subscription.plan === 'basic' ? 1 : dashboardResult.data.jobsiteStats.total,
+            monthlyEmails: dashboardResult.data.weatherAlertMetrics
           });
           
-          setRecentActivity(data.recentActivity);
+          setRecentActivity(dashboardResult.data.recentActivity);
         }
         
         // Fetch weather data separately
