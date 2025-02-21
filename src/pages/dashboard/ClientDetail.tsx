@@ -146,7 +146,8 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
     try {
       setStatusUpdateLoading(true);
       const newStatus = !client.is_active;
-      await updateClientStatus(id, newStatus);
+      await updateClientStatus(id, client.is_active ? false : true);
+
       
       setClient({
         ...client,
