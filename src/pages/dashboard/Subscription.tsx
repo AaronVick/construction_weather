@@ -345,7 +345,8 @@ const darkMode = theme ? theme.darkMode : false;
   
     try {
       setLoading(true);
-      await updateSubscriptionPlan(selectedPlan);
+      await updateSubscriptionPlan(selectedPlan ?? 'monthly'); 
+
 
   
       setSubscription((prev) => ({
@@ -373,7 +374,8 @@ const darkMode = theme ? theme.darkMode : false;
   const confirmCancelSubscription = async () => {
     try {
       setLoading(true);
-      await updateSubscriptionPlan(selectedPlan);
+      await updateSubscriptionPlan(selectedPlan ?? 'basic'); 
+
 
   
       setSubscription((prev) => ({
