@@ -48,210 +48,93 @@ const AppRoutes: React.FC = () => {
   }
   
   return (
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
-        <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-    
-        {/* Protected Dashboard Routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <Dashboard />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-    
-        {/* Client Management Routes */}
-        <Route
-          path="/clients"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <Clients />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/clients/new"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <ClientDetail />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/clients/:id"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <ClientDetail />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/clients/:id/edit"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <ClientDetail isEdit={true} />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-    
-        {/* Jobsite Management Routes - Premium Feature */}
-        <Route
-          path="/jobsites"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <PremiumFeature requiredPlan="premium" fallback="/subscription">
-                  <Jobsites />
-                </PremiumFeature>
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/jobsites/new"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <PremiumFeature requiredPlan="premium" fallback="/subscription">
-                  <JobsiteDetail />
-                </PremiumFeature>
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/jobsites/:id"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <PremiumFeature requiredPlan="premium" fallback="/subscription">
-                  <JobsiteDetail />
-                </PremiumFeature>
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-    
-        {/* Worker Management Routes */}
-        <Route
-          path="/workers"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <Workers />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/workers/new"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <WorkerDetail />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/workers/:id"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <WorkerDetail />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/workers/:id/edit"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <WorkerDetail isEdit={true} />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-    
-        {/* Weather and Email Configuration Routes */}
-        <Route
-          path="/weather"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <WeatherAutomation />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/email"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <EmailConfiguration />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-    
-        {/* Analytics - Premium Feature */}
-        <Route
-          path="/analytics"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <PremiumFeature requiredPlan="premium" fallback="/subscription">
-                  <Analytics />
-                </PremiumFeature>
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-    
-        {/* Subscription and Settings Routes */}
-        <Route
-          path="/subscription"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <Subscription />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <Settings />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-    
-        {/* 404 Route */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    );
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<LandingPage />} />
+      <Route 
+        path="/login" 
+        element={user ? <Navigate to="/dashboard" /> : <Login />} 
+      />
+      <Route 
+        path="/register" 
+        element={user ? <Navigate to="/dashboard" /> : <Register />} 
+      />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* Protected Dashboard Routes */}
+      <Route element={<ProtectedRoute />}>
+        <Route element={<DashboardLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          
+          {/* Client Routes */}
+          <Route path="/clients" element={<Clients />} />
+          <Route path="/clients/new" element={<ClientDetail />} />
+          <Route path="/clients/:id" element={<ClientDetail />} />
+          <Route 
+            path="/clients/:id/edit" 
+            element={<ClientDetail isEdit={true} />} 
+          />
+          
+          {/* Jobsite Routes - Premium Feature */}
+          <Route 
+            path="/jobsites" 
+            element={
+              <PremiumFeature requiredPlan="premium" fallback="/subscription">
+                <Jobsites />
+              </PremiumFeature>
+            } 
+          />
+          <Route 
+            path="/jobsites/new" 
+            element={
+              <PremiumFeature requiredPlan="premium" fallback="/subscription">
+                <JobsiteDetail />
+              </PremiumFeature>
+            } 
+          />
+          <Route 
+            path="/jobsites/:id" 
+            element={
+              <PremiumFeature requiredPlan="premium" fallback="/subscription">
+                <JobsiteDetail />
+              </PremiumFeature>
+            } 
+          />
+          
+          {/* Worker Routes */}
+          <Route path="/workers" element={<Workers />} />
+          <Route path="/workers/new" element={<WorkerDetail />} />
+          <Route path="/workers/:id" element={<WorkerDetail />} />
+          <Route 
+            path="/workers/:id/edit" 
+            element={<WorkerDetail isEdit={true} />} 
+          />
+          
+          {/* Configuration Routes */}
+          <Route path="/weather" element={<WeatherAutomation />} />
+          <Route path="/email" element={<EmailConfiguration />} />
+          
+          {/* Analytics - Premium Feature */}
+          <Route 
+            path="/analytics" 
+            element={
+              <PremiumFeature requiredPlan="premium" fallback="/subscription">
+                <Analytics />
+              </PremiumFeature>
+            } 
+          />
+          
+          {/* Settings Routes */}
+          <Route path="/subscription" element={<Subscription />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
+      </Route>
+
+      {/* 404 Route */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
 };
 
 const App: React.FC = () => {

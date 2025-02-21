@@ -6,6 +6,7 @@ import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
 import { getCurrentWeather } from '../../services/weatherService';
 import { ChevronLeft } from "lucide-react";
+import { Outlet } from 'react-router-dom';
 
 
 // Icons
@@ -114,7 +115,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             onClick={toggleSidebar}
           />
         )}
-
+  
         {/* Sidebar Header */}
         <div className={`
           flex items-center justify-between h-16 
@@ -137,7 +138,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             </button>
           )}
         </div>
-
+  
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4">
           <ul className="space-y-2 px-2">
@@ -179,7 +180,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             })}
           </ul>
         </nav>
-
+  
         {/* User Profile */}
         <div className={`
           p-4 border-t
@@ -217,7 +218,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           )}
         </div>
       </div>
-
+  
       {/* Main Content */}
       <div className={`
         flex-1
@@ -247,7 +248,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               {navItems.find(item => item.path === location.pathname)?.name || 'Dashboard'}
             </h1>
           </div>
-
+  
           <div className="flex items-center space-x-4">
             {weatherData && location.pathname === '/dashboard' && (
               <div className="hidden md:flex items-center mr-4">
@@ -269,10 +270,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             </button>
           </div>
         </header>
-
-        {/* Page Content */}
+  
+        {/* Page Content - Replace children with Outlet */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>
