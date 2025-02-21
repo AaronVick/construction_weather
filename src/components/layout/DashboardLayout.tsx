@@ -30,11 +30,9 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-interface DashboardLayoutProps {
-  children: React.ReactNode;
-}
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+
+const DashboardLayout: React.FC<DashboardLayoutProps> = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [weatherData, setWeatherData] = useState<any>(null);
   const location = useLocation();
