@@ -57,7 +57,8 @@ const darkMode = theme ? theme.darkMode : false;
         const zipCode = localStorage.getItem('userZipCode') || user?.user_metadata?.zip_code || '10001';
   
         // Fetch dashboard metrics in a single API call
-        const { data, error } = await getDashboardData();
+        const { data, error } = await fetchDashboardData();
+
         if (error) throw error;
   
         if (data) {
@@ -272,8 +273,8 @@ const darkMode = theme ? theme.darkMode : false;
           <div className="h-64">
             <LineChart 
               data={insights.monthlyEmails}
-              xKey="month"
-              yKey="count"
+              xAxisKey="month"
+              yAxisKey="count"
               color="#4f46e5"
             />
           </div>

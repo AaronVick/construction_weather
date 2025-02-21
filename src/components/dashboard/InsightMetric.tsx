@@ -15,6 +15,7 @@ interface InsightMetricProps {
   description?: string;
   loading?: boolean;
   className?: string;
+  color?: string;
   onClick?: () => void;
 }
 

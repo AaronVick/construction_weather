@@ -424,31 +424,26 @@ const darkMode = theme ? theme.darkMode : false;
             <Card>
               <h2 className="text-lg font-medium mb-4">Recent Activity</h2>
               <Timeline
-                items={[
-                  ...emailHistory.slice(0, 3).map(email => ({
-                    id: email.id,
-                    title: 'Email Sent',
-                    description: email.subject,
-                    icon: <Mail size={16} />,
-                    timestamp: email.sentAt,
-                    status: ['pending', 'error', 'success', 'warning', 'info'].includes(email.status as any)
-                    ? (email.status as 'pending' | 'error' | 'success' | 'warning' | 'info')
-                    : 'info',
+  items={[
+    ...emailHistory.slice(0, 3).map(email => ({
+      id: email.id,
+      title: 'Email Sent',
+      description: email.subject,
+      icon: <Mail size={16} />,
+      timestamp: email.sentAt,
+      status: (['pending', 'error', 'success', 'warning', 'info'].includes(email.status) ? email.status : 'info') as 'pending' | 'error' | 'success' | 'warning' | 'info',
+    })),
+    {
+      id: 'client-created',
+      title: 'Client Created',
+      description: `Added to the system`,
+      icon: <User size={16} />,
+      timestamp: client.createdAt,
+      status: 'success',
+    }
+  ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())}
+/>
 
-
-
-
-                  })),
-                  {
-                    id: 'client-created',
-                    title: 'Client Created',
-                    description: `Added to the system`,
-                    icon: <User size={16} />,
-                    timestamp: client.createdAt,
-                    status: 'success'
-                  }
-                ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())}
-              />
               <div className="mt-4 text-center">
                 <Button
                   variant="ghost"

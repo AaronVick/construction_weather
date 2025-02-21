@@ -334,64 +334,115 @@ async function getNotificationStats(userId: string): Promise<NotificationStats> 
 
 
 // get pendingEmails
-
+/**
+ * Fetches the count of pending emails for a given user.
+ */
 export async function getPendingEmails(userId: string): Promise<number> {
-  const { count, error } = await supabase
-    .from('email_logs')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('status', 'pending');
+  try {
+    const { count, error } = await supabase
+      .from('email_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'pending');
 
-  if (error) {
-    console.error('Error fetching pending emails:', error);
+    if (error) {
+      console.error('Error fetching pending emails:', error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (err) {
+    console.error('Unexpected error in getPendingEmails:', err);
     return 0;
   }
-
-  return count || 0;
 }
 
-
 /**
- * Gets recent activity
+ * Fetches the recent activity of email notifications for a given user.
  */
-async function getRecentActivity(userId: string): Promise<Array<{
-  id: number;
-  type: string;
-  message: string;
-  timestamp: string;
-  status: string;
-}>> {
-  // This is a simplified example - in a real app, you'd aggregate activity from multiple tables
-  const { data } = await supabase
-    .from('email_logs')
-    .select(`
-      id,
-      trigger,
-      subject,
-      recipient_name,
-      sent_at,
-      status
-    `)
-    .in('client_id', (sb) =>
-      sb.from('clients').select('id').eq('user_id', userId)
-    )
-    .or(`worker_id.in.(${
-      supabase.from('workers').select('id').eq('user_id', userId).toString()
-    })`)
-    .order('sent_at', { ascending: false })
-    .limit(10);
-  
-  if (!data || data.length === 0) {
+export async function getRecentActivity(userId: string): Promise<
+  Array<{
+    id: number;
+    type: string;
+    message: string;
+    timestamp: string;
+    status: string;
+  }>
+> {
+  try {
+    // Fetch client IDs associated with the user
+    const { data: clientData, error: clientError } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('user_id', userId);
+
+    if (clientError) {
+      console.error('Error fetching client IDs:', clientError);
+      return [];
+    }
+
+    const clientIds = clientData?.map(client => client.id) || [];
+
+    // Fetch worker IDs associated with the user
+    const { data: workerData, error: workerError } = await supabase
+      .from('workers')
+      .select('id')
+      .eq('user_id', userId);
+
+    if (workerError) {
+      console.error('Error fetching worker IDs:', workerError);
+      return [];
+    }
+
+    const workerIds = workerData?.map(worker => worker.id) || [];
+
+    // Construct email log query
+    let query = supabase
+      .from('email_logs')
+      .select(`
+        id,
+        trigger,
+        subject,
+        recipient_name,
+        sent_at,
+        status
+      `)
+      .order('sent_at', { ascending: false })
+      .limit(10);
+
+    // Apply filters based on user-related clients/workers
+    if (clientIds.length > 0) {
+      query = query.in('client_id', clientIds);
+    }
+
+    if (workerIds.length > 0) {
+      query = query.or(`worker_id.in.(${workerIds.join(',')})`);
+    }
+
+    // Fetch the email logs
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching recent activity:', error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Transform the data into the expected format
+    return data.map((log) => ({
+      id: log.id, // Use the actual ID from the log
+      type: log.trigger === 'weather' ? 'weather_alert' : 'email_notification',
+      message: `${log.trigger === 'weather' ? 'Weather alert' : 'Email'} sent to ${log.recipient_name}: ${log.subject}`,
+      timestamp: log.sent_at,
+      status: log.status,
+    }));
+  } catch (err) {
+    console.error('Unexpected error in getRecentActivity:', err);
     return [];
   }
-  
-  return data.map((log, index) => ({
-    id: index + 1, // Use index as ID for demo
-    type: log.trigger === 'weather' ? 'weather_alert' : 'email_notification',
-    message: `${log.trigger === 'weather' ? 'Weather alert' : 'Email'} sent to ${log.recipient_name}: ${log.subject}`,
-    timestamp: log.sent_at,
-    status: log.status,
-  }));
 }
 
 /**

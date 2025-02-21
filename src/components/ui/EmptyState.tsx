@@ -8,6 +8,7 @@ interface EmptyStateProps {
   description: string;
   icon?: React.ReactNode;
   actionLabel?: string;
+  actionText?: string;
   onAction?: () => void;
   secondaryActionLabel?: string;
   onSecondaryAction?: () => void;
