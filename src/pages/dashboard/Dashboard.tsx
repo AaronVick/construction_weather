@@ -57,7 +57,7 @@ const darkMode = theme ? theme.darkMode : false;
         const zipCode = localStorage.getItem('userZipCode') || user?.user_metadata?.zip_code || '10001';
         
         // Fetch dashboard metrics
-        const dashboardResult = await getDashboardData();
+        const dashboardResult = await fetchDashboardData();
         
         if (dashboardResult.error) throw dashboardResult.error;
         
