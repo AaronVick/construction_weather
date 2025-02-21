@@ -367,19 +367,19 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
                   </div>
                 </div>
                 
-                {(client.address || client.city || client.state || client.zipCode) && (
+                {(client.address || client.city || client.state || client.zip_code) && (
                   <div>
                     <h3 className="text-sm font-medium mb-1">Address</h3>
                     <div className="flex items-start">
                       <MapPin className={`h-4 w-4 mt-0.5 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                       <div className="text-sm">
                         {client.address && <div>{client.address}</div>}
-                        {(client.city || client.state || client.zipCode) && (
+                        {(client.city || client.state || client.zip_code) && (
                           <div>
                             {[
                               client.city,
                               client.state,
-                              client.zipCode
+                              client.zip_code
                             ].filter(Boolean).join(', ')}
                           </div>
                         )}
@@ -437,7 +437,7 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
                       <div className="flex items-start">
                         <Clock className={`h-4 w-4 mt-0.5 mr-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                         <div className="text-sm">
-                          Last updated: {new Date(client.updatedAt).toLocaleDateString()}
+                          Last updated: {new Date(client.updated_at).toLocaleDateString()}
                         </div>
                       </div>
                     )}

@@ -33,10 +33,12 @@ export interface ClientFormData {
   address?: string;
   city?: string;
   state?: string;
-  zip_code?: string;  // Fixed to match `Client`
-  is_active: boolean; // Fixed to match `Client`
+  zip_code?: string;  
+  is_active: boolean; 
   notes?: string;
+  user_id?: string;  // ✅ Added to match `Client`
 }
+
 
 
 export interface ClientFilters {

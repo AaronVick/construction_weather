@@ -7,6 +7,7 @@ import { useToast } from '../../hooks/useToast';
 import { createClient, updateClient, getClient } from '../../services/clientService';
 
 // Components
+
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import LoadingSpinner from '../ui/LoadingSpinner';
@@ -20,6 +21,17 @@ import { Save, X, ArrowLeft, Building, User, Mail, Phone, MapPin, Check } from '
 interface ClientFormProps {
   clientId?: string;
   isEdit?: boolean;
+}
+
+export async function getCurrentUserId(): Promise<string | null> {
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error || !data?.user) {
+    console.error('Error fetching user:', error?.message);
+    return null;
+  }
+
+  return data.user.id;
 }
 
 const ClientForm: React.FC<ClientFormProps> = ({ clientId, isEdit = false }) => {
@@ -54,7 +66,7 @@ const darkMode = theme ? theme.darkMode : false;
     try {
       setLoading(true);
       const client = await getClient(id);
-      
+  
       if (client) {
         setFormData({
           name: client.name,
@@ -66,7 +78,8 @@ const darkMode = theme ? theme.darkMode : false;
           state: client.state || '',
           zip_code: client.zip_code || '',
           is_active: client.is_active,
-          notes: client.notes || ''
+          notes: client.notes || '',
+          user_id: client.user_id, // ✅ Added to match ClientFormData
         });
       } else {
         showToast('Client not found', 'error');
@@ -80,6 +93,7 @@ const darkMode = theme ? theme.darkMode : false;
       setLoading(false);
     }
   };
+  
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -135,23 +149,28 @@ const darkMode = theme ? theme.darkMode : false;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+  
     if (!validateForm()) {
       showToast('Please fix the errors in the form', 'error');
       return;
     }
-    
+  
     try {
       setSaving(true);
-      
+  
+      // Ensure user_id is added before saving
+      const userId = await getCurrentUserId(); // Function to fetch current user ID
+  
+      const clientData = { ...formData, user_id: userId };
+  
       if (isEdit && clientId) {
-        await updateClient(clientId, formData);
+        await updateClient(clientId, clientData);
         showToast('Client updated successfully', 'success');
       } else {
-        await createClient(formData);
+        await createClient(clientData);
         showToast('Client created successfully', 'success');
       }
-      
+  
       navigate('/clients');
     } catch (error) {
       console.error('Error saving client:', error);
@@ -160,6 +179,7 @@ const darkMode = theme ? theme.darkMode : false;
       setSaving(false);
     }
   };
+  
 
   if (loading) {
     return (
@@ -331,7 +351,7 @@ const darkMode = theme ? theme.darkMode : false;
                       type="checkbox"
                       id="isActive"
                       name="isActive"
-                      checked={formData.isActive}
+                      checked={formData.is_active}
                       onChange={handleInputChange}
                       className={`
                         h-4 w-4 rounded

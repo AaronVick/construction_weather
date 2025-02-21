@@ -302,7 +302,7 @@ const darkMode = theme ? theme.darkMode : false;
       setLoading(true);
       const details = await getSubscriptionDetails();
       setSubscription(details);
-      setBillingCycle(details.billingCycle);
+      setBillingCycle(details.billing_cycle);
     } catch (error) {
       console.error('Failed to fetch subscription details:', error);
       showToast('Failed to load subscription information', 'error');
@@ -350,7 +350,7 @@ const darkMode = theme ? theme.darkMode : false;
       setSubscription({
         ...subscription,
         plan: selectedPlan,
-        billing_cycle,
+        billingCycle,
         next_billing_date: getNextBillingDate(billingCycle),
       });
 
@@ -758,8 +758,8 @@ const darkMode = theme ? theme.darkMode : false;
                     Active
                   </span>
                   <span>
-                    Next billing on {new Date(subscription.nextBillingDate).toLocaleDateString()} 
-                    ({subscription.billingCycle})
+                    Next billing on {new Date(subscription.next_billing_date).toLocaleDateString()} 
+                    ({subscription.billing_cycle})
                   </span>
                 </>
               ) : subscription.status === 'trial' ? (

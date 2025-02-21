@@ -20,7 +20,7 @@ export interface Subscription {
   payment_method?: PaymentMethod;
   created_at: string;
   updated_at?: string;
-  features: string[];
+  features: SubscriptionFeatures; // ✅ Fixed: Now an object, not a string[]
 }
 
 export interface PaymentMethod {
@@ -64,6 +64,6 @@ export interface PlanOption {
     monthly: number;
     annually: number;
   };
-  features: string[];
+  features: string[]; // ✅ Keep this as `string[]` for plan descriptions
   limitations?: string[];
 }

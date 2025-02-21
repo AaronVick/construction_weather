@@ -90,7 +90,7 @@ const darkMode = theme ? theme.darkMode : false;
     // Apply status filter
     if (filterOptions.status !== 'all') {
       result = result.filter(client => 
-        filterOptions.status === 'active' ? client.isActive : !client.isActive
+        filterOptions.status === 'active' ? client.is_active : !client.is_active
       );
     }
     
@@ -112,7 +112,7 @@ const darkMode = theme ? theme.darkMode : false;
       }
       
       result = result.filter(client => 
-        new Date(client.createdAt) >= compareDate
+        new Date(client.created_at) >= compareDate
       );
     }
     
@@ -125,10 +125,10 @@ const darkMode = theme ? theme.darkMode : false;
         result.sort((a, b) => b.name.localeCompare(a.name));
         break;
       case 'dateAsc':
-        result.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.createdAt).getTime());
         break;
       case 'dateDesc':
-        result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.createdAt).getTime());
         break;
     }
     

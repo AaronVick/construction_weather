@@ -82,32 +82,11 @@ export async function getClient(id: string): Promise<ClientWithAssociations | nu
   }
 }
 
-/**
- * Update client status (active/inactive)
- */
-export async function updateClientStatus(id: string, isActive: boolean): Promise<void> {
-  try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError) throw userError;
-    if (!user) throw new Error('Not authenticated');
-
-    const { error } = await supabase
-      .from('clients')
-      .update({ is_active: isActive })
-      .eq('id', id)
-      .eq('user_id', user.id);
-
-    if (error) throw error;
-  } catch (error) {
-    console.error(`Error updating client status for ${id}:`, error);
-    throw error;
-  }
-}
 
 /**
  * Create a new client
  */
-export async function createClient(client: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>): Promise<Client | null> {
+export async function createClient(client: Omit<Client, 'id' | 'created_at' | 'updated_at'>): Promise<Client | null> {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError) throw userError;
@@ -117,19 +96,21 @@ export async function createClient(client: Omit<Client, 'id' | 'createdAt' | 'up
       .from('clients')
       .insert({
         ...client,
-        user_id: user.id,
+        user_id: user.id, // Ensure user ID is included
+        created_at: new Date().toISOString(), // Explicitly set created_at
       })
       .select()
       .single();
-    
+
     if (error) throw error;
-    
+
     return formatClient(data);
   } catch (error) {
     console.error('Error creating client:', error);
     return null;
   }
 }
+
 
 /**
  * Delete a client
@@ -182,12 +163,14 @@ function formatClient(data: any): Client {
     id: data.id,
     name: data.name,
     email: data.email,
-    phone: data.phone || null,
-    address: data.address || null,
-    company: data.company || null,
-    notes: data.notes || null,
-    isActive: data.is_active,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
+    phone: data.phone || '',
+    address: data.address || '',
+    company: data.company || '',
+    notes: data.notes || '',
+    is_active: data.is_active,  // Fix: use correct key
+    created_at: data.created_at, // Fix: use correct key
+    updated_at: data.updated_at || null,
+    user_id: data.user_id, // Ensure this is included
   };
 }
+
