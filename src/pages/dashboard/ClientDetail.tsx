@@ -447,38 +447,41 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
             </Card>
             
             {/* Recent Activity Card */}
-            <Card>
-              <h2 className="text-lg font-medium mb-4">Recent Activity</h2>
-              <Timeline 
-                items={[
-                  ...emailHistory.slice(0, 3).map(email => ({
-                    id: email.id,
-                    title: 'Email Sent',
-                    description: email.subject,
-                    icon: <Mail size={16} />,
-                    timestamp: email.sentAt,
-                    status: mapEmailStatusToTimelineStatus(email.status)
-                  })),
-                  {
-                    id: 'client-created',
-                    title: 'Client Created',
-                    description: 'Added to the system',
-                    icon: <User size={16} />,
-                    timestamp: client.createdAt,
-                    status: 'success'
-                  }
-                ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())}
-              />
-              <div className="mt-4 text-center">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setActiveTab('emails')}
-                >
-                  View Full History
-                </Button>
-              </div>
-            </Card>
+<Card>
+  <h2 className="text-lg font-medium mb-4">Recent Activity</h2>
+  <Timeline 
+    items={[
+      ...emailHistory.slice(0, 3).map(email => {
+        const status = mapEmailStatusToTimelineStatus(email.status);
+        return {
+          id: email.id,
+          title: 'Email Sent',
+          description: email.subject,
+          icon: <Mail size={16} />,
+          timestamp: email.sentAt,
+          status // This is now properly typed from our mapper function
+        };
+      }),
+      {
+        id: 'client-created',
+        title: 'Client Created',
+        description: 'Added to the system',
+        icon: <User size={16} />,
+        timestamp: client.createdAt,
+        status: 'success' as const // Use const assertion to narrow the type
+      }
+    ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())}
+  />
+  <div className="mt-4 text-center">
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={() => setActiveTab('emails')}
+    >
+      View Full History
+    </Button>
+  </div>
+</Card>
             
             {/* Notes Section */}
             <Card className="md:col-span-3">
