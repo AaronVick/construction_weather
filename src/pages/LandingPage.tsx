@@ -1,13 +1,12 @@
 // src/pages/LandingPage.tsx
 
 import React, { useState } from 'react';
-import '../styles/LandingPage.css'; // Import the CSS
-import heroImage from '../assets/images/hero-image.jpg'; // Example image
-import featureIcon1 from '../assets/icons/cloud-lightning.svg'; // Example icon
-import featureIcon2 from '../assets/icons/email.svg'; // Example icon
-import featureIcon3 from '../assets/icons/settings.svg'; // Example icon
-import testimonialImage1 from '../assets/images/user1.jpg'; // Example testimonial image
-import { supabase } from '../lib/supabaseClient'; // Supabase client
+import '../styles/LandingPage.css';
+import heroImage from '../assets/images/hero-image.png';
+import featureIcon1 from '../assets/icons/cloud-lightning.svg';
+import featureIcon2 from '../assets/icons/email.svg';
+import featureIcon3 from '../assets/icons/settings.svg';
+import { supabase } from '../lib/supabaseClient';
 
 const LandingPage: React.FC = () => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -29,8 +28,8 @@ const LandingPage: React.FC = () => {
     if (error) {
       setError(error.message);
     } else {
-      setIsLoginModalOpen(false); // Close modal on successful login
-      window.location.href = '/dashboard'; // Redirect to dashboard
+      setIsLoginModalOpen(false);
+      window.location.href = '/dashboard';
     }
   };
 
@@ -45,7 +44,7 @@ const LandingPage: React.FC = () => {
       setError(error.message);
     } else {
       alert('Password reset email sent! Check your inbox.');
-      setIsForgotPassword(false); // Reset to login form
+      setIsForgotPassword(false);
     }
   };
 
@@ -140,18 +139,6 @@ const LandingPage: React.FC = () => {
             <img src={featureIcon3} alt="Customizable Alerts" />
             <h3>Customizable Alerts</h3>
             <p>Tailor alerts to specific jobsites or teams.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="testimonials-section">
-        <h2>What Our Users Are Saying</h2>
-        <div className="testimonial-cards">
-          <div className="testimonial-card">
-            <img src={testimonialImage1} alt="User 1" />
-            <p>"This platform has been a game-changer for our team!"</p>
-            <span>- John Doe, Construction Manager</span>
           </div>
         </div>
       </section>
