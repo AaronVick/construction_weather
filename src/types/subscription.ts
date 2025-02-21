@@ -19,6 +19,7 @@ export interface Subscription {
   cancellation_date?: string;
   price_id?: string;
   customer_id?: string;
+  currentPeriodEnd: string; // Make this required
   payment_method?: {
     brand?: string;
     last4?: string;

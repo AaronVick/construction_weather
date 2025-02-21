@@ -343,14 +343,16 @@ const Subscription: React.FC = () => {
   
     try {
       setLoading(true);
-      await updateSubscriptionPlan(selectedPlan ?? 'monthly'); 
-
-      setSubscription((prev) => ({
+      await updateSubscriptionPlan(selectedPlan);
+  
+      setSubscription((prev: Subscription): Subscription => ({
         ...prev,
-        plan: selectedPlan,
-        billing_cycle: billingCycle,
-        next_billing_date: getNextBillingDate(billingCycle), 
+        plan: selectedPlan as SubscriptionPlan, // Ensures type correctness
+        billing_cycle: billingCycle as BillingCycle,
+        next_billing_date: getNextBillingDate(billingCycle),
+        currentPeriodEnd: getNextBillingDate(billingCycle), // Ensure it's included
         updated_at: new Date().toISOString(),
+        status: prev.status ?? 'active', // Ensure status is not missing
       }));
   
       showToast(`Successfully updated to ${selectedPlan} plan`, 'success');
@@ -364,19 +366,20 @@ const Subscription: React.FC = () => {
       setLoading(false);
     }
   };
-
+  
   const confirmCancelSubscription = async () => {
     try {
       setLoading(true);
-      await updateSubscriptionPlan(selectedPlan ?? 'basic'); 
-
-      setSubscription((prev) => ({
+      await updateSubscriptionPlan('none'); // Ensure 'none' is a valid plan
+  
+      setSubscription((prev: Subscription): Subscription => ({
         ...prev,
-        plan: 'none',
-        status: 'canceled',
-        billing_cycle: 'monthly',
+        plan: 'none' as SubscriptionPlan, // Explicitly cast
+        status: 'canceled' as SubscriptionStatus,
+        billing_cycle: prev.billing_cycle, // Keep existing cycle
         end_date: getEndOfCurrentBillingPeriod(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        currentPeriodEnd: getNextBillingDate(prev.billing_cycle), // Ensure it's included
       }));
   
       showToast('Your subscription has been canceled', 'success');
@@ -388,6 +391,8 @@ const Subscription: React.FC = () => {
       setLoading(false);
     }
   };
+  
+  
 
   const getNextBillingDate = (cycle: BillingCycle): string => {
     const today = new Date();
