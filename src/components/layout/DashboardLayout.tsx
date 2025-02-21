@@ -32,7 +32,7 @@ import {
 
 
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = () => {
+const DashboardLayout: React.FC = () => {  
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [weatherData, setWeatherData] = useState<any>(null);
   const location = useLocation();
