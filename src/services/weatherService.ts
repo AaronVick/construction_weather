@@ -2,8 +2,8 @@
 import axios from 'axios';
 import { supabase } from '../lib/supabaseClient';
 
-const WEATHER_API_KEY = import.meta.env.VITE_WEATHER_API_KEY;
-const WEATHER_API_URL = 'https://api.weatherapi.com/v1';
+const WEATHER_API_KEY = import.meta.env.VITE_WEATHER_API;
+const WEATHER_API_BASE_URL = 'https://api.weatherapi.com/v1';
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 const OPENAI_API_URL = 'https://api.openai.com/v1';
 

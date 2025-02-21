@@ -46,10 +46,18 @@
     }
   ],
   "env": {
-    "VITE_SUPABASE_URL": "VITE_SUPABASE_URL",
-    "VITE_SUPABASE_ANON_API": "VITE_SUPABASE_ANON_API",
-    "VITE_OPENAI_API_KEY": "VITE_OPENAI_API_KEY",
-    "VITE_WEATHER_API_KEY": "VITE_WEATHER_API",
-    "VITE_STRIPE_PUBLIC_KEY": "VITE_STRIPE_PUBLIC_KEY"
+    
+    "VITE_SUPABASE_URL": "@vite_supabase_url",
+    "VITE_SUPABASE_ANON_API": "@vite_supabase_anon_api",
+    "VITE_OPENAI_API": "@vite_openai_api",
+    "VITE_WEATHER_API": "@vite_weather_api",
+    "VITE_STRIPE_PUBLIC_KEY": "@vite_stripe_public_key",
+    
+    
+    "WEATHER_API": "@weather_api",
+    "SUPABASE_URL": "@supabase_url",
+    "SUPABASE_KEY": "@supabase_key",
+    "OPENAI_API_KEY": "@openai_api_key",
+    "STRIPE_SECRET_KEY": "@stripe_secret_key"
   }
 }

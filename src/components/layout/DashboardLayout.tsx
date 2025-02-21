@@ -7,8 +7,6 @@ import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
 import { getCurrentWeather } from '../../services/weatherService';
 import { ChevronLeft } from "lucide-react";
 import { Outlet } from 'react-router-dom';
-
-
 // Icons
 import {
   Home,
@@ -29,8 +27,6 @@ import {
   ChevronDown,
   ChevronRight
 } from 'lucide-react';
-
-
 
 const DashboardLayout: React.FC = () => {  
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -53,7 +49,7 @@ const DashboardLayout: React.FC = () => {
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        const zipCode = localStorage.getItem('userZipCode') || '10001'; // Default to NYC if not set
+        const zipCode = localStorage.getItem('userZipCode') || '10001';
         const data = await getCurrentWeather(zipCode);
         setWeatherData(data);
       } catch (error) {
@@ -93,111 +89,103 @@ const DashboardLayout: React.FC = () => {
   };
 
   return (
-    <div className={`h-screen flex overflow-hidden ${darkMode ? 'dark bg-gray-900' : 'bg-gray-100'}`}>
+    <div className="h-screen flex overflow-hidden bg-gray-100 dark:bg-gray-900">
+      {/* Mobile Sidebar Overlay */}
+      {isMobile && isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-75 z-20"
+          onClick={toggleSidebar}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Sidebar */}
-      <div 
+      <aside 
         className={`
-          ${isSidebarOpen ? 'w-64' : 'w-20'} 
-          ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}
-          transition-all duration-300 ease-in-out
           fixed inset-y-0 left-0 z-30
+          transform transition-transform duration-300 ease-in-out
+          ${isMobile ? (isSidebarOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'}
+          ${isSidebarOpen ? 'w-64' : 'w-20'}
+          bg-white dark:bg-gray-800
+          border-r border-gray-200 dark:border-gray-700
           flex flex-col
-          ${isMobile && !isSidebarOpen ? '-translate-x-full' : ''}
-          ${isMobile && isSidebarOpen ? 'w-64 shadow-lg' : ''}
         `}
       >
-        {/* Mobile Overlay */}
-        {isMobile && isSidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-20"
-            onClick={toggleSidebar}
-          />
-        )}
-  
         {/* Sidebar Header */}
-        <div className={`
-          flex items-center justify-between h-16 
-          ${darkMode ? 'border-gray-700' : 'border-gray-200'} 
-          border-b px-4
-        `}>
+        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700">
           {isSidebarOpen ? (
             <>
-              <span className="text-xl font-bold">WeatherCrew</span>
-              <button onClick={toggleSidebar} className="p-1 rounded-md focus:outline-none">
-                {isMobile ? <X size={20} /> : <ChevronLeft size={20} />}
-              </button>
+              <span className="text-xl font-bold dark:text-white">WeatherCrew</span>
+              {!isMobile && (
+                <button 
+                  onClick={toggleSidebar}
+                  className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                  aria-label="Collapse sidebar"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+              )}
             </>
           ) : (
             <button 
-              onClick={toggleSidebar} 
-              className="p-1 mx-auto rounded-md focus:outline-none"
+              onClick={toggleSidebar}
+              className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 mx-auto"
+              aria-label="Expand sidebar"
             >
               <ChevronRight size={20} />
             </button>
           )}
         </div>
-  
+
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4">
-          <ul className="space-y-2 px-2">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <li key={item.path}>
-                  <Link
-                    to={item.path}
-                    className={`
-                      flex items-center p-2 rounded-md
-                      ${isActive 
-                        ? darkMode 
-                          ? 'bg-blue-700 text-white' 
-                          : 'bg-blue-50 text-blue-700'
-                        : darkMode
-                          ? 'hover:bg-gray-700'
-                          : 'hover:bg-gray-100'
-                      }
-                      ${isSidebarOpen ? 'justify-start' : 'justify-center'}
-                      transition-colors duration-200
-                    `}
-                  >
-                    <div className="relative">
-                      {item.icon}
-                      {item.premium && (
-                        <span className="flex h-2 w-2 absolute -top-1 -right-1">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
-                        </span>
-                      )}
-                    </div>
-                    {isSidebarOpen && (
-                      <span className="ml-3">{item.name}</span>
+        <nav className="flex-1 overflow-y-auto py-4" aria-label="Sidebar">
+          <ul className="space-y-1 px-3">
+            {navItems.map((item) => (
+              <li key={item.path}>
+                <Link
+                  to={item.path}
+                  className={`
+                    flex items-center px-2 py-2 rounded-md
+                    ${location.pathname === item.path
+                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
+                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }
+                    ${isSidebarOpen ? '' : 'justify-center'}
+                  `}
+                  aria-current={location.pathname === item.path ? 'page' : undefined}
+                >
+                  <span className="flex items-center">
+                    {item.icon}
+                    {item.premium && (
+                      <span className="flex h-2 w-2 relative -mt-2 -mr-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                      </span>
                     )}
-                  </Link>
-                </li>
-              );
-            })}
+                  </span>
+                  {isSidebarOpen && <span className="ml-3">{item.name}</span>}
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
-  
+
         {/* User Profile */}
-        <div className={`
-          p-4 border-t
-          ${darkMode ? 'border-gray-700' : 'border-gray-200'}
-        `}>
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4">
           {isSidebarOpen ? (
             <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <img
-                  className="h-9 w-9 rounded-full"
-                  src={user?.user_metadata?.avatar_url || '/default-avatar.png'}
-                  alt="User avatar"
-                />
-              </div>
+              <img
+                className="h-8 w-8 rounded-full"
+                src={user?.user_metadata?.avatar_url || '/default-avatar.png'}
+                alt="User avatar"
+              />
               <div className="ml-3">
-                <p className="text-sm font-medium">{user?.user_metadata?.full_name || user?.email}</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  {user?.user_metadata?.full_name || user?.email}
+                </p>
                 <button
                   onClick={signOut}
-                  className={`text-xs ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                  className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                 >
                   Sign out
                 </button>
@@ -205,26 +193,25 @@ const DashboardLayout: React.FC = () => {
             </div>
           ) : (
             <div className="flex justify-center">
-              <button className="p-1 rounded-full">
-                <img
-                  className="h-8 w-8 rounded-full"
-                  src={user?.user_metadata?.avatar_url || '/default-avatar.png'}
-                  alt="User avatar"
-                />
-              </button>
+              <img
+                className="h-8 w-8 rounded-full"
+                src={user?.user_metadata?.avatar_url || '/default-avatar.png'}
+                alt="User avatar"
+              />
             </div>
           )}
         </div>
-      </div>
-  
+      </aside>
+
       {/* Main Content */}
-      <div className={`
-        flex-1
-        ${isSidebarOpen ? 'ml-64' : 'ml-20'}
-        ${isMobile ? 'ml-0' : ''}
-        transition-all duration-300 ease-in-out
-        flex flex-col
-      `}>
+      <div 
+        className={`
+          flex-1 flex flex-col
+          ${isSidebarOpen ? 'md:ml-64' : 'md:ml-20'} 
+          min-h-screen
+          transition-all duration-300 ease-in-out
+        `}
+      >
         {/* Top Navigation */}
         <header className={`
           h-16 flex items-center justify-between px-4 sm:px-6
@@ -237,8 +224,9 @@ const DashboardLayout: React.FC = () => {
               <button
                 onClick={toggleSidebar}
                 className={`mr-4 p-2 rounded-md ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                aria-label="Toggle sidebar"
               >
-                <Menu size={20} />
+                {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             )}
             
@@ -250,7 +238,11 @@ const DashboardLayout: React.FC = () => {
           <div className="flex items-center space-x-4">
             {weatherData && location.pathname === '/dashboard' && (
               <div className="hidden md:flex items-center mr-4">
-                <Cloud className={weatherData.isRainy ? 'text-blue-500' : 'text-yellow-500'} size={20} />
+                <Cloud 
+                  className={weatherData.isRainy ? 'text-blue-500' : 'text-yellow-500'} 
+                  size={20} 
+                  aria-hidden="true"
+                />
                 <span className="ml-2">{weatherData.temperature}°F, {weatherData.condition}</span>
               </div>
             )}
@@ -258,21 +250,28 @@ const DashboardLayout: React.FC = () => {
             <button
               onClick={toggleDarkMode}
               className={`p-2 rounded-md ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+              aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {darkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
             
-            <button className={`p-2 rounded-md ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} relative`}>
+            <button 
+              className={`p-2 rounded-md ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} relative`}
+              aria-label="View notifications"
+            >
               <Bell size={20} />
-              <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"></span>
+              <span 
+                className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"
+                aria-hidden="true"
+              />
             </button>
           </div>
         </header>
-  
-        {/* Page Content - Replace children with Outlet */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+
+        {/* Page Content */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <Outlet />
-        </main>
+        </div>
       </div>
     </div>
   );
