@@ -2,10 +2,13 @@
 
 // Base types that match the database constraints
 export type SubscriptionPlan = 'none' | 'basic' | 'premium' | 'enterprise';
-export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trial' | 'incomplete';
+
+// Make sure this matches all status comparisons in the codebase
+export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trial' | 'incomplete' | 'cancelled' | 'expired';
+
 export type BillingCycle = 'monthly' | 'annually';
 
-// Payment method types
+// Payment method for full payment details
 export interface PaymentMethod {
   id: string;
   type: 'card' | 'paypal' | 'bank_transfer';
@@ -16,7 +19,7 @@ export interface PaymentMethod {
   isDefault: boolean;
 }
 
-// Compact payment method type for subscription context
+// Simplified payment method for subscription context
 export interface SubscriptionPaymentMethod {
   brand: string | null;
   last4: string | null;
@@ -38,7 +41,7 @@ export interface SubscriptionFeatures {
   singleSignOn: boolean;
 }
 
-// Main subscription interface that matches database schema
+// Main subscription interface
 export interface Subscription {
   id: string;
   user_id: string;
@@ -59,7 +62,7 @@ export interface Subscription {
   currentPeriodEnd: string;
 }
 
-// Billing history interface
+// Billing history
 export interface BillingHistory {
   id: string;
   date: string;
@@ -70,7 +73,7 @@ export interface BillingHistory {
   invoiceUrl: string | null;
 }
 
-// Plan option interface for UI
+// Plan option for UI
 export interface PlanOption {
   id: SubscriptionPlan;
   name: string;
@@ -85,7 +88,7 @@ export interface PlanOption {
   recommendedFor?: string;
 }
 
-// Default subscription for initialization
+// Complete default subscription matching all required fields
 export const defaultSubscription: Subscription = {
   id: '',
   user_id: '',
@@ -121,3 +124,16 @@ export const defaultSubscription: Subscription = {
   updated_at: null,
   currentPeriodEnd: new Date().toISOString()
 };
+
+// Helper function to format payment method for subscription
+export function formatPaymentMethodForSubscription(
+  paymentMethod: PaymentMethod | null | undefined
+): SubscriptionPaymentMethod | null {
+  if (!paymentMethod) return null;
+  return {
+    brand: paymentMethod.brand,
+    last4: paymentMethod.last4,
+    expMonth: paymentMethod.expMonth,
+    expYear: paymentMethod.expYear
+  };
+}
