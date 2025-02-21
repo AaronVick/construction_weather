@@ -113,8 +113,11 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
         setJobsites(jobsiteData);
       }
       
-      const emailData = await getClientEmails(clientId);
-      setEmailHistory(emailData);
+      // Get the user_id from the client data since it's included in the client object
+      if (clientData && clientData.user_id) {
+        const emailData = await getClientEmails(clientId, clientData.user_id);
+        setEmailHistory(emailData);
+      }
     } catch (error) {
       console.error('Error fetching client data:', error);
       showToast('Failed to load client information', 'error');
@@ -123,6 +126,7 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
       setLoading(false);
     }
   };
+  
 
   const handleDeleteClient = async () => {
     if (!id) return;
