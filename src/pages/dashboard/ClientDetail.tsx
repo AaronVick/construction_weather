@@ -65,7 +65,7 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const theme = useTheme();
-const darkMode = theme ? theme.darkMode : false;
+  const darkMode = theme ? theme.darkMode : false;
   const { showToast } = useToast();
   const { subscription } = useSubscription();
   const [client, setClient] = useState<ClientWithAssociations | null>(null);
@@ -83,6 +83,23 @@ const darkMode = theme ? theme.darkMode : false;
       fetchClientData(id);
     }
   }, [id]);
+
+  const mapEmailStatusToTimelineStatus = (emailStatus: EmailLog['status']): TimelineItem['status'] => {
+    switch (emailStatus) {
+      case 'sent':
+      case 'delivered':
+        return 'success';
+      case 'opened':
+        return 'info';
+      case 'pending':
+        return 'pending';
+      case 'failed':
+        return 'error';
+      default:
+        return 'info';
+    }
+  };
+
 
   const fetchClientData = async (clientId: string) => {
     try {
@@ -432,26 +449,27 @@ const darkMode = theme ? theme.darkMode : false;
             {/* Recent Activity Card */}
             <Card>
               <h2 className="text-lg font-medium mb-4">Recent Activity</h2>
-              <Timeline
-  items={[
-    ...emailHistory.slice(0, 3).map(email => ({
-      id: email.id,
-      title: 'Email Sent',
-      description: email.subject,
-      icon: <Mail size={16} />,
-      timestamp: email.sentAt,
-      status: (email.status as TimelineItem['status']) || 'info'
-    })),
-    {
-      id: 'client-created',
-      title: 'Client Created',
-      description: 'Added to the system',
-      icon: <User size={16} />,
-      timestamp: client.createdAt,
-      status: 'success'
-    }
-  ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())}
-/>
+              const timelineItems: TimelineItem[] = [
+  ...emailHistory.slice(0, 3).map(email => ({
+    id: email.id,
+    title: 'Email Sent',
+    description: email.subject,
+    icon: <Mail size={16} />,
+    timestamp: email.sentAt,
+    status: mapEmailStatusToTimelineStatus(email.status) // Using our helper function here
+  })),
+  {
+    id: 'client-created',
+    title: 'Client Created',
+    description: 'Added to the system',
+    icon: <User size={16} />,
+    timestamp: client.createdAt,
+    status: 'success'
+  }
+].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+// Then use it in the Timeline component
+<Timeline items={timelineItems} />
 
               <div className="mt-4 text-center">
                 <Button

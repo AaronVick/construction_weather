@@ -470,16 +470,16 @@ async function getWeatherAlertMetrics(userId: string): Promise<Array<{
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
   
   const { data } = await supabase
-    .from('email_logs')
-    .select('sent_at')
-    .eq('trigger', 'weather')
-    .in('client_id', (sb) =>
-      sb.from('clients').select('id').eq('user_id', userId)
-    )
-    .or(`worker_id.in.(${
-      supabase.from('workers').select('id').eq('user_id', userId).toString()
-    })`)
-    .gte('sent_at', sixMonthsAgo.toISOString());
+  .from('email_logs')
+  .select('sent_at')
+  .eq('trigger', 'weather')
+  .in('client_id', 
+    await supabase
+      .from('clients')
+      .select('id')
+      .eq('user_id', userId)
+      .then(result => result.data?.map(client => client.id) || [])
+  );
   
   if (!data || data.length === 0) {
     // Return sample data if no actual data

@@ -52,15 +52,15 @@ const darkMode = theme ? theme.darkMode : false;
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-  
+        
         // Get user preferences
         const zipCode = localStorage.getItem('userZipCode') || user?.user_metadata?.zip_code || '10001';
-  
-        // Fetch dashboard metrics in a single API call
-        const { data, error } = await fetchDashboardData();
-
+        
+        // Fetch dashboard metrics
+        const { data, error } = await getDashboardData();
+        
         if (error) throw error;
-  
+        
         if (data) {
           setInsights({
             activeClients: data.clientStats.active,
@@ -70,17 +70,17 @@ const darkMode = theme ? theme.darkMode : false;
             jobsites: subscription.plan === 'basic' ? 1 : data.jobsiteStats.total,
             monthlyEmails: data.weatherAlertMetrics
           });
-  
+          
           setRecentActivity(data.recentActivity);
         }
-  
+        
         // Fetch weather data separately
         const currentWeather = await getCurrentWeather(zipCode);
         const forecast = await fetchWeatherForecast(zipCode, 7);
-  
+        
         setWeatherData(currentWeather);
         setForecastData(forecast);
-  
+        
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
         setError('Failed to load dashboard data. Please try again.');
@@ -271,12 +271,19 @@ const darkMode = theme ? theme.darkMode : false;
         <Card>
           <h3 className="text-lg font-medium mb-4">Email Activity</h3>
           <div className="h-64">
-            <LineChart 
-              data={insights.monthlyEmails}
-              xAxisKey="month"
-              yAxisKey="count"
-              color="#4f46e5"
-            />
+          <LineChart 
+            data={insights.monthlyEmails}
+            lines={[
+              {
+                key: 'count',
+                name: 'Email Count',
+                color: '#4f46e5'
+              }
+            ]}
+            xAxisKey="month"
+            height={300}
+            showGrid={true}
+          />
           </div>
         </Card>
         
