@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { useToast } from '../../hooks/useToast';
 import { createClient, updateClient, getClient } from '../../services/clientService';
+import { supabase } from '../../lib/supabaseClient';
+
 
 // Components
 
@@ -159,7 +161,7 @@ const darkMode = theme ? theme.darkMode : false;
       setSaving(true);
   
       // Ensure user_id is added before saving
-      const userId = await getCurrentUserId(); // Function to fetch current user ID
+      const userId = await getCurrentUserId() ?? undefined; // Function to fetch current user ID
   
       const clientData = { ...formData, user_id: userId };
   

@@ -125,10 +125,10 @@ const darkMode = theme ? theme.darkMode : false;
         result.sort((a, b) => b.name.localeCompare(a.name));
         break;
       case 'dateAsc':
-        result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.createdAt).getTime());
+        result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         break;
       case 'dateDesc':
-        result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.createdAt).getTime());
+        result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
     }
     

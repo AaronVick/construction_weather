@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { useSubscription } from '../../hooks/useSubscription';
 import { useToast } from '../../hooks/useToast';
-import { getSubscriptionDetails, updateSubscription, getBillingHistory } from '../../services/subscriptionService';
+import { getSubscriptionDetails, updateSubscriptionPlan, getBillingHistory } from '../../services/subscriptionService';
 import { supabase } from '../../lib/supabaseClient';
 
 // Components
@@ -342,18 +342,19 @@ const darkMode = theme ? theme.darkMode : false;
 
   const confirmPlanChange = async () => {
     if (!selectedPlan) return;
-
+  
     try {
       setLoading(true);
-      await updateSubscription(selectedPlan, billingCycle);
-
-      setSubscription({
-        ...subscription,
+      await updateSubscriptionPlan(selectedPlan, billingCycle);
+  
+      setSubscription((prev) => ({
+        ...prev,
         plan: selectedPlan,
-        billingCycle,
-        next_billing_date: getNextBillingDate(billingCycle),
-      });
-
+        billing_cycle: billingCycle, // ✅ Correct casing
+        next_billing_date: getNextBillingDate(billingCycle), 
+        updated_at: new Date().toISOString(), // ✅ Ensure timestamp is updated
+      }));
+  
       showToast(`Successfully updated to ${selectedPlan} plan`, 'success');
       setUpgradeDialogOpen(false);
       setDowngradeDialogOpen(false);
@@ -365,19 +366,23 @@ const darkMode = theme ? theme.darkMode : false;
       setLoading(false);
     }
   };
+  
+  
 
   const confirmCancelSubscription = async () => {
     try {
       setLoading(true);
-      await updateSubscription('none', 'monthly');
-
-      setSubscription({
-        ...subscription,
+      await updateSubscriptionPlan('none', 'monthly');
+  
+      setSubscription((prev) => ({
+        ...prev,
         plan: 'none',
         status: 'canceled',
+        billing_cycle: 'monthly', // Ensure correct casing
         end_date: getEndOfCurrentBillingPeriod(),
-      });
-
+        updated_at: new Date().toISOString() // Ensure timestamp is updated
+      }));
+  
       showToast('Your subscription has been canceled', 'success');
       setCancelDialogOpen(false);
     } catch (error) {
@@ -387,6 +392,7 @@ const darkMode = theme ? theme.darkMode : false;
       setLoading(false);
     }
   };
+  
 
   const getNextBillingDate = (cycle: BillingCycle): string => {
     const today = new Date();

@@ -9,7 +9,7 @@ export interface Subscription {
   user_id: string;
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
-  billing_cycle: BillingCycle;
+  billing_cycle: BillingCycle; // ✅ Ensure this matches exactly
   price_id?: string;
   customer_id?: string;
   start_date: string;
@@ -20,8 +20,9 @@ export interface Subscription {
   payment_method?: PaymentMethod;
   created_at: string;
   updated_at?: string;
-  features: SubscriptionFeatures; // ✅ Fixed: Now an object, not a string[]
+  features: SubscriptionFeatures;
 }
+
 
 export interface PaymentMethod {
   id: string;

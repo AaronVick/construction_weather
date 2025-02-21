@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { useToast } from '../../hooks/useToast';
 import { useSubscription } from '../../hooks/useSubscription';
-import { getClient, deleteClient, updateClientStatus } from '../../services/clientService';
+import { getClient, deleteClient, ClientStatus } from '../../services/clientService';
 import { getClientJobsites } from '../../services/jobsiteService';
 import { getClientEmails } from '../../services/emailService';
 
@@ -145,7 +145,7 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
     try {
       setStatusUpdateLoading(true);
       const newStatus = !client.is_active;
-      await updateClientStatus(id, newStatus);
+      await ClientStatus(id, newStatus);
       
       setClient({
         ...client,

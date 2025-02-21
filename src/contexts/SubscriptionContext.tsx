@@ -13,11 +13,13 @@ type SubscriptionContextType = {
 
 const defaultSubscription: Subscription = {
   id: '',
+  user_id: '', // Ensure this matches the Subscription type
   plan: 'basic',
   status: 'active', // Using 'active' instead of 'inactive' to match SubscriptionStatus type
   billing_cycle: 'monthly',
-  startDate: '',
-  nextBillingDate: '',
+  start_date: '',
+  next_billing_date: '',
+  created_at: new Date().toISOString(), // Default to current timestamp
   features: {
     maxJobsites: 0,
     maxEmailTemplates: 0,
@@ -31,6 +33,7 @@ const defaultSubscription: Subscription = {
     singleSignOn: false
   }
 };
+
 
 export const SubscriptionContext = createContext<SubscriptionContextType>({
   subscription: defaultSubscription,
