@@ -14,6 +14,7 @@ import InsightMetric from '../../components/dashboard/InsightMetric';
 import LineChart from '../../components/charts/LineChart';
 import RecentActivityList from '../../components/dashboard/RecentActivityList';
 import UpgradePrompt from '../../components/subscription/UpgradePrompt';
+import { getDashboardData } from '../../services/dataService';
 
 // Icons
 import {
@@ -56,22 +57,24 @@ const darkMode = theme ? theme.darkMode : false;
         // Get user preferences
         const zipCode = localStorage.getItem('userZipCode') || user?.user_metadata?.zip_code || '10001';
         
-        // Fetch dashboard metrics
-        const dashboardResult = await fetchDashboardData();
+        // Fetch dashboard metrics - make sure to explicitly type the Promise return
+        const { data, error } = await getDashboardData();
         
-        if (dashboardResult.error) throw dashboardResult.error;
+        if (error) {
+          throw error;
+        }
         
-        if (dashboardResult.data) {
+        if (data) {
           setInsights({
-            activeClients: dashboardResult.data.clientStats.active,
-            activeWorkers: dashboardResult.data.workerStats.active,
-            pendingEmails: dashboardResult.data.notificationStats.last30Days,
-            weatherAlerts: dashboardResult.data.jobsiteStats.withRecentAlerts,
-            jobsites: subscription.plan === 'basic' ? 1 : dashboardResult.data.jobsiteStats.total,
-            monthlyEmails: dashboardResult.data.weatherAlertMetrics
+            activeClients: data.clientStats.active,
+            activeWorkers: data.workerStats.active,
+            pendingEmails: data.notificationStats.last30Days,
+            weatherAlerts: data.jobsiteStats.withRecentAlerts,
+            jobsites: subscription.plan === 'basic' ? 1 : data.jobsiteStats.total,
+            monthlyEmails: data.weatherAlertMetrics
           });
           
-          setRecentActivity(dashboardResult.data.recentActivity);
+          setRecentActivity(data.recentActivity);
         }
         
         // Fetch weather data separately
