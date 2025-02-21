@@ -40,13 +40,11 @@ import {
 } from 'lucide-react';
 
 // Types
-import { SubscriptionPlan, BillingCycle, BillingHistory as BillingHistoryType } from '../../types/subscription';
-
-
+import { SubscriptionPlan, BillingCycle, BillingHistory as BillingHistoryType, Subscription, PaymentMethod } from '../../types/subscription';
 
 const Subscription: React.FC = () => {
   const theme = useTheme();
-const darkMode = theme ? theme.darkMode : false;
+  const darkMode = theme ? theme.darkMode : false;
   const navigate = useNavigate();
   const { subscription, setSubscription } = useSubscription();
   const { showToast } = useToast();
@@ -322,9 +320,9 @@ const darkMode = theme ? theme.darkMode : false;
   };
 
   const handlePlanSelect = (plan: SubscriptionPlan) => {
-    if (plan === subscription.plan) return;
+    if (plan === subscription?.plan) return;
 
-    const currentPlanIndex = plans.findIndex((p) => p.id === subscription.plan);
+    const currentPlanIndex = plans.findIndex((p) => p.id === subscription?.plan);
     const newPlanIndex = plans.findIndex((p) => p.id === plan);
 
     setSelectedPlan(plan);
@@ -347,14 +345,12 @@ const darkMode = theme ? theme.darkMode : false;
       setLoading(true);
       await updateSubscriptionPlan(selectedPlan ?? 'monthly'); 
 
-
-  
       setSubscription((prev) => ({
         ...prev,
         plan: selectedPlan,
-        billing_cycle: billingCycle, // ✅ Correct casing
+        billing_cycle: billingCycle,
         next_billing_date: getNextBillingDate(billingCycle), 
-        updated_at: new Date().toISOString(), // ✅ Ensure timestamp is updated
+        updated_at: new Date().toISOString(),
       }));
   
       showToast(`Successfully updated to ${selectedPlan} plan`, 'success');
@@ -368,23 +364,19 @@ const darkMode = theme ? theme.darkMode : false;
       setLoading(false);
     }
   };
-  
-  
 
   const confirmCancelSubscription = async () => {
     try {
       setLoading(true);
       await updateSubscriptionPlan(selectedPlan ?? 'basic'); 
 
-
-  
       setSubscription((prev) => ({
         ...prev,
         plan: 'none',
         status: 'canceled',
-        billing_cycle: 'monthly', // Ensure correct casing
+        billing_cycle: 'monthly',
         end_date: getEndOfCurrentBillingPeriod(),
-        updated_at: new Date().toISOString() // Ensure timestamp is updated
+        updated_at: new Date().toISOString()
       }));
   
       showToast('Your subscription has been canceled', 'success');
@@ -396,7 +388,6 @@ const darkMode = theme ? theme.darkMode : false;
       setLoading(false);
     }
   };
-  
 
   const getNextBillingDate = (cycle: BillingCycle): string => {
     const today = new Date();
@@ -409,7 +400,7 @@ const darkMode = theme ? theme.darkMode : false;
   };
 
   const getEndOfCurrentBillingPeriod = (): string => {
-    const currentBillingEndDate = new Date(subscription.next_billing_date);
+    const currentBillingEndDate = new Date(subscription?.next_billing_date || '');
     return currentBillingEndDate.toISOString();
   };
 
@@ -437,15 +428,15 @@ const darkMode = theme ? theme.darkMode : false;
   };
 
   const getCurrentPlanPrice = (): number => {
-    const currentPlan = plans.find((p) => p.id === subscription.plan);
+    const currentPlan = plans.find((p) => p.id === subscription?.plan);
     if (!currentPlan) return 0;
 
-    return subscription.billing_cycle === 'monthly' ? currentPlan.price.monthly : currentPlan.price.annually;
+    return subscription?.billing_cycle === 'monthly' ? currentPlan.price.monthly : currentPlan.price.annually;
   };
 
   const getDaysLeftInBillingCycle = (): number => {
     const today = new Date();
-    const nextBilling = new Date(subscription.next_billing_date);
+    const nextBilling = new Date(subscription?.next_billing_date || '');
     const diffTime = nextBilling.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -453,7 +444,7 @@ const darkMode = theme ? theme.darkMode : false;
   };
 
   const getTotalDaysInBillingCycle = (): number => {
-    return subscription.billing_cycle === 'monthly' ? 30 : 365;
+    return subscription?.billing_cycle === 'monthly' ? 30 : 365;
   };
 
   useEffect(() => {
@@ -759,38 +750,38 @@ const darkMode = theme ? theme.darkMode : false;
       <Card>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h2 className="text-lg font-medium mb-1">Current Plan: {subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)}</h2>
+            <h2 className="text-lg font-medium mb-1">Current Plan: {subscription?.plan.charAt(0).toUpperCase() + subscription?.plan.slice(1)}</h2>
             <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              {subscription.status === 'active' ? (
+              {subscription?.status === 'active' ? (
                 <>
                   <span className="inline-flex items-center mr-2">
                     <Check size={16} className="text-green-500 mr-1" />
                     Active
                   </span>
                   <span>
-                    Next billing on {new Date(subscription.next_billing_date).toLocaleDateString()} 
-                    ({subscription.billing_cycle})
+                    Next billing on {new Date(subscription?.next_billing_date || '').toLocaleDateString()} 
+                    ({subscription?.billing_cycle})
                   </span>
                 </>
-              ) : subscription.status === 'trial' ? (
+              ) : subscription?.status === 'trial' ? (
                 <>
                   <span className="inline-flex items-center mr-2">
                     <Clock size={16} className="text-blue-500 mr-1" />
                     Trial
                   </span>
                   <span>
-                    Trial ends on {new Date(subscription.trial_end!).toLocaleDateString()}
+                    Trial ends on {new Date(subscription?.trial_end || '').toLocaleDateString()}
                   </span>
                 </>
               ) : (
                 <>
                   <span className="inline-flex items-center mr-2">
                     <AlertTriangle size={16} className="text-red-500 mr-1" />
-                    {subscription.status === 'canceled' ? 'Canceled' : 'Inactive'}
+                    {subscription?.status === 'canceled' ? 'Canceled' : 'Inactive'}
                   </span>
-                  {subscription.end_date && (
+                  {subscription?.end_date && (
                     <span>
-                      Active until {new Date(subscription.end_date).toLocaleDateString()}
+                      Active until {new Date(subscription?.end_date).toLocaleDateString()}
                     </span>
                   )}
                 </>
@@ -798,7 +789,7 @@ const darkMode = theme ? theme.darkMode : false;
             </div>
           </div>
           <div className="flex gap-2">
-            {subscription.status === 'active' && (
+            {subscription?.status === 'active' && (
               <Button
                 variant="danger"
                 onClick={handleCancelSubscription}
@@ -810,7 +801,7 @@ const darkMode = theme ? theme.darkMode : false;
               variant="primary"
               onClick={() => setActiveTab('plans')}
             >
-              {subscription.status === 'active' ? 'Change Plan' : 'View Plans'}
+              {subscription?.status === 'active' ? 'Change Plan' : 'View Plans'}
             </Button>
           </div>
         </div>
@@ -891,7 +882,7 @@ const darkMode = theme ? theme.darkMode : false;
                 key={plan.id}
                 plan={plan}
                 billingCycle={billingCycle}
-                isCurrentPlan={subscription.plan === plan.id}
+                isCurrentPlan={subscription?.plan === plan.id}
                 onSelect={() => handlePlanSelect(plan.id)}
               />
             ))}
@@ -912,7 +903,7 @@ const darkMode = theme ? theme.darkMode : false;
           <Card>
             <h2 className="text-lg font-medium mb-4">Payment Method</h2>
             
-            {subscription.payment_method ? (
+            {subscription?.payment_method ? (
               <div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">

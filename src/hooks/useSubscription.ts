@@ -14,7 +14,7 @@ export function useSubscription() {
   const [subscription, setSubscription] = useState<Subscription>({
     plan: 'basic',
     status: 'active',
-    currentPeriodEnd: new Date().toISOString()
+    currentPeriodEnd: new Date().toISOString(),
   });
   const [loading, setLoading] = useState(true);
 
@@ -51,5 +51,5 @@ export function useSubscription() {
     }
   }, [user]);
 
-  return { subscription, loading };
+  return { subscription, setSubscription, loading };
 }
