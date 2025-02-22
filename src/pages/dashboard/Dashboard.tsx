@@ -39,47 +39,13 @@ import {
 
 
 const Dashboard: React.FC = () => {
-  // Debug render state
-  console.log('Dashboard Render State:', {
-    loading: loading,
-    error: error,
-    hasInsights: !!insights,
-    hasRecentActivity: recentActivity.length > 0,
-    pathname: location.pathname,
-    user: !!user,
-    subscription: subscription?.plan
-  });
-
-  // Debug getDashboardData service
-  useEffect(() => {
-    const testService = async () => {
-      try {
-        console.log('Testing getDashboardData service...');
-        const response = await getDashboardData();
-        console.log('Service Response:', response);
-      } catch (e) {
-        console.error('Service Test Error:', e);
-      }
-    };
-    testService();
-  }, []);
-  
-  // Hook initialization with logging
+  // Hook initialization
   const theme = useTheme();
-  console.log('Theme hook initialized:', { darkMode: theme?.darkMode });
-
   const { user } = useSupabaseAuth();
-  console.log('Auth hook initialized:', { 
-    userEmail: user?.email,
-    userMetadata: user?.user_metadata 
-  });
-
   const { subscription } = useSubscription();
-  console.log('Subscription hook initialized:', { plan: subscription?.plan });
-
   const darkMode = theme ? theme.darkMode : false;
 
-  // State initialization with logging
+  // State initialization
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [insights, setInsights] = useState<{
@@ -100,7 +66,6 @@ const Dashboard: React.FC = () => {
     jobsites: 0,
     monthlyEmails: [],
   });
-  console.log('Initial insights state set:', insights);
   
   const [recentActivity, setRecentActivity] = useState<Array<{
     id: number;
@@ -109,8 +74,42 @@ const Dashboard: React.FC = () => {
     timestamp: string;
     status: string;
   }>>([]);
-  console.log('Initial recent activity state set:', recentActivity);
 
+  // Debug logging (moved after state declarations)
+  console.log('Dashboard Render State:', {
+    loading,
+    error,
+    hasInsights: !!insights,
+    hasRecentActivity: recentActivity.length > 0,
+    pathname: location.pathname,
+    user: !!user,
+    subscription: subscription?.plan
+  });
+
+  console.log('Theme hook initialized:', { darkMode: theme?.darkMode });
+  console.log('Auth hook initialized:', { 
+    userEmail: user?.email,
+    userMetadata: user?.user_metadata 
+  });
+  console.log('Subscription hook initialized:', { plan: subscription?.plan });
+  console.log('Initial insights state:', insights);
+  console.log('Initial recent activity state:', recentActivity);
+
+  // Service test effect
+  useEffect(() => {
+    const testService = async () => {
+      try {
+        console.log('Testing getDashboardData service...');
+        const response = await getDashboardData();
+        console.log('Service Response:', response);
+      } catch (e) {
+        console.error('Service Test Error:', e);
+      }
+    };
+    testService();
+  }, []);
+  
+  
 // Main data fetching effect
 useEffect(() => {
   const fetchDashboardData = async () => {
