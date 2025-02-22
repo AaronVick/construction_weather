@@ -1,11 +1,8 @@
 // src/types/subscription.ts
 
-// Base types that match the database constraints
+// Base types that match the database constraints and UI usage
 export type SubscriptionPlan = 'none' | 'basic' | 'premium' | 'enterprise';
-
-// Make sure this matches all status comparisons in the codebase
-export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trial' | 'incomplete' | 'cancelled' | 'expired';
-
+export type SubscriptionStatus = 'active' | 'canceled' | 'cancelled' | 'expired' | 'past_due' | 'trial' | 'incomplete';
 export type BillingCycle = 'monthly' | 'annually';
 
 // Payment method for full payment details
@@ -88,7 +85,7 @@ export interface PlanOption {
   recommendedFor?: string;
 }
 
-// Complete default subscription matching all required fields
+// Default subscription object with all required fields
 export const defaultSubscription: Subscription = {
   id: '',
   user_id: '',
@@ -125,7 +122,7 @@ export const defaultSubscription: Subscription = {
   currentPeriodEnd: new Date().toISOString()
 };
 
-// Helper function to format payment method for subscription
+// Helper functions for type conversion
 export function formatPaymentMethodForSubscription(
   paymentMethod: PaymentMethod | null | undefined
 ): SubscriptionPaymentMethod | null {
@@ -135,5 +132,16 @@ export function formatPaymentMethodForSubscription(
     last4: paymentMethod.last4,
     expMonth: paymentMethod.expMonth,
     expYear: paymentMethod.expYear
+  };
+}
+
+export function createUpdatedSubscription(
+  prevState: Subscription,
+  updates: Partial<Subscription>
+): Subscription {
+  return {
+    ...prevState,
+    ...updates,
+    updated_at: new Date().toISOString()
   };
 }

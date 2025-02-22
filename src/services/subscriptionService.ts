@@ -119,6 +119,7 @@ export async function cancelSubscription(): Promise<void> {
 /**
  * Formats subscription data from Supabase
  */
+
 function formatSubscription(data: any): Subscription {
   return {
     id: data.id,
@@ -126,17 +127,18 @@ function formatSubscription(data: any): Subscription {
     plan: data.plan,
     status: data.status,
     billing_cycle: data.billing_cycle,
-    price_id: data.price_id || '',
-    customer_id: data.customer_id || '',
+    price_id: data.price_id,
+    customer_id: data.customer_id,
     start_date: data.start_date,
-    end_date: data.end_date || '',
-    trial_end: data.trial_end || '',
+    end_date: data.end_date,
+    trial_end: data.trial_end,
     next_billing_date: data.next_billing_date,
-    cancellation_date: data.cancellation_date || '',
-    payment_method: data.payment_method ? formatPaymentMethod(data.payment_method) : undefined,
-    created_at: data.created_at,
-    updated_at: data.updated_at || '',
+    cancellation_date: data.cancellation_date,
+    payment_method: formatPaymentMethodForSubscription(data.payment_method),
     features: typeof data.features === 'string' ? parseSubscriptionFeatures(data.features) : data.features,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+    currentPeriodEnd: data.next_billing_date // Using next_billing_date as currentPeriodEnd
   };
 }
 

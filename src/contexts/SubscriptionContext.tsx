@@ -3,6 +3,8 @@ import React, { createContext, useState, useEffect } from 'react';
 import { Subscription } from '../types/subscription';
 import { getSubscriptionDetails } from '../services/subscriptionService';
 
+import { defaultSubscription } from '../types/subscription';
+
 type SubscriptionContextType = {
   subscription: Subscription;
   loading: boolean;
