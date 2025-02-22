@@ -42,18 +42,30 @@ export interface DashboardData {
   }>;
 }
 
-/**
- * Fetches dashboard data with various metrics and statistics
- */
 export async function getDashboardData(): Promise<{
   data: DashboardData | null;
   error: Error | null;
 }> {
+  console.log('getDashboardData: Starting data fetch');
   try {
     // Get authenticated user
+    console.log('getDashboardData: Fetching authenticated user');
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError) throw userError;
-    if (!user) throw new Error('Not authenticated');
+    
+    if (userError) {
+      console.error('getDashboardData: User auth error:', userError);
+      throw userError;
+    }
+    
+    if (!user) {
+      console.error('getDashboardData: No authenticated user found');
+      throw new Error('Not authenticated');
+    }
+
+    console.log('getDashboardData: User authenticated successfully:', {
+      userId: user.id,
+      email: user.email
+    });
     
     // Use the existing helper functions to get all stats in parallel
     const [

@@ -14,6 +14,26 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     this.state = { hasError: false };
   }
 
+
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+    console.log('ErrorBoundary initialized');
+  }
+  
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    console.error('ErrorBoundary caught error:', error);
+    return { hasError: true };
+  }
+  
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('ErrorBoundary componentDidCatch:', {
+      error,
+      errorInfo
+    });
+  }
+
+  
   static getDerivedStateFromError(_: Error): ErrorBoundaryState {
     return { hasError: true };
   }
