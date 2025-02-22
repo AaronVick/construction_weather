@@ -3,8 +3,22 @@
 import { 
   Subscription, 
   PaymentMethod,
-  PaymentMethodData
+  PaymentMethodData,
+  SubscriptionFeatures
 } from '../types/subscription';
+
+const defaultFeatures: SubscriptionFeatures = {
+  maxJobsites: 0,
+  maxEmailTemplates: 0,
+  advancedAnalytics: false,
+  customEmails: false,
+  prioritySupport: false,
+  smsNotifications: false,
+  customReports: false,
+  apiAccess: false,
+  whiteLabeling: false,
+  singleSignOn: false
+};
 
 export function formatPaymentMethod(
   paymentMethod: PaymentMethod | null | undefined
@@ -29,8 +43,8 @@ export function createUpdatedSubscription(
   };
 }
 
-export function getNextBillingDate(date: Date = new Date(), cycle: 'monthly' | 'annually'): string {
-  const nextDate = new Date(date);
+export function getNextBillingDate(cycle: 'monthly' | 'annually'): string {
+  const nextDate = new Date();
   if (cycle === 'monthly') {
     nextDate.setMonth(nextDate.getMonth() + 1);
   } else {
@@ -39,10 +53,10 @@ export function getNextBillingDate(date: Date = new Date(), cycle: 'monthly' | '
   return nextDate.toISOString();
 }
 
-export function parseSubscriptionFeatures(featuresStr: string) {
+export function parseSubscriptionFeatures(featuresStr: string): SubscriptionFeatures {
   try {
     return JSON.parse(featuresStr);
   } catch {
-    return defaultSubscription.features;
+    return defaultFeatures;
   }
 }

@@ -1,13 +1,16 @@
 // src/services/subscriptionService.ts
 
-
 import { supabase } from '../lib/supabaseClient';
+import { formatPaymentMethod } from '../utils/subscriptionHelpers';
 import { 
   Subscription,
   PaymentMethod,
-  BillingHistory 
+  PaymentMethodData,
+  BillingHistoryItem,
+  SubscriptionFeatures,
+  SubscriptionPlan,
+  SubscriptionStatus
 } from '../types/subscription';
-import { formatPaymentMethod } from '../utils/subscriptionHelpers';
 
 /**
  * Fetch the current user's subscription details
@@ -36,7 +39,7 @@ export async function getSubscriptionDetails(): Promise<Subscription> {
 /**
  * Updates the user's subscription plan
  */
-export async function updateSubscriptionPlan(plan: string): Promise<void> {
+export async function updateSubscriptionPlan(plan: SubscriptionPlan): Promise<void> {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError) throw userError;
@@ -44,7 +47,10 @@ export async function updateSubscriptionPlan(plan: string): Promise<void> {
 
     const { error } = await supabase
       .from('subscriptions')
-      .update({ plan })
+      .update({ 
+        plan,
+        updated_at: new Date().toISOString()
+      })
       .eq('user_id', user.id);
 
     if (error) throw error;
@@ -57,7 +63,7 @@ export async function updateSubscriptionPlan(plan: string): Promise<void> {
 /**
  * Fetch the user's billing history
  */
-export async function getBillingHistory(): Promise<BillingHistory[]> {
+export async function getBillingHistory(): Promise<BillingHistoryItem[]> {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError) throw userError;
@@ -114,7 +120,11 @@ export async function cancelSubscription(): Promise<void> {
 
     const { error } = await supabase
       .from('subscriptions')
-      .update({ status: 'canceled', cancellation_date: new Date().toISOString() })
+      .update({ 
+        status: 'canceled' as SubscriptionStatus,
+        cancellation_date: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
       .eq('user_id', user.id);
 
     if (error) throw error;
@@ -125,9 +135,24 @@ export async function cancelSubscription(): Promise<void> {
 }
 
 /**
+ * Default subscription features
+ */
+const defaultFeatures: SubscriptionFeatures = {
+  maxJobsites: 0,
+  maxEmailTemplates: 0,
+  advancedAnalytics: false,
+  customEmails: false,
+  prioritySupport: false,
+  smsNotifications: false,
+  customReports: false,
+  apiAccess: false,
+  whiteLabeling: false,
+  singleSignOn: false
+};
+
+/**
  * Formats subscription data from Supabase
  */
-
 function formatSubscription(data: any): Subscription {
   return {
     id: data.id,
@@ -142,8 +167,10 @@ function formatSubscription(data: any): Subscription {
     trial_end: data.trial_end,
     next_billing_date: data.next_billing_date,
     cancellation_date: data.cancellation_date,
-    payment_method: formatPaymentMethodForSubscription(data.payment_method),
-    features: typeof data.features === 'string' ? JSON.parse(data.features) : data.features,
+    payment_method: formatPaymentMethod(data.payment_method),
+    features: typeof data.features === 'string' 
+      ? parseSubscriptionFeatures(data.features)
+      : data.features || defaultFeatures,
     created_at: data.created_at,
     updated_at: data.updated_at,
     currentPeriodEnd: data.next_billing_date
@@ -151,59 +178,32 @@ function formatSubscription(data: any): Subscription {
 }
 
 /**
- * Parses features stored as a string (JSON in the DB) and converts it to an object.
+ * Parses features stored as a string (JSON in the DB) and converts it to an object
  */
 function parseSubscriptionFeatures(features: string): SubscriptionFeatures {
   try {
-    return JSON.parse(features);
+    const parsedFeatures = JSON.parse(features);
+    return {
+      ...defaultFeatures,
+      ...parsedFeatures
+    };
   } catch {
     console.warn('Invalid subscription features format. Falling back to default.');
-    return {
-      maxJobsites: 0,
-      maxEmailTemplates: 0,
-      advancedAnalytics: false,
-      customEmails: false,
-      prioritySupport: false,
-      smsNotifications: false,
-      customReports: false,
-      apiAccess: false,
-      whiteLabeling: false,
-      singleSignOn: false,
-    };
+    return defaultFeatures;
   }
-}
-
-
-/**
- * Formats subscription features data
- */
-function formatSubscriptionFeatures(data: any): SubscriptionFeatures {
-  return {
-    maxJobsites: data.maxJobsites || 0,
-    maxEmailTemplates: data.maxEmailTemplates || 0,
-    advancedAnalytics: data.advancedAnalytics || false,
-    customEmails: data.customEmails || false,
-    prioritySupport: data.prioritySupport || false,
-    smsNotifications: data.smsNotifications || false,
-    customReports: data.customReports || false,
-    apiAccess: data.apiAccess || false,
-    whiteLabeling: data.whiteLabeling || false,
-    singleSignOn: data.singleSignOn || false
-  };
 }
 
 /**
  * Formats billing history data
  */
-function formatBillingHistory(data: any): BillingHistory {
+function formatBillingHistory(data: any): BillingHistoryItem {
   return {
     id: data.id,
     date: data.date,
     description: data.description,
     amount: data.amount,
     status: data.status,
-    invoice: data.invoice || '',
-    invoiceUrl: data.invoiceUrl || ''
+    invoice: data.invoice || null,
+    invoiceUrl: data.invoiceUrl || null
   };
 }
-

@@ -2,22 +2,12 @@
 
 import { ReactNode } from 'react';
 
-// All possible subscription plans
-export type SubscriptionPlan = 'basic' | 'premium' | 'enterprise' | 'none';
-
-// All possible subscription statuses (including UI states)
-export type SubscriptionStatus = 
-  | 'active' 
-  | 'canceled'
-  | 'cancelled'  // UI variant
-  | 'expired'    // UI variant
-  | 'past_due' 
-  | 'trial' 
-  | 'incomplete';
-
+// Exactly matching database constraints
+export type SubscriptionPlan = 'none' | 'basic' | 'premium' | 'enterprise';
+export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trial' | 'incomplete';
 export type BillingCycle = 'monthly' | 'annually';
 
-// Base payment method interface
+// Payment method types
 export interface PaymentMethodData {
   brand: string | null;
   last4: string | null;
@@ -25,14 +15,13 @@ export interface PaymentMethodData {
   expYear: number | null;
 }
 
-// Extended payment method for full details
 export interface PaymentMethod extends PaymentMethodData {
   id: string;
   type: 'card' | 'paypal' | 'bank_transfer';
   isDefault: boolean;
 }
 
-// Subscription features
+// Features schema
 export interface SubscriptionFeatures {
   maxJobsites: number;
   maxEmailTemplates: number;
@@ -46,7 +35,7 @@ export interface SubscriptionFeatures {
   singleSignOn: boolean;
 }
 
-// Main subscription interface
+// Main subscription type matching database schema
 export interface Subscription {
   id: string;
   user_id: string;
@@ -67,8 +56,8 @@ export interface Subscription {
   currentPeriodEnd: string;
 }
 
-// Billing history entry
-export interface BillingHistory {
+// Billing history type
+export interface BillingHistoryItem {
   id: string;
   date: string;
   description: string;
@@ -78,57 +67,22 @@ export interface BillingHistory {
   invoiceUrl: string | null;
 }
 
-// Plan pricing structure
+// UI-specific types
 export interface PlanPricing {
   monthly: number;
   annually: number;
 }
 
-// Plan option for UI
 export interface PlanOption {
   id: SubscriptionPlan;
   name: string;
   description: string;
-  pricing: PlanPricing;
+  price: {
+    monthly: number;
+    annually: number;
+  };
   features: string[];
   limitations?: string[];
   icon?: ReactNode;
   recommendedFor?: string;
 }
-
-// Default subscription state
-export const defaultSubscription: Subscription = {
-  id: '',
-  user_id: '',
-  plan: 'basic',
-  status: 'active',
-  billing_cycle: 'monthly',
-  price_id: null,
-  customer_id: null,
-  start_date: new Date().toISOString(),
-  end_date: null,
-  trial_end: null,
-  next_billing_date: new Date().toISOString(),
-  cancellation_date: null,
-  payment_method: {
-    brand: null,
-    last4: null,
-    expMonth: null,
-    expYear: null
-  },
-  features: {
-    maxJobsites: 0,
-    maxEmailTemplates: 0,
-    advancedAnalytics: false,
-    customEmails: false,
-    prioritySupport: false,
-    smsNotifications: false,
-    customReports: false,
-    apiAccess: false,
-    whiteLabeling: false,
-    singleSignOn: false
-  },
-  created_at: new Date().toISOString(),
-  updated_at: null,
-  currentPeriodEnd: new Date().toISOString()
-};

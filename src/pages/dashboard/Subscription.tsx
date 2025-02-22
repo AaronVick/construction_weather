@@ -23,7 +23,8 @@ import {
   SubscriptionPlan,
   SubscriptionStatus,
   BillingCycle,
-  PlanOption 
+  PlanOption,
+  BillingHistoryItem // Import the renamed type
 } from '../../types/subscription';
 
 
@@ -63,7 +64,7 @@ const Subscription: React.FC = () => {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
-  const [billingHistory, setBillingHistory] = useState<BillingHistoryType[]>([]);
+  const [billingHistory, setBillingHistory] = useState<BillingHistoryItem[]>([]);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [activeTab, setActiveTab] = useState<'plans' | 'details' | 'history'>('plans');
   const [user, setUser] = useState<any>(null);
