@@ -1,7 +1,7 @@
 /* src/styles/fonts.css */
 @font-face {
     font-family: 'Inter var';
-    src: url('/fonts/inter-var.woff2') format('woff2');
+    src: url('/fonts/InterVariable.woff2') format('woff2');
     font-weight: 100 900;
     font-display: swap;
     font-style: normal;
@@ -9,7 +9,7 @@
   
   @font-face {
     font-family: 'JetBrains Mono';
-    src: url('/fonts/jetbrains-mono-var.woff2') format('woff2');
+    src: url('/fonts/JetBrainsMono-Regular.woff2') format('woff2');
     font-weight: 100 900;
     font-display: swap;
     font-style: normal;
