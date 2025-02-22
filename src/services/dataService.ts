@@ -55,24 +55,23 @@ export async function getDashboardData(): Promise<{
     if (userError) throw userError;
     if (!user) throw new Error('Not authenticated');
     
-    // Get client stats
-    const clientStats = await getClientStats(user.id);
-    
-    // Get jobsite stats
-    const jobsiteStats = await getJobsiteStats(user.id);
-    
-    // Get worker stats
-    const workerStats = await getWorkerStats(user.id);
-    
-    // Get notification stats
-    const notificationStats = await getNotificationStats(user.id);
-    
-    // Get recent activity
-    const recentActivity = await getRecentActivity(user.id);
-    
-    // Get weather alert metrics
-    const weatherAlertMetrics = await getWeatherAlertMetrics(user.id);
-    
+    // Use the existing helper functions to get all stats in parallel
+    const [
+      clientStats,
+      jobsiteStats,
+      workerStats,
+      notificationStats,
+      recentActivity,
+      weatherAlertMetrics
+    ] = await Promise.all([
+      getClientStats(user.id),
+      getJobsiteStats(user.id),
+      getWorkerStats(user.id),
+      getNotificationStats(user.id),
+      getRecentActivity(user.id),
+      getWeatherAlertMetrics(user.id)
+    ]);
+
     return {
       data: {
         clientStats,
@@ -80,15 +79,15 @@ export async function getDashboardData(): Promise<{
         workerStats,
         notificationStats,
         recentActivity,
-        weatherAlertMetrics,
+        weatherAlertMetrics
       },
-      error: null,
+      error: null
     };
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
     return {
       data: null,
-      error: error as Error,
+      error: error as Error
     };
   }
 }

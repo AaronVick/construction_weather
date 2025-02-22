@@ -17,7 +17,7 @@ export function useSubscription() {
 
         const { data, error } = await supabase
           .from('subscriptions')
-          .select('*')
+          .select('*, features')
           .eq('user_id', user.id)
           .single();
 
@@ -27,7 +27,7 @@ export function useSubscription() {
         }
 
         if (data) {
-          // Transform the data to match our Subscription type
+          // Transform to match our Subscription type
           const transformedData: Subscription = {
             id: data.id,
             user_id: data.user_id,
