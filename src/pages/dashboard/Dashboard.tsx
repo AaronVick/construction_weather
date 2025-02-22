@@ -39,8 +39,31 @@ import {
 
 
 const Dashboard: React.FC = () => {
-  console.log('Dashboard component initializing'); // Initial component load log
+  // Debug render state
+  console.log('Dashboard Render State:', {
+    loading: loading,
+    error: error,
+    hasInsights: !!insights,
+    hasRecentActivity: recentActivity.length > 0,
+    pathname: location.pathname,
+    user: !!user,
+    subscription: subscription?.plan
+  });
 
+  // Debug getDashboardData service
+  useEffect(() => {
+    const testService = async () => {
+      try {
+        console.log('Testing getDashboardData service...');
+        const response = await getDashboardData();
+        console.log('Service Response:', response);
+      } catch (e) {
+        console.error('Service Test Error:', e);
+      }
+    };
+    testService();
+  }, []);
+  
   // Hook initialization with logging
   const theme = useTheme();
   console.log('Theme hook initialized:', { darkMode: theme?.darkMode });
