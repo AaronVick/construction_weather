@@ -1,139 +1,69 @@
 // src/components/layout/DashboardLayout.tsx
-
 // src/components/layout/DashboardLayout.tsx
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Outlet } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
 import { getCurrentWeather } from '../../services/weatherService';
-import { 
-  Home,
-  Users,
-  Briefcase,
-  Cloud,
-  Mail,
-  Settings,
-  Bell,
-  Menu,
-  X,
-  Moon,
-  Sun,
-  MapPin,
-  CreditCard,
-  BarChart2,
+import {
+  Home, Users, Briefcase, Cloud, Mail, Settings, Bell, Menu, X, Moon, Sun, MapPin, CreditCard, BarChart2
 } from 'lucide-react';
-import { Outlet } from 'react-router-dom';
 import CollapsibleSidebar from './CollapsibleSidebar';
 
 const DashboardLayout: React.FC = () => {
-  console.log('DashboardLayout component initializing');
+  console.log('DashboardLayout initializing');
 
-  // State management
+  // State Management
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [weatherData, setWeatherData] = useState<any>(null);
 
-  // Hook initialization with logging
+  // Hooks
   const location = useLocation();
-  console.log('Current location:', location.pathname);
-
   const { darkMode, toggleDarkMode } = useTheme();
-  console.log('Theme state:', { darkMode });
-
   const isMobile = useMediaQuery('(max-width: 768px)');
-  console.log('Mobile detection:', { isMobile });
-
   const { user, signOut } = useSupabaseAuth();
-  console.log('Auth state:', { 
-    userEmail: user?.email, 
-    hasUser: !!user 
-  });
 
-  // Navigation items configuration
+  // Sidebar Navigation
   const navItems = [
     { name: 'Dashboard', icon: <Home size={20} />, path: '/dashboard' },
     { name: 'Clients', icon: <Users size={20} />, path: '/clients' },
-    { 
-      name: 'Jobsites', 
-      icon: <MapPin size={20} />, 
-      path: '/jobsites',
-      premium: true 
-    },
+    { name: 'Jobsites', icon: <MapPin size={20} />, path: '/jobsites', premium: true },
     { name: 'Workers', icon: <Briefcase size={20} />, path: '/workers' },
     { name: 'Weather Automation', icon: <Cloud size={20} />, path: '/weather' },
     { name: 'Email Configuration', icon: <Mail size={20} />, path: '/email' },
-    { 
-      name: 'Analytics', 
-      icon: <BarChart2 size={20} />, 
-      path: '/analytics',
-      premium: true 
-    },
+    { name: 'Analytics', icon: <BarChart2 size={20} />, path: '/analytics', premium: true },
     { name: 'Subscription', icon: <CreditCard size={20} />, path: '/subscription' },
     { name: 'Settings', icon: <Settings size={20} />, path: '/settings' }
   ];
 
-  // Mobile responsiveness effect
+  // Mobile Sidebar Handling
   useEffect(() => {
-    console.log('Mobile view effect triggered:', { isMobile });
-    if (isMobile) {
-      console.log('Mobile view detected, closing sidebar');
-      setIsSidebarOpen(false);
-    } else {
-      console.log('Desktop view detected, opening sidebar');
-      setIsSidebarOpen(true);
-    }
+    setIsSidebarOpen(!isMobile);
   }, [isMobile]);
 
-  // Weather data fetching effect
+  // Fetch Weather Data
   useEffect(() => {
-    const fetchWeather = async () => {
-      console.log('Weather fetch effect triggered');
-      try {
-        const zipCode = localStorage.getItem('userZipCode') || user?.user_metadata?.zip_code || '10001';
-        console.log('Fetching weather for zip code:', zipCode);
-        
-        const data = await getCurrentWeather(zipCode);
-        console.log('Weather data received:', data);
-        
-        setWeatherData(data);
-      } catch (error) {
-        console.error('Weather fetch error:', error);
-      }
-    };
-
     if (location.pathname === '/dashboard') {
-      console.log('On dashboard path, initiating weather fetch');
+      const fetchWeather = async () => {
+        try {
+          const zipCode = localStorage.getItem('userZipCode') || user?.user_metadata?.zip_code || '10001';
+          const data = await getCurrentWeather(zipCode);
+          setWeatherData(data);
+        } catch (error) {
+          console.error('Weather fetch error:', error);
+        }
+      };
       fetchWeather();
     }
   }, [location.pathname, user?.user_metadata?.zip_code]);
 
-  // Sidebar toggle handler
-  const toggleSidebar = () => {
-    console.log('Toggling sidebar, current state:', { isSidebarOpen });
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
-  // Sign out handler
-  const handleSignOut = async () => {
-    console.log('Sign out initiated');
-    try {
-      await signOut();
-      console.log('Sign out successful');
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
-  };
-
-  // Component render
-  console.log('DashboardLayout rendering with state:', {
-    isSidebarOpen,
-    hasWeatherData: !!weatherData,
-    currentPath: location.pathname
-  });
+  // Sidebar Toggle Handler
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
-      {/* Collapsible Sidebar Component */}
+      {/* Sidebar */}
       <CollapsibleSidebar
         isOpen={isSidebarOpen}
         isMobile={isMobile}
@@ -141,89 +71,50 @@ const DashboardLayout: React.FC = () => {
         currentPath={location.pathname}
         user={user}
         onToggle={toggleSidebar}
-        onSignOut={handleSignOut}
+        onSignOut={signOut}
       />
 
-      {/* Main Content Area */}
-      <div 
-        className={`
-          flex-1 flex flex-col
-          ${isSidebarOpen ? 'md:ml-64' : 'md:ml-20'}
-          min-h-screen
-          transition-all duration-300
-        `}
-      >
-        {/* Top Navigation Bar */}
+      {/* Main Content */}
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
+        {/* Header */}
         <header className="h-16 flex items-center justify-between px-4 sm:px-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center">
-            {/* Mobile Menu Toggle */}
             {isMobile && (
-              <button
-                onClick={() => {
-                  console.log('Mobile menu toggle clicked');
-                  toggleSidebar();
-                }}
-                className="mr-4 p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
-                aria-label="Toggle menu"
-              >
+              <button onClick={toggleSidebar} className="mr-4 p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
                 {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             )}
-            
-            {/* Page Title */}
             <h1 className="text-xl font-semibold text-gray-900 dark:text-white hidden sm:block">
               {navItems.find(item => item.path === location.pathname)?.name || 'Dashboard'}
             </h1>
           </div>
-  
-          {/* Right Side Controls */}
+
+          {/* Right Controls */}
           <div className="flex items-center space-x-4">
             {/* Weather Display */}
             {weatherData && location.pathname === '/dashboard' && (
-              <div className="hidden md:flex items-center mr-4">
-                <Cloud 
-                  className={weatherData.isRainy ? 'text-blue-500' : 'text-yellow-500'} 
-                  size={20} 
-                />
-                <span className="ml-2 text-gray-700 dark:text-gray-200">
-                  {weatherData.temperature}°F, {weatherData.condition}
-                </span>
+              <div className="hidden md:flex items-center">
+                <Cloud className={weatherData.isRainy ? 'text-blue-500' : 'text-yellow-500'} size={20} />
+                <span className="ml-2 text-gray-700 dark:text-gray-200">{weatherData.temperature}°F, {weatherData.condition}</span>
               </div>
             )}
-            
+
             {/* Theme Toggle */}
-            <button
-              onClick={() => {
-                console.log('Theme toggle clicked, current mode:', darkMode);
-                toggleDarkMode();
-              }}
-              className="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
-              aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
+            <button onClick={toggleDarkMode} className="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
               {darkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            
+
             {/* Notifications */}
-            <button 
-              onClick={() => {
-                console.log('Notifications button clicked');
-              }}
-              className="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 relative"
-              aria-label="View notifications"
-            >
+            <button className="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 relative">
               <Bell size={20} />
-              <span 
-                className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500"
-                aria-hidden="true"
-              />
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500" />
             </button>
           </div>
         </header>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+        <div className="flex-1 overflow-y-auto">
           <div className="py-6 px-4 sm:px-6 lg:px-8">
-            {/* Router Outlet */}
             <Outlet />
           </div>
         </div>
@@ -232,21 +123,7 @@ const DashboardLayout: React.FC = () => {
   );
 };
 
-// Performance monitoring
-const renderCount = {
-  count: 0
-};
-
-// Wrap the export with a render counter
-const WrappedDashboardLayout = () => {
-  renderCount.count++;
-  console.log(`DashboardLayout render count: ${renderCount.count}`);
-  return <DashboardLayout />;
-};
-
-export default WrappedDashboardLayout;
-
-
+export default DashboardLayout;
 
 
 /* before sidebar refractor */
