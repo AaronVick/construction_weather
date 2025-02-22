@@ -1,29 +1,36 @@
 // src/components/layout/DashboardLayout.tsx
+
 import React, { useState, useEffect } from 'react';
-import { useLocation, Outlet } from 'react-router-dom';
-import { useTheme } from '../../hooks/useTheme';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
-import { getCurrentWeather } from '../../services/weatherService';
-import {
-  Home, Users, Briefcase, Cloud, Mail, Settings, Bell, Menu, X, Moon, Sun, MapPin, CreditCard, BarChart2
-} from 'lucide-react';
+import { useTheme } from '@/hooks/useTheme';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { Moon, Sun, Bell, Menu, X, Home, Users, Briefcase, Cloud, Mail, Settings, MapPin, CreditCard, BarChart2 } from 'lucide-react';
 import CollapsibleSidebar from './CollapsibleSidebar';
 
-const DashboardLayout: React.FC = () => {
+interface DashboardLayoutProps {
+  children: React.ReactNode;
+}
+
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+  // Debug logging for initial render
   console.log('DashboardLayout initializing');
 
   // State Management
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [weatherData, setWeatherData] = useState<any>(null);
+  const [weatherData, setWeatherData] = useState(null);
 
   // Hooks
-  const location = useLocation();
   const { darkMode, toggleDarkMode } = useTheme();
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const { user, signOut } = useSupabaseAuth();
 
-  // Sidebar Navigation
+  // Debug logging for state changes
+  console.log('DashboardLayout state:', {
+    isSidebarOpen,
+    darkMode,
+    isMobile,
+    hasWeatherData: !!weatherData
+  });
+
+  // Navigation items configuration
   const navItems = [
     { name: 'Dashboard', icon: <Home size={20} />, path: '/dashboard' },
     { name: 'Clients', icon: <Users size={20} />, path: '/clients' },
@@ -36,122 +43,98 @@ const DashboardLayout: React.FC = () => {
     { name: 'Settings', icon: <Settings size={20} />, path: '/settings' }
   ];
 
-  // Sidebar Auto-Close on Mobile
+  // Sidebar auto-close on mobile
   useEffect(() => {
+    console.log('Checking mobile view state:', isMobile);
     setIsSidebarOpen(!isMobile);
   }, [isMobile]);
 
-  // Fetch Weather Data
-  useEffect(() => {
-    if (location.pathname === '/dashboard') {
-      const fetchWeather = async () => {
-        try {
-          const zipCode = localStorage.getItem('userZipCode') || user?.user_metadata?.zip_code || '10001';
-          const data = await getCurrentWeather(zipCode);
-          setWeatherData(data);
-        } catch (error) {
-          console.error('Weather fetch error:', error);
-        }
-      };
-      fetchWeather();
-    }
-  }, [location.pathname, user?.user_metadata?.zip_code]);
-
-  // Sidebar Toggle Handler
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  // Toggle sidebar handler
+  const toggleSidebar = () => {
+    console.log('Toggling sidebar');
+    setIsSidebarOpen(!isSidebarOpen);
+  };
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
-      {/* Sidebar */}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Sidebar Component */}
       <CollapsibleSidebar
         isOpen={isSidebarOpen}
         isMobile={isMobile}
         navItems={navItems}
-        currentPath={location.pathname}
-        user={user}
+        currentPath={window.location.pathname}
+        user={{
+          email: "user@example.com",
+          user_metadata: {
+            avatar_url: "/api/placeholder/40/40"
+          }
+        }}
         onToggle={toggleSidebar}
-        onSignOut={signOut}
+        onSignOut={() => console.log('Sign out clicked')}
       />
 
-      {/* Main Content Wrapper */}
-      <div className={`flex flex-col w-full transition-all duration-300 ${isSidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
-        
+      {/* Main Content */}
+      <main 
+        className={`
+          flex flex-col
+          transition-all duration-300 ease-in-out
+          ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}
+        `}
+      >
         {/* Header */}
-        <header className="flex justify-between items-center h-16 px-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center">
-            {isMobile && (
-              <button onClick={toggleSidebar} className="mr-4 p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700">
-                {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+        <header className="sticky top-0 z-30 h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between h-full px-4">
+            {/* Left section */}
+            <div className="flex items-center">
+              {isMobile && (
+                <button
+                  onClick={toggleSidebar}
+                  className="p-2 mr-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  aria-label={isSidebarOpen ? "Close menu" : "Open menu"}
+                >
+                  {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+                </button>
+              )}
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Dashboard
+              </h1>
+            </div>
+
+            {/* Right section */}
+            <div className="flex items-center space-x-4">
+              {/* Theme toggle */}
+              <button
+                onClick={toggleDarkMode}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {darkMode ? (
+                  <Sun size={20} className="text-gray-500 dark:text-gray-400" />
+                ) : (
+                  <Moon size={20} className="text-gray-500 dark:text-gray-400" />
+                )}
               </button>
-            )}
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-              {navItems.find(item => item.path === location.pathname)?.name || 'Dashboard'}
-            </h1>
-          </div>
 
-          {/* Right Controls */}
-          <div className="flex items-center space-x-4">
-            {/* Weather Display */}
-            {weatherData && location.pathname === '/dashboard' && (
-              <div className="hidden md:flex items-center bg-gray-100 dark:bg-gray-800 p-2 rounded-md">
-                <Cloud className={weatherData.isRainy ? 'text-blue-500' : 'text-yellow-500'} size={20} />
-                <span className="ml-2 text-gray-700 dark:text-gray-200">{weatherData.temperature}°F, {weatherData.condition}</span>
-              </div>
-            )}
-
-            {/* Theme Toggle */}
-            <button onClick={toggleDarkMode} className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700">
-              {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
-
-            {/* Notifications */}
-            <button className="p-2 rounded-md relative hover:bg-gray-200 dark:hover:bg-gray-700">
-              <Bell size={20} />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
-            </button>
+              {/* Notifications */}
+              <button
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative"
+                aria-label="View notifications"
+              >
+                <Bell size={20} className="text-gray-500 dark:text-gray-400" />
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500" />
+              </button>
+            </div>
           </div>
         </header>
 
-        {/* Main Dashboard Layout */}
-        <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column */}
-          <div className="col-span-2 space-y-6">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-              <h2 className="text-lg font-semibold mb-2">Welcome back, {user?.user_metadata?.full_name || 'User'}!</h2>
-              <p className="text-gray-600 dark:text-gray-300">Here's what's happening today.</p>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-              <h3 className="text-lg font-semibold mb-4">Weather Updates</h3>
-              {weatherData ? (
-                <p className="text-gray-700 dark:text-gray-300">{weatherData.condition}, {weatherData.temperature}°F</p>
-              ) : (
-                <p className="text-gray-500 dark:text-gray-400">Loading weather data...</p>
-              )}
-            </div>
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-              <h3 className="text-lg font-semibold">Quick Actions</h3>
-              <button className="w-full mt-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
-                Create New Report
-              </button>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-              <h3 className="text-lg font-semibold">Notifications</h3>
-              <p className="text-gray-500 dark:text-gray-400">No new notifications</p>
-            </div>
+        {/* Page Content */}
+        <div className="flex-1 p-6">
+          {/* Content wrapper with max width and auto margins */}
+          <div className="max-w-7xl mx-auto">
+            {children}
           </div>
         </div>
-
-        {/* Router Outlet */}
-        <div className="p-6">
-          <Outlet />
-        </div>
-      </div>
+      </main>
     </div>
   );
 };
