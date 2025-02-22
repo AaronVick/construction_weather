@@ -1,5 +1,10 @@
+// src/services/subscriptionService.ts
+
+
 import { supabase } from '../lib/supabaseClient';
-import { Subscription, SubscriptionFeatures, PaymentMethod, BillingHistory } from '../types/subscription';
+import { Subscription, SubscriptionFeatures } from '../types/subscription';
+import { formatPaymentMethodForSubscription } from '../utils/subscriptionHelpers';
+
 
 /**
  * Fetch the current user's subscription details
@@ -135,10 +140,10 @@ function formatSubscription(data: any): Subscription {
     next_billing_date: data.next_billing_date,
     cancellation_date: data.cancellation_date,
     payment_method: formatPaymentMethodForSubscription(data.payment_method),
-    features: typeof data.features === 'string' ? parseSubscriptionFeatures(data.features) : data.features,
+    features: typeof data.features === 'string' ? JSON.parse(data.features) : data.features,
     created_at: data.created_at,
     updated_at: data.updated_at,
-    currentPeriodEnd: data.next_billing_date // Using next_billing_date as currentPeriodEnd
+    currentPeriodEnd: data.next_billing_date
   };
 }
 

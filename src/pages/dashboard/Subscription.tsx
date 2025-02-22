@@ -17,6 +17,15 @@ import BillingHistory from '../../components/subscription/BillingHistory';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
+import { createUpdatedSubscription } from '../../utils/subscriptionHelpers';
+import { 
+  Subscription,
+  SubscriptionPlan,
+  SubscriptionStatus,
+  BillingCycle 
+} from '../../types/subscription';
+
+
 // Icons
 import {
   CreditCard,
@@ -39,8 +48,6 @@ import {
   XCircle
 } from 'lucide-react';
 
-// Types
-import { SubscriptionPlan, BillingCycle, BillingHistory as BillingHistoryType, Subscription, PaymentMethod } from '../../types/subscription';
 
 const Subscription: React.FC = () => {
   const theme = useTheme();

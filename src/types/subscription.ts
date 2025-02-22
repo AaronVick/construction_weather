@@ -1,22 +1,11 @@
 // src/types/subscription.ts
 
-// Base types that match the database constraints and UI usage
+import { ReactNode } from 'react';
+
 export type SubscriptionPlan = 'none' | 'basic' | 'premium' | 'enterprise';
-export type SubscriptionStatus = 'active' | 'canceled' | 'cancelled' | 'expired' | 'past_due' | 'trial' | 'incomplete';
+export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trial' | 'incomplete';
 export type BillingCycle = 'monthly' | 'annually';
 
-// Payment method for full payment details
-export interface PaymentMethod {
-  id: string;
-  type: 'card' | 'paypal' | 'bank_transfer';
-  last4: string | null;
-  brand: string | null;
-  expMonth: number | null;
-  expYear: number | null;
-  isDefault: boolean;
-}
-
-// Simplified payment method for subscription context
 export interface SubscriptionPaymentMethod {
   brand: string | null;
   last4: string | null;
@@ -24,7 +13,6 @@ export interface SubscriptionPaymentMethod {
   expYear: number | null;
 }
 
-// Subscription features
 export interface SubscriptionFeatures {
   maxJobsites: number;
   maxEmailTemplates: number;
@@ -38,7 +26,6 @@ export interface SubscriptionFeatures {
   singleSignOn: boolean;
 }
 
-// Main subscription interface
 export interface Subscription {
   id: string;
   user_id: string;
@@ -59,7 +46,6 @@ export interface Subscription {
   currentPeriodEnd: string;
 }
 
-// Billing history
 export interface BillingHistory {
   id: string;
   date: string;
@@ -70,7 +56,6 @@ export interface BillingHistory {
   invoiceUrl: string | null;
 }
 
-// Plan option for UI
 export interface PlanOption {
   id: SubscriptionPlan;
   name: string;
@@ -81,67 +66,6 @@ export interface PlanOption {
   };
   features: string[];
   limitations?: string[];
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   recommendedFor?: string;
-}
-
-// Default subscription object with all required fields
-export const defaultSubscription: Subscription = {
-  id: '',
-  user_id: '',
-  plan: 'basic',
-  status: 'active',
-  billing_cycle: 'monthly',
-  price_id: null,
-  customer_id: null,
-  start_date: new Date().toISOString(),
-  end_date: null,
-  trial_end: null,
-  next_billing_date: new Date().toISOString(),
-  cancellation_date: null,
-  payment_method: {
-    brand: null,
-    last4: null,
-    expMonth: null,
-    expYear: null
-  },
-  features: {
-    maxJobsites: 0,
-    maxEmailTemplates: 0,
-    advancedAnalytics: false,
-    customEmails: false,
-    prioritySupport: false,
-    smsNotifications: false,
-    customReports: false,
-    apiAccess: false,
-    whiteLabeling: false,
-    singleSignOn: false
-  },
-  created_at: new Date().toISOString(),
-  updated_at: null,
-  currentPeriodEnd: new Date().toISOString()
-};
-
-// Helper functions for type conversion
-export function formatPaymentMethodForSubscription(
-  paymentMethod: PaymentMethod | null | undefined
-): SubscriptionPaymentMethod | null {
-  if (!paymentMethod) return null;
-  return {
-    brand: paymentMethod.brand,
-    last4: paymentMethod.last4,
-    expMonth: paymentMethod.expMonth,
-    expYear: paymentMethod.expYear
-  };
-}
-
-export function createUpdatedSubscription(
-  prevState: Subscription,
-  updates: Partial<Subscription>
-): Subscription {
-  return {
-    ...prevState,
-    ...updates,
-    updated_at: new Date().toISOString()
-  };
 }

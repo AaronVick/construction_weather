@@ -1,9 +1,8 @@
 // src/contexts/SubscriptionContext.tsx
 import React, { createContext, useState, useEffect } from 'react';
 import { Subscription } from '../types/subscription';
+import { defaultSubscription } from '../utils/subscriptionHelpers';
 import { getSubscriptionDetails } from '../services/subscriptionService';
-
-import { defaultSubscription } from '../types/subscription';
 
 type SubscriptionContextType = {
   subscription: Subscription;
@@ -12,6 +11,14 @@ type SubscriptionContextType = {
   setSubscription: React.Dispatch<React.SetStateAction<Subscription>>;
   refreshSubscription: () => Promise<void>;
 };
+
+export const SubscriptionContext = createContext<SubscriptionContextType>({
+  subscription: defaultSubscription,
+  loading: true,
+  error: null,
+  setSubscription: () => {},
+  refreshSubscription: async () => {}
+});
 
 const defaultSubscription: Subscription = {
   id: '',
@@ -45,13 +52,6 @@ const defaultSubscription: Subscription = {
 };
 
 
-export const SubscriptionContext = createContext<SubscriptionContextType>({
-  subscription: defaultSubscription,
-  loading: true,
-  error: null,
-  setSubscription: () => {},
-  refreshSubscription: async () => {}
-});
 
 export const SubscriptionProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [subscription, setSubscription] = useState<Subscription>(defaultSubscription);
