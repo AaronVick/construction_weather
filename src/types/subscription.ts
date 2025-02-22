@@ -1,13 +1,12 @@
 // src/types/subscription.ts
-
 import { ReactNode } from 'react';
 
-// Exactly matching database constraints
+// Exactly match database constraints
 export type SubscriptionPlan = 'none' | 'basic' | 'premium' | 'enterprise';
 export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trial' | 'incomplete';
 export type BillingCycle = 'monthly' | 'annually';
 
-// Payment method types
+// Payment method
 export interface PaymentMethodData {
   brand: string | null;
   last4: string | null;
@@ -15,13 +14,7 @@ export interface PaymentMethodData {
   expYear: number | null;
 }
 
-export interface PaymentMethod extends PaymentMethodData {
-  id: string;
-  type: 'card' | 'paypal' | 'bank_transfer';
-  isDefault: boolean;
-}
-
-// Features schema
+// Features
 export interface SubscriptionFeatures {
   maxJobsites: number;
   maxEmailTemplates: number;
@@ -35,7 +28,7 @@ export interface SubscriptionFeatures {
   singleSignOn: boolean;
 }
 
-// Main subscription type matching database schema
+// Main subscription interface
 export interface Subscription {
   id: string;
   user_id: string;
@@ -56,7 +49,7 @@ export interface Subscription {
   currentPeriodEnd: string;
 }
 
-// Billing history type
+// History
 export interface BillingHistoryItem {
   id: string;
   date: string;
@@ -67,12 +60,7 @@ export interface BillingHistoryItem {
   invoiceUrl: string | null;
 }
 
-// UI-specific types
-export interface PlanPricing {
-  monthly: number;
-  annually: number;
-}
-
+// UI types
 export interface PlanOption {
   id: SubscriptionPlan;
   name: string;

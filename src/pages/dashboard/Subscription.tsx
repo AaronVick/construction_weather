@@ -1,4 +1,5 @@
 // src/pages/dashboard/Subscription.tsx
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
@@ -10,28 +11,21 @@ import { supabase } from '../../lib/supabaseClient';
 // Components
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import PlanCard from '../../components/subscription/PlanCard';
-import FeatureComparison from '../../components/subscription/FeatureComparison';
-import PaymentMethodForm from '../../components/subscription/PaymentMethodForm';
 import BillingHistory from '../../components/subscription/BillingHistory';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
-import { createUpdatedSubscription } from '../../utils/subscriptionHelpers';
 import { 
   Subscription,
   SubscriptionPlan,
   SubscriptionStatus,
   BillingCycle,
   PlanOption,
-  BillingHistoryItem // Import the renamed type
+  BillingHistoryItem
 } from '../../types/subscription';
-
-
 
 // Icons
 import {
-  CreditCard,
   Check,
   AlertTriangle,
   Clock,
@@ -43,7 +37,6 @@ import {
   Headphones,
   Shield,
   Star,
-  Calendar,
   MapPin,
   MessageSquare,
   FileText,

@@ -1,9 +1,9 @@
 // src/components/subscription/BillingHistory.tsx
 import React from "react";
-import { BillingHistory as BillingHistoryType } from "../../types/subscription";
+import { BillingHistoryItem } from "../../types/subscription";
 
 interface BillingHistoryProps {
-  items: BillingHistoryType[];
+  items: BillingHistoryItem[];
 }
 
 const BillingHistory: React.FC<BillingHistoryProps> = ({ items }) => {
