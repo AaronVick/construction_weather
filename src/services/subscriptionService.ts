@@ -2,9 +2,12 @@
 
 
 import { supabase } from '../lib/supabaseClient';
-import { Subscription, SubscriptionFeatures } from '../types/subscription';
-import { formatPaymentMethodForSubscription } from '../utils/subscriptionHelpers';
-
+import { 
+  Subscription,
+  PaymentMethod,
+  BillingHistory 
+} from '../types/subscription';
+import { formatPaymentMethod } from '../utils/subscriptionHelpers';
 
 /**
  * Fetch the current user's subscription details
@@ -204,17 +207,3 @@ function formatBillingHistory(data: any): BillingHistory {
   };
 }
 
-/**
- * Formats payment method data
- */
-function formatPaymentMethod(data: any): PaymentMethod {
-  return {
-    id: data.id,
-    type: data.type,
-    last4: data.last4 || '',
-    brand: data.brand || '',
-    expMonth: data.expMonth || 0,
-    expYear: data.expYear || 0,
-    isDefault: data.isDefault
-  };
-}

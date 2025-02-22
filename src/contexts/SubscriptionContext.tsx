@@ -1,16 +1,15 @@
 // src/contexts/SubscriptionContext.tsx
 import React, { createContext, useState, useEffect } from 'react';
-import { Subscription } from '../types/subscription';
-import { defaultSubscription } from '../utils/subscriptionHelpers';
+import { Subscription, defaultSubscription } from '../types/subscription';
 import { getSubscriptionDetails } from '../services/subscriptionService';
 
-type SubscriptionContextType = {
+interface SubscriptionContextType {
   subscription: Subscription;
   loading: boolean;
   error: string | null;
   setSubscription: React.Dispatch<React.SetStateAction<Subscription>>;
   refreshSubscription: () => Promise<void>;
-};
+}
 
 export const SubscriptionContext = createContext<SubscriptionContextType>({
   subscription: defaultSubscription,
@@ -19,38 +18,6 @@ export const SubscriptionContext = createContext<SubscriptionContextType>({
   setSubscription: () => {},
   refreshSubscription: async () => {}
 });
-
-const defaultSubscription: Subscription = {
-  id: '',
-  user_id: '',
-  plan: 'basic',
-  status: 'active',
-  billing_cycle: 'monthly',  // Ensure this exists
-  start_date: '',
-  next_billing_date: '',  // Ensure this exists
-  trial_end: '',
-  end_date: '',
-  created_at: new Date().toISOString(),
-  payment_method: {
-    brand: '',
-    last4: '',
-    expMonth: null,
-    expYear: null
-  },
-  features: { 
-    maxJobsites: 0,
-    maxEmailTemplates: 0,
-    advancedAnalytics: false,
-    customEmails: false,
-    prioritySupport: false,
-    smsNotifications: false,
-    customReports: false,
-    apiAccess: false,
-    whiteLabeling: false,
-    singleSignOn: false
-  }
-};
-
 
 
 export const SubscriptionProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {

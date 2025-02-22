@@ -22,8 +22,10 @@ import {
   Subscription,
   SubscriptionPlan,
   SubscriptionStatus,
-  BillingCycle 
+  BillingCycle,
+  PlanOption 
 } from '../../types/subscription';
+
 
 
 // Icons
