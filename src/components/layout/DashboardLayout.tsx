@@ -1,5 +1,4 @@
 // src/components/layout/DashboardLayout.tsx
-// src/components/layout/DashboardLayout.tsx
 import React, { useState, useEffect } from 'react';
 import { useLocation, Outlet } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
@@ -62,7 +61,7 @@ const DashboardLayout: React.FC = () => {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
       {/* Sidebar */}
       <CollapsibleSidebar
         isOpen={isSidebarOpen}
@@ -74,17 +73,18 @@ const DashboardLayout: React.FC = () => {
         onSignOut={signOut}
       />
 
-      {/* Main Content */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
+      {/* Main Content Wrapper */}
+      <div className={`flex flex-col w-full transition-all duration-300 ${isSidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
+        
         {/* Header */}
-        <header className="h-16 flex items-center justify-between px-4 sm:px-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <header className="flex justify-between items-center h-16 px-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center">
             {isMobile && (
-              <button onClick={toggleSidebar} className="mr-4 p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
+              <button onClick={toggleSidebar} className="mr-4 p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700">
                 {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             )}
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white hidden sm:block">
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
               {navItems.find(item => item.path === location.pathname)?.name || 'Dashboard'}
             </h1>
           </div>
@@ -93,30 +93,63 @@ const DashboardLayout: React.FC = () => {
           <div className="flex items-center space-x-4">
             {/* Weather Display */}
             {weatherData && location.pathname === '/dashboard' && (
-              <div className="hidden md:flex items-center">
+              <div className="hidden md:flex items-center bg-gray-100 dark:bg-gray-800 p-2 rounded-md">
                 <Cloud className={weatherData.isRainy ? 'text-blue-500' : 'text-yellow-500'} size={20} />
                 <span className="ml-2 text-gray-700 dark:text-gray-200">{weatherData.temperature}°F, {weatherData.condition}</span>
               </div>
             )}
 
             {/* Theme Toggle */}
-            <button onClick={toggleDarkMode} className="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
+            <button onClick={toggleDarkMode} className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700">
               {darkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
 
             {/* Notifications */}
-            <button className="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 relative">
+            <button className="p-2 rounded-md relative hover:bg-gray-200 dark:hover:bg-gray-700">
               <Bell size={20} />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500" />
+              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
             </button>
           </div>
         </header>
 
-        {/* Main Content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="py-6 px-4 sm:px-6 lg:px-8">
-            <Outlet />
+        {/* Main Dashboard Layout */}
+        <div className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column */}
+          <div className="col-span-2 space-y-6">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+              <h2 className="text-lg font-semibold mb-2">Welcome back, {user?.user_metadata?.full_name || 'User'}!</h2>
+              <p className="text-gray-600 dark:text-gray-300">Here's what's happening today.</p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+              <h3 className="text-lg font-semibold mb-4">Weather Updates</h3>
+              {weatherData ? (
+                <p className="text-gray-700 dark:text-gray-300">{weatherData.condition}, {weatherData.temperature}°F</p>
+              ) : (
+                <p className="text-gray-500 dark:text-gray-400">Loading weather data...</p>
+              )}
+            </div>
           </div>
+
+          {/* Right Column */}
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+              <h3 className="text-lg font-semibold">Quick Actions</h3>
+              <button className="w-full mt-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+                Create New Report
+              </button>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+              <h3 className="text-lg font-semibold">Notifications</h3>
+              <p className="text-gray-500 dark:text-gray-400">No new notifications</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Router Outlet */}
+        <div className="p-6">
+          <Outlet />
         </div>
       </div>
     </div>
@@ -124,6 +157,7 @@ const DashboardLayout: React.FC = () => {
 };
 
 export default DashboardLayout;
+
 
 
 /* before sidebar refractor */
