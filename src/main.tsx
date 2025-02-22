@@ -1,7 +1,7 @@
-// src/main.tsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { ErrorBoundary } from 'react-error-boundary';
+import type { ErrorInfo } from 'react'; // Import ErrorInfo type
 import App from './App';
 import ErrorFallback from './components/ui/ErrorFallback';
 import './index.css';
@@ -23,7 +23,7 @@ const handleError = (error: Error, info: ErrorInfo) => {
     message: error.message,
     stack: error.stack,
     componentStack: info.componentStack,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 };
 
@@ -39,7 +39,7 @@ const attemptRender = () => {
   try {
     console.log('Creating React root');
     const root = ReactDOM.createRoot(rootElement!);
-    
+
     console.log('Starting application render');
     root.render(
       <React.StrictMode>
@@ -57,16 +57,17 @@ const attemptRender = () => {
     );
 
     console.log('Initial render completed successfully');
-    
   } catch (error) {
     console.error(`Render attempt ${renderAttempts} failed:`, {
       error,
       message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
 
     if (renderAttempts < maxRenderAttempts) {
-      console.log(`Retrying render in 1 second... (${maxRenderAttempts - renderAttempts} attempts remaining)`);
+      console.log(
+        `Retrying render in 1 second... (${maxRenderAttempts - renderAttempts} attempts remaining)`
+      );
       setTimeout(attemptRender, 1000);
     } else {
       console.error('Maximum render attempts reached, application failed to start');
@@ -91,7 +92,7 @@ window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled Promise Rejection:', {
     reason: event.reason,
     promise: event.promise,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -103,6 +104,6 @@ window.addEventListener('error', (event) => {
     filename: event.filename,
     lineno: event.lineno,
     colno: event.colno,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
