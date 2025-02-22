@@ -40,7 +40,11 @@ import PremiumFeature from './components/subscription/PremiumFeature';
 import LoadingScreen from './components/ui/LoadingScreen';
 import NotFound from './pages/NotFound';
 
+// error boundary
+import ErrorBoundary from './components/ErrorBoundary';
+
 const AppRoutes: React.FC = () => {
+  console.log('App initializing');
   const { user, loading } = useSupabaseAuth();
   
   if (loading) {
@@ -139,6 +143,7 @@ const AppRoutes: React.FC = () => {
 
 const App: React.FC = () => {
   return (
+    <ErrorBoundary> 
     <BrowserRouter>
       <ThemeProvider>
         <SupabaseProvider>
@@ -150,6 +155,7 @@ const App: React.FC = () => {
         </SupabaseProvider>
       </ThemeProvider>
     </BrowserRouter>
+   </ErrorBoundary>
   );
 };
 
