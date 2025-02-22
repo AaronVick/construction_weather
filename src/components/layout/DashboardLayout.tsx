@@ -36,7 +36,7 @@ const DashboardLayout: React.FC = () => {
     { name: 'Settings', icon: <Settings size={20} />, path: '/settings' }
   ];
 
-  // Mobile Sidebar Handling
+  // Sidebar Auto-Close on Mobile
   useEffect(() => {
     setIsSidebarOpen(!isMobile);
   }, [isMobile]);
@@ -113,7 +113,7 @@ const DashboardLayout: React.FC = () => {
         </header>
 
         {/* Main Dashboard Layout */}
-        <div className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
           <div className="col-span-2 space-y-6">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
@@ -157,6 +157,7 @@ const DashboardLayout: React.FC = () => {
 };
 
 export default DashboardLayout;
+
 
 
 
