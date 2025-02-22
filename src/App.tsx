@@ -5,6 +5,9 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
+import './index.css'; // Ensure this imports Tailwind CSS
+import './global.css'; // Import global styles if you have them
+
 
 // Landing Page (not lazy-loaded since it's the main public page)
 import LandingPage from './pages/LandingPage';
