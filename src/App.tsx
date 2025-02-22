@@ -1,8 +1,6 @@
-// // src/App.tsx
-
 // src/App.tsx
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { SupabaseProvider } from './contexts/SupabaseContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -45,135 +43,22 @@ import NotFound from './pages/NotFound';
 // Error boundary
 import ErrorBoundary from './components/ErrorBoundary';
 
-// const AppRoutes: React.FC = () => {
-//   console.log('App initializing');
-//   const { user, loading } = useSupabaseAuth();
-
-//   if (loading) {
-//     console.log('Loading user data...');
-//     return <LoadingScreen />;
-//   }
-
-//   console.log('User:', user ? 'Authenticated' : 'Not authenticated');
-
-//   return (
-//     <Routes>
-//       {/* Public Routes */}
-//       <Route path="/" element={<LandingPage />} />
-//       <Route
-//         path="/login"
-//         element={user ? <Navigate to="/dashboard" /> : <Login />}
-//       />
-//       <Route
-//         path="/register"
-//         element={user ? <Navigate to="/dashboard" /> : <Register />}
-//       />
-//       <Route path="/forgot-password" element={<ForgotPassword />} />
-//       <Route path="/reset-password" element={<ResetPassword />} />
-
-//       {/* Protected Dashboard Routes */}
-//       <Route element={<ProtectedRoute />}>
-//         <Route element={<DashboardLayout />}>
-//           <Route path="/dashboard" element={<Dashboard />} />
-
-//           {/* Client Routes */}
-//           <Route path="/clients" element={<Clients />} />
-//           <Route path="/clients/new" element={<ClientDetail />} />
-//           <Route path="/clients/:id" element={<ClientDetail />} />
-//           <Route
-//             path="/clients/:id/edit"
-//             element={<ClientDetail isEdit={true} />}
-//           />
-
-//           {/* Jobsite Routes - Premium Feature */}
-//           <Route
-//             path="/jobsites"
-//             element={
-//               <PremiumFeature requiredPlan="premium" fallback="/subscription">
-//                 <Jobsites />
-//               </PremiumFeature>
-//             }
-//           />
-//           <Route
-//             path="/jobsites/new"
-//             element={
-//               <PremiumFeature requiredPlan="premium" fallback="/subscription">
-//                 <JobsiteDetail />
-//               </PremiumFeature>
-//             }
-//           />
-//           <Route
-//             path="/jobsites/:id"
-//             element={
-//               <PremiumFeature requiredPlan="premium" fallback="/subscription">
-//                 <JobsiteDetail />
-//               </PremiumFeature>
-//             }
-//           />
-
-//           {/* Worker Routes */}
-//           <Route path="/workers" element={<Workers />} />
-//           <Route path="/workers/new" element={<WorkerDetail />} />
-//           <Route path="/workers/:id" element={<WorkerDetail />} />
-//           <Route
-//             path="/workers/:id/edit"
-//             element={<WorkerDetail isEdit={true} />}
-//           />
-
-//           {/* Configuration Routes */}
-//           <Route path="/weather" element={<WeatherAutomation />} />
-//           <Route path="/email" element={<EmailConfiguration />} />
-
-//           {/* Analytics - Premium Feature */}
-//           <Route
-//             path="/analytics"
-//             element={
-//               <PremiumFeature requiredPlan="premium" fallback="/subscription">
-//                 <Analytics />
-//               </PremiumFeature>
-//             }
-//           />
-
-//           {/* Settings Routes */}
-//           <Route path="/subscription" element={<Subscription />} />
-//           <Route path="/settings" element={<Settings />} />
-//         </Route>
-//       </Route>
-
-//       {/* 404 Route */}
-//       <Route path="*" element={<NotFound />} />
-//     </Routes>
-//   );
-// };
-
-
 const AppRoutes: React.FC = () => {
-  console.log('AppRoutes: Rendering...');
   const { user, loading, error } = useSupabaseAuth();
 
   if (loading) {
-    console.log('AppRoutes: Loading user data...');
     return <LoadingScreen />;
   }
 
   if (error) {
-    console.error('AppRoutes: Auth error:', error);
-    return (
-      <div className="p-4 bg-red-50 text-red-700 rounded">
-        Authentication error: {error.message}
-      </div>
-    );
+    console.error('Auth error:', error);
+    // You can handle the error state here if needed
   }
-
-  console.log('AppRoutes: User:', user ? 'Authenticated' : 'Not authenticated');
 
   return (
     <Routes>
       {/* Public Routes */}
-      <Route
-        path="/"
-        element={user ? <Navigate to="/dashboard" /> : <LandingPage />}
-      />
+      <Route path="/" element={<LandingPage />} />
       <Route
         path="/login"
         element={user ? <Navigate to="/dashboard" /> : <Login />}
@@ -189,7 +74,56 @@ const AppRoutes: React.FC = () => {
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          {/* Add other protected routes here */}
+          <Route path="/clients" element={<Clients />} />
+          <Route path="/clients/new" element={<ClientDetail />} />
+          <Route path="/clients/:id" element={<ClientDetail />} />
+          <Route
+            path="/clients/:id/edit"
+            element={<ClientDetail isEdit={true} />}
+          />
+          <Route
+            path="/jobsites"
+            element={
+              <PremiumFeature requiredPlan="premium" fallback="/subscription">
+                <Jobsites />
+              </PremiumFeature>
+            }
+          />
+          <Route
+            path="/jobsites/new"
+            element={
+              <PremiumFeature requiredPlan="premium" fallback="/subscription">
+                <JobsiteDetail />
+              </PremiumFeature>
+            }
+          />
+          <Route
+            path="/jobsites/:id"
+            element={
+              <PremiumFeature requiredPlan="premium" fallback="/subscription">
+                <JobsiteDetail />
+              </PremiumFeature>
+            }
+          />
+          <Route path="/workers" element={<Workers />} />
+          <Route path="/workers/new" element={<WorkerDetail />} />
+          <Route path="/workers/:id" element={<WorkerDetail />} />
+          <Route
+            path="/workers/:id/edit"
+            element={<WorkerDetail isEdit={true} />}
+          />
+          <Route path="/weather" element={<WeatherAutomation />} />
+          <Route path="/email" element={<EmailConfiguration />} />
+          <Route
+            path="/analytics"
+            element={
+              <PremiumFeature requiredPlan="premium" fallback="/subscription">
+                <Analytics />
+              </PremiumFeature>
+            }
+          />
+          <Route path="/subscription" element={<Subscription />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>
 
@@ -198,7 +132,6 @@ const AppRoutes: React.FC = () => {
     </Routes>
   );
 };
-
 
 const App: React.FC = () => {
   return (
