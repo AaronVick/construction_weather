@@ -1,9 +1,8 @@
 // src/main.tsx
-
-// src/main.tsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { ErrorBoundary } from 'react-error-boundary';
+import type { ErrorInfo } from 'react';
 import App from './App';
 import ErrorFallback from './components/ui/ErrorFallback';
 import './index.css';
@@ -45,7 +44,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // Enhanced error handler for ErrorBoundary
-const handleError = (error: Error, info: { componentStack: string }) => {
+const handleError = (error: Error, info: ErrorInfo) => {
   console.error('Unhandled error in application:', {
     error,
     message: error.message,
@@ -98,7 +97,6 @@ const attemptRender = () => {
       setTimeout(attemptRender, 1000);
     } else {
       console.error('Maximum render attempts reached, application failed to start');
-      // Display some kind of fallback UI here if possible
       if (rootElement) {
         rootElement.innerHTML = `
           <div style="padding: 20px; text-align: center;">
