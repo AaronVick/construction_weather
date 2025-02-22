@@ -3,9 +3,9 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
+  base: "/", // ✅ Ensures React Router works correctly
   plugins: [
     react(),
-    // 🚨 Removed VitePWA() completely
   ],
   resolve: {
     alias: {
@@ -37,9 +37,6 @@ export default defineConfig({
     sourcemap: process.env.NODE_ENV !== 'production',
     assetsDir: 'assets',
     rollupOptions: {
-      input: {
-        main: path.resolve(__dirname, 'index.html'),
-      },
       output: {
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom'],
