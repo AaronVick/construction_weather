@@ -6,7 +6,7 @@
   "framework": "vite",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/index.html" } // Serve index.html for all routes
+    { "source": "/(.*)", "destination": "/index.html" } 
   ],
   "headers": [
     {
