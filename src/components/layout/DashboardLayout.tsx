@@ -34,18 +34,24 @@ const DashboardLayout: React.FC = () => {
   const { user, signOut } = useSupabaseAuth();
 
   useEffect(() => {
+    console.log('Checking mobile view...');
     if (isMobile) {
+      console.log('Mobile view detected, closing sidebar.');
       setIsSidebarOpen(false);
     } else {
+      console.log('Desktop view detected, opening sidebar.');
       setIsSidebarOpen(true);
     }
   }, [isMobile]);
 
   useEffect(() => {
+    console.log('Fetching weather data...');
     const fetchWeather = async () => {
       try {
         const zipCode = localStorage.getItem('userZipCode') || user?.user_metadata?.zip_code || '10001';
+        console.log(`Fetching weather for zip code: ${zipCode}`);
         const data = await getCurrentWeather(zipCode);
+        console.log('Weather data fetched:', data);
         setWeatherData(data);
       } catch (error) {
         console.error('Failed to fetch weather data:', error);
@@ -80,6 +86,7 @@ const DashboardLayout: React.FC = () => {
   ];
 
   const toggleSidebar = () => {
+    console.log('Toggling sidebar...');
     setIsSidebarOpen(!isSidebarOpen);
   };
 
