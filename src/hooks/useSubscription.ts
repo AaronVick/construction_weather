@@ -2,20 +2,12 @@
 import { useState, useEffect } from 'react';
 import { useSupabaseAuth } from './useSupabaseAuth';
 import { supabase } from '../lib/supabaseClient';
-
-interface Subscription {
-  plan: 'basic' | 'premium' | 'enterprise';
-  status: 'active' | 'cancelled' | 'expired';
-  currentPeriodEnd: string;
-}
+import { Subscription } from '../types/subscription';
+import { defaultSubscription } from '../defaults/subscriptionDefaults';
 
 export function useSubscription() {
   const { user } = useSupabaseAuth();
-  const [subscription, setSubscription] = useState<Subscription>({
-    plan: 'basic',
-    status: 'active',
-    currentPeriodEnd: new Date().toISOString(),
-  });
+  const [subscription, setSubscription] = useState<Subscription>(defaultSubscription);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,7 +27,27 @@ export function useSubscription() {
         }
 
         if (data) {
-          setSubscription(data);
+          // Transform the data to match our Subscription type
+          const transformedData: Subscription = {
+            id: data.id,
+            user_id: data.user_id,
+            plan: data.plan,
+            status: data.status,
+            billing_cycle: data.billing_cycle,
+            price_id: data.price_id,
+            customer_id: data.customer_id,
+            start_date: data.start_date,
+            end_date: data.end_date,
+            trial_end: data.trial_end,
+            next_billing_date: data.next_billing_date,
+            cancellation_date: data.cancellation_date,
+            payment_method: data.payment_method,
+            features: data.features || defaultSubscription.features,
+            created_at: data.created_at,
+            updated_at: data.updated_at,
+            currentPeriodEnd: data.next_billing_date
+          };
+          setSubscription(transformedData);
         }
       } catch (error) {
         console.error('Error in subscription hook:', error);

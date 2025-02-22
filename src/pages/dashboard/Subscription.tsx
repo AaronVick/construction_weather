@@ -16,6 +16,11 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
 import { 
+  createUpdatedSubscription,
+  getNextBillingDate 
+} from '../../utils/subscriptionHelpers';
+
+import { 
   Subscription,
   SubscriptionPlan,
   SubscriptionStatus,
@@ -341,56 +346,68 @@ const Subscription: React.FC = () => {
     setCancelDialogOpen(true);
   };
 
-  
-const confirmPlanChange = async () => {
-  if (!selectedPlan) return;
-  
-  try {
-    setLoading(true);
-    await updateSubscriptionPlan(selectedPlan);
+
+  const confirmPlanChange = async () => {
+    if (!selectedPlan || !subscription) return;
     
-    setSubscription(prev => createUpdatedSubscription(prev, {
-      plan: selectedPlan,
-      billing_cycle: billingCycle,
-      next_billing_date: getNextBillingDate(billingCycle),
-      currentPeriodEnd: getNextBillingDate(billingCycle),
-      status: prev.status
-    }));
-
-    showToast(`Successfully updated to ${selectedPlan} plan`, 'success');
-    setUpgradeDialogOpen(false);
-    setDowngradeDialogOpen(false);
-    navigate('/dashboard');
-  } catch (error) {
-    console.error('Failed to update subscription:', error);
-    showToast('Failed to update subscription. Please try again or contact support.', 'error');
-  } finally {
-    setLoading(false);
-  }
-};
-
-const confirmCancelSubscription = async () => {
-  try {
-    setLoading(true);
-    await updateSubscriptionPlan('none');
-    
-    setSubscription(prev => createUpdatedSubscription(prev, {
-      plan: 'none',
-      status: 'canceled',
-      end_date: getEndOfCurrentBillingPeriod(),
-      currentPeriodEnd: getNextBillingDate(prev.billing_cycle)
-    }));
-
-    showToast('Your subscription has been canceled', 'success');
-    setCancelDialogOpen(false);
-  } catch (error) {
-    console.error('Failed to cancel subscription:', error);
-    showToast('Failed to cancel subscription. Please try again or contact support.', 'error');
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      setLoading(true);
+      await updateSubscriptionPlan(selectedPlan);
+      
+      const nextBillingDate = getNextBillingDate(billingCycle);
+      
+      // Create the full updated subscription object
+      const updatedSubscription: Subscription = {
+        ...subscription,
+        plan: selectedPlan,
+        billing_cycle: billingCycle,
+        next_billing_date: nextBillingDate,
+        currentPeriodEnd: nextBillingDate,
+        updated_at: new Date().toISOString()
+      };
   
+      setSubscription(updatedSubscription);
+      showToast(`Successfully updated to ${selectedPlan} plan`, 'success');
+      setUpgradeDialogOpen(false);
+      setDowngradeDialogOpen(false);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Failed to update subscription:', error);
+      showToast('Failed to update subscription. Please try again or contact support.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const confirmCancelSubscription = async () => {
+    if (!subscription) return;
+    
+    try {
+      setLoading(true);
+      await updateSubscriptionPlan('none');
+      
+      const nextBillingDate = getNextBillingDate(subscription.billing_cycle);
+      const endDate = getEndOfCurrentBillingPeriod();
+      
+      const updatedSubscription: Subscription = {
+        ...subscription,
+        plan: 'none',
+        status: 'canceled',
+        end_date: endDate,
+        currentPeriodEnd: nextBillingDate,
+        updated_at: new Date().toISOString()
+      };
+  
+      setSubscription(updatedSubscription);
+      showToast('Your subscription has been canceled', 'success');
+      setCancelDialogOpen(false);
+    } catch (error) {
+      console.error('Failed to cancel subscription:', error);
+      showToast('Failed to cancel subscription. Please try again or contact support.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
   
 
   const getNextBillingDate = (cycle: BillingCycle): string => {

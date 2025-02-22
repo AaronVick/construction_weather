@@ -2,10 +2,25 @@
 
 import { 
   Subscription, 
-  PaymentMethod,
   PaymentMethodData,
-  SubscriptionFeatures
+  SubscriptionFeatures,
+  SubscriptionPlan,
+  BillingCycle,
+  SubscriptionStatus
 } from '../types/subscription';
+
+// Update function signature
+export function formatPaymentMethod(
+  paymentMethod: PaymentMethodData | null | undefined
+): PaymentMethodData | null {
+  if (!paymentMethod) return null;
+  return {
+    brand: paymentMethod.brand,
+    last4: paymentMethod.last4,
+    expMonth: paymentMethod.expMonth,
+    expYear: paymentMethod.expYear
+  };
+}
 
 const defaultFeatures: SubscriptionFeatures = {
   maxJobsites: 0,
@@ -20,21 +35,11 @@ const defaultFeatures: SubscriptionFeatures = {
   singleSignOn: false
 };
 
-export function formatPaymentMethod(
-  paymentMethod: PaymentMethod | null | undefined
-): PaymentMethodData | null {
-  if (!paymentMethod) return null;
-  return {
-    brand: paymentMethod.brand,
-    last4: paymentMethod.last4,
-    expMonth: paymentMethod.expMonth,
-    expYear: paymentMethod.expYear
-  };
-}
+
 
 export function createUpdatedSubscription(
   prevState: Subscription,
-  updates: Partial<Subscription>
+  updates: Partial<Omit<Subscription, 'id' | 'user_id'>>
 ): Subscription {
   return {
     ...prevState,
