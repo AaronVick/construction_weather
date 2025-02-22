@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabaseClient';
 import { formatPaymentMethod } from '../utils/subscriptionHelpers';
 import { 
   Subscription,
-  PaymentMethod,
   PaymentMethodData,
   BillingHistoryItem,
   SubscriptionFeatures,
@@ -84,10 +83,11 @@ export async function getBillingHistory(): Promise<BillingHistoryItem[]> {
   }
 }
 
+
 /**
  * Fetch the user's payment method details
  */
-export async function getPaymentMethod(): Promise<PaymentMethod | null> {
+export async function getPaymentMethod(): Promise<PaymentMethodData | null> {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError) throw userError;
