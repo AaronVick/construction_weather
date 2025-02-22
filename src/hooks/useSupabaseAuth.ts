@@ -1,6 +1,3 @@
-// src/hooks/useSupabaseAuth.ts
-
-// src/hooks/useSupabaseAuth.ts
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
@@ -20,140 +17,73 @@ export function useSupabaseAuth() {
     error: null,
   });
 
-// src/hooks/useSupabaseAuth.ts
-useEffect(() => {
-  console.log('useSupabaseAuth: Initializing auth state...');
-  const getInitialSession = async () => {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        throw error;
-      }
-
-      if (session) {
-        console.log('useSupabaseAuth: Session found, fetching user data...');
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+  useEffect(() => {
+    console.log('useSupabaseAuth: Initializing auth state...');
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (userError) {
-          throw userError;
+        if (error) {
+          throw error;
         }
 
-        console.log('useSupabaseAuth: User data fetched:', user);
-        setAuthState({
-          user: user,
-          session: session,
-          loading: false,
-          error: null,
-        });
-      } else {
-        console.log('useSupabaseAuth: No session found');
+        if (session) {
+          console.log('useSupabaseAuth: Session found, fetching user data...');
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          
+          if (userError) {
+            throw userError;
+          }
+
+          console.log('useSupabaseAuth: User data fetched:', user);
+          setAuthState({
+            user: user,
+            session: session,
+            loading: false,
+            error: null,
+          });
+        } else {
+          console.log('useSupabaseAuth: No session found');
+          setAuthState({
+            user: null,
+            session: null,
+            loading: false,
+            error: null,
+          });
+        }
+      } catch (error) {
+        console.error('useSupabaseAuth: Error fetching session:', error);
         setAuthState({
           user: null,
           session: null,
           loading: false,
-          error: null,
+          error: error as Error,
         });
       }
-    } catch (error) {
-      console.error('useSupabaseAuth: Error fetching session:', error);
-      setAuthState({
-        user: null,
-        session: null,
-        loading: false,
-        error: error as Error,
-      });
-    }
-  };
+    };
 
-  getInitialSession();
+    getInitialSession();
 
-  const { data: authListener } = supabase.auth.onAuthStateChange(
-    async (event, session) => {
-      console.log('useSupabaseAuth: Auth state changed:', event);
-      const { data: { user }, error } = await supabase.auth.getUser();
-      
-      setAuthState({
-        user: error ? null : user,
-        session,
-        loading: false,
-        error: error || null,
-      });
-    }
-  );
-
-  return () => {
-    console.log('useSupabaseAuth: Unsubscribing from auth listener');
-    authListener?.subscription.unsubscribe();
-  };
-}, []);
-
-  // useEffect(() => {
-  //   // Get initial session
-  //   const getInitialSession = async () => {
-  //     try {
-  //       const { data: { session }, error } = await supabase.auth.getSession();
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('useSupabaseAuth: Auth state changed:', event);
+        const { data: { user }, error } = await supabase.auth.getUser();
         
-  //       if (error) {
-  //         throw error;
-  //       }
+        setAuthState({
+          user: error ? null : user,
+          session,
+          loading: false,
+          error: error || null,
+        });
+      }
+    );
 
-  //       if (session) {
-  //         // Ensure we have fresh session data
-  //         const { data: { user }, error: userError } = await supabase.auth.getUser();
-          
-  //         if (userError) {
-  //           throw userError;
-  //         }
+    return () => {
+      console.log('useSupabaseAuth: Unsubscribing from auth listener');
+      authListener?.subscription.unsubscribe();
+    };
+  }, []);
 
-  //         setAuthState({
-  //           user: user,
-  //           session: session,
-  //           loading: false,
-  //           error: null,
-  //         });
-  //       } else {
-  //         setAuthState({
-  //           user: null,
-  //           session: null,
-  //           loading: false,
-  //           error: null,
-  //         });
-  //       }
-  //     } catch (error) {
-  //       console.error('Auth error:', error);
-  //       setAuthState({
-  //         user: null,
-  //         session: null,
-  //         loading: false,
-  //         error: error as Error,
-  //       });
-  //     }
-  //   };
-
-  //   getInitialSession();
-
-    // Listen for auth changes
-  //   const { data: authListener } = supabase.auth.onAuthStateChange(
-  //     async (event, session) => {
-  //       // Get fresh user data on auth state change
-  //       const { data: { user }, error } = await supabase.auth.getUser();
-        
-  //       setAuthState({
-  //         user: error ? null : user,
-  //         session,
-  //         loading: false,
-  //         error: error || null,
-  //       });
-  //     }
-  //   );
-
-  //   return () => {
-  //     authListener?.subscription.unsubscribe();
-  //   };
-  // }, []);
-
-  
   const signIn = async (email: string, password: string) => {
     try {
       setAuthState(prev => ({ ...prev, loading: true, error: null }));
@@ -178,8 +108,6 @@ useEffect(() => {
       setAuthState(prev => ({ ...prev, loading: false }));
     }
   };
-
-
 
   const signUp = async (email: string, password: string, metadata?: any) => {
     try {

@@ -58,7 +58,10 @@ const AppRoutes: React.FC = () => {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/" element={<LandingPage />} />
+      <Route
+        path="/"
+        element={user ? <Navigate to="/dashboard" /> : <LandingPage />}
+      />
       <Route
         path="/login"
         element={user ? <Navigate to="/dashboard" /> : <Login />}
@@ -70,7 +73,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
 
-      {/* Protected Dashboard Routes */}
+      {/* Protected Routes */}
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />

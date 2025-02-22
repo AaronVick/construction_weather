@@ -1,42 +1,410 @@
 // src/pages/dashboard/Dashboard.tsx
-
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { Link, Navigate } from 'react-router-dom';
+import { useTheme } from '../../hooks/useTheme';
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
-import WeatherWidgetContainer from '../../components/weather/WeatherWidgetContainer';
+import { useSubscription } from '../../hooks/useSubscription';
+import { getDashboardData } from '../../services/dataService';
 import LoadingScreen from '../../components/ui/LoadingScreen';
 
+// Lazy-loaded components
+const WeatherWidgetContainer = lazy(() => import('../../components/weather/WeatherWidgetContainer'));
+const Card = lazy(() => import('../../components/ui/Card'));
+const InsightMetric = lazy(() => import('../../components/dashboard/InsightMetric'));
+const LineChart = lazy(() => import('../../components/charts/LineChart'));
+const RecentActivityList = lazy(() => import('../../components/dashboard/RecentActivityList'));
+const UpgradePrompt = lazy(() => import('../../components/subscription/UpgradePrompt'));
+
+// Lazy-loaded icons
+const Users = lazy(() => import('lucide-react').then(module => ({ default: module.Users })));
+const Briefcase = lazy(() => import('lucide-react').then(module => ({ default: module.Briefcase })));
+const Mail = lazy(() => import('lucide-react').then(module => ({ default: module.Mail })));
+const AlertTriangle = lazy(() => import('lucide-react').then(module => ({ default: module.AlertTriangle })));
+const Map = lazy(() => import('lucide-react').then(module => ({ default: module.Map })));
+const Cloud = lazy(() => import('lucide-react').then(module => ({ default: module.Cloud })));
+const CheckCircle = lazy(() => import('lucide-react').then(module => ({ default: module.CheckCircle })));
+const AlertCircle = lazy(() => import('lucide-react').then(module => ({ default: module.AlertCircle })));
+
+// Component loading check utility
+const checkComponentLoad = (name: string) => {
+  try {
+    console.log(`✓ Successfully loaded: ${name}`);
+    return true;
+  } catch (err) {
+    console.error(`✗ Failed to load: ${name}`, err);
+    return false;
+  }
+};
+
 const Dashboard: React.FC = () => {
+  // Check hooks loading
+  console.log('--- Checking Hook Loading ---');
+  const theme = useTheme();
+  checkComponentLoad('useTheme');
+
   const { user } = useSupabaseAuth();
+  checkComponentLoad('useSupabaseAuth');
+
+  const { subscription } = useSubscription();
+  checkComponentLoad('useSubscription');
+
+  const darkMode = theme ? theme.darkMode : false;
+
+  // Check component loading
+  console.log('--- Checking Component Loading ---');
+  const componentsLoaded = {
+    weatherWidget: checkComponentLoad('WeatherWidgetContainer'),
+    card: checkComponentLoad('Card'),
+    insightMetric: checkComponentLoad('InsightMetric'),
+    lineChart: checkComponentLoad('LineChart'),
+    recentActivity: checkComponentLoad('RecentActivityList'),
+    upgradePrompt: checkComponentLoad('UpgradePrompt'),
+  };
+
+  // State initialization
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [insights, setInsights] = useState({
+    activeClients: 0,
+    activeWorkers: 0,
+    pendingEmails: 0,
+    weatherAlerts: 0,
+    jobsites: 0,
+    monthlyEmails: [] as Array<{ month: string; count: number }>,
+  });
 
+  const [recentActivity, setRecentActivity] = useState<
+    Array<{
+      id: number;
+      type: string;
+      message: string;
+      timestamp: string;
+      status: string;
+    }>
+  >([]);
+
+  // Log initial state
+  console.log('Initial state:', {
+    loading,
+    error,
+    insights,
+    recentActivity,
+    darkMode,
+    user: !!user,
+    subscription: subscription?.plan,
+  });
+
+  // Main data fetching effect
   useEffect(() => {
-    if (user) {
-      // Simulate fetching data
-      setTimeout(() => {
+    const fetchDashboardData = async () => {
+      console.log('Starting fetchDashboardData execution');
+      try {
+        setLoading(true);
+        console.log('Loading state set to true');
+
+        // Fetch dashboard metrics
+        console.log('Initiating getDashboardData API call');
+        const { data, error } = await getDashboardData();
+        console.log('getDashboardData response received:', {
+          hasData: !!data,
+          hasError: !!error,
+          errorDetails: error,
+        });
+
+        if (error) {
+          console.error('Error from getDashboardData:', error);
+          throw error;
+        }
+
+        if (!data) {
+          console.error('No data returned from getDashboardData');
+          throw new Error('No data available');
+        }
+
+        console.log('Processing dashboard data:', {
+          clientStats: data.clientStats,
+          workerStats: data.workerStats,
+          notificationStats: data.notificationStats,
+          jobsiteStats: data.jobsiteStats,
+        });
+
+        // Update insights state
+        const newInsights = {
+          activeClients: data.clientStats.active,
+          activeWorkers: data.workerStats.active,
+          pendingEmails: data.notificationStats.last30Days,
+          weatherAlerts: data.jobsiteStats.withRecentAlerts,
+          jobsites: subscription?.plan === 'basic' ? 1 : data.jobsiteStats.total,
+          monthlyEmails: data.weatherAlertMetrics,
+        };
+        console.log('Setting new insights:', newInsights);
+        setInsights(newInsights);
+
+        console.log('Setting recent activity:', data.recentActivity);
+        setRecentActivity(data.recentActivity);
+      } catch (err: unknown) {
+        console.error('Detailed error in fetchDashboardData:', {
+          error: err,
+          message: err instanceof Error ? err.message : 'An unknown error occurred',
+          stack: err instanceof Error ? err.stack : undefined,
+        });
+        setError('Failed to load dashboard data. Please try again.');
+      } finally {
+        console.log('Completing fetchDashboardData, setting loading to false');
         setLoading(false);
-      }, 1000);
-    }
-  }, [user]);
+      }
+    };
 
-  if (!user) {
-    return <Navigate to="/login" />;
-  }
+    fetchDashboardData();
+  }, [user, subscription?.plan]);
 
+  // Render loading state
   if (loading) {
-    return <LoadingScreen />;
+    console.log('Rendering loading state');
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+        <div className="text-center">
+          <p className="text-lg font-medium mb-2">Loading your dashboard...</p>
+          <p className="text-sm text-gray-500">This may take a few moments</p>
+        </div>
+      </div>
+    );
   }
 
+  // Render error state
+  if (error) {
+    console.log('Rendering error state:', error);
+    return (
+      <div className="flex h-full flex-col items-center justify-center">
+        <AlertCircle size={48} className="text-red-500 mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Something went wrong</h2>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">{error}</p>
+        <button
+          onClick={() => {
+            console.log('Retry button clicked, reloading page');
+            window.location.reload();
+          }}
+          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // Main dashboard render function
+  console.log('Starting main dashboard render');
   return (
-    <div className="dashboard">
-      <h1>Welcome to the Dashboard</h1>
-      <WeatherWidgetContainer zipCode="10001" />
-      {/* Add other dashboard components here */}
+    <div className="space-y-6">
+      {/* Welcome & Weather Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Main Weather Card */}
+        <Suspense fallback={<LoadingScreen />}>
+          <Card className="md:col-span-2">
+            <div className="flex flex-col h-full justify-between">
+              {/* Welcome Section */}
+              <div>
+                <h2 className="text-2xl font-semibold mb-2">
+                  {(() => {
+                    const userName = user?.user_metadata?.full_name?.split(' ')[0] || 'there';
+                    console.log('Rendering welcome message for:', userName);
+                    return `Welcome back, ${userName}!`;
+                  })()}
+                </h2>
+                <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-4`}>
+                  Here's what's happening with your crews today
+                </p>
+              </div>
+
+              {/* Weather Widget with Error Boundary */}
+              <div className="weather-widget-container">
+                <Suspense fallback={<LoadingScreen />}>
+                  <WeatherWidgetContainer
+                    zipCode={localStorage.getItem('userZipCode') || user?.user_metadata?.zip_code || '10001'}
+                  />
+                </Suspense>
+              </div>
+            </div>
+          </Card>
+        </Suspense>
+
+        {/* Secondary Weather Card */}
+        <Suspense fallback={<LoadingScreen />}>
+          <Card>
+            <WeatherWidgetContainer
+              zipCode={localStorage.getItem('userZipCode') || user?.user_metadata?.zip_code || '10001'}
+            />
+          </Card>
+        </Suspense>
+      </div>
+
+      {/* Key Metrics Section */}
+      <Suspense fallback={<LoadingScreen />}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <InsightMetric
+            title="Active Clients"
+            value={insights.activeClients}
+            icon={<Users size={24} />}
+            change={+8}
+            linkTo="/clients"
+            color="blue"
+          />
+          <InsightMetric
+            title="Active Workers"
+            value={insights.activeWorkers}
+            icon={<Briefcase size={24} />}
+            change={+2}
+            linkTo="/workers"
+            color="green"
+          />
+          <InsightMetric
+            title="Pending Emails"
+            value={insights.pendingEmails}
+            icon={<Mail size={24} />}
+            change={0}
+            linkTo="/email"
+            color="purple"
+          />
+          <InsightMetric
+            title="Weather Alerts"
+            value={insights.weatherAlerts}
+            icon={<Cloud size={24} />}
+            change={+1}
+            linkTo="/weather"
+            color={insights.weatherAlerts > 0 ? 'red' : 'green'}
+          />
+        </div>
+      </Suspense>
+
+      {/* Upgrade Prompt Section */}
+      {subscription?.plan === 'basic' && (
+        <Suspense fallback={<LoadingScreen />}>
+          <UpgradePrompt
+            features={[
+              'Multiple jobsite management',
+              'Jobsite-specific email notifications',
+              'Advanced analytics',
+              'Priority support',
+            ]}
+          />
+        </Suspense>
+      )}
+
+      {/* Charts and Activity Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Email Activity Chart */}
+        <Suspense fallback={<LoadingScreen />}>
+          <Card>
+            <h3 className="text-lg font-medium mb-4">Email Activity</h3>
+            <div className="h-64">
+              <LineChart
+                data={insights.monthlyEmails}
+                lines={[
+                  {
+                    key: 'count',
+                    name: 'Email Count',
+                    color: '#4f46e5',
+                  },
+                ]}
+                xAxisKey="month"
+                height={300}
+                showGrid={true}
+              />
+            </div>
+          </Card>
+        </Suspense>
+
+        {/* Recent Activity List */}
+        <Suspense fallback={<LoadingScreen />}>
+          <Card>
+            <h3 className="text-lg font-medium mb-4">Recent Activity</h3>
+            <RecentActivityList activities={recentActivity} />
+          </Card>
+        </Suspense>
+      </div>
+
+      {/* Quick Actions Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Suspense fallback={<LoadingScreen />}>
+          <Link to="/weather">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                  <Cloud size={20} />
+                </div>
+                <div className="ml-4">
+                  <h3 className="font-medium">Weather Check</h3>
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Run manual check
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </Link>
+        </Suspense>
+
+        <Suspense fallback={<LoadingScreen />}>
+          <Link to="/email">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
+                  <Mail size={20} />
+                </div>
+                <div className="ml-4">
+                  <h3 className="font-medium">Send Notification</h3>
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Email clients/crews
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </Link>
+        </Suspense>
+
+        <Suspense fallback={<LoadingScreen />}>
+          <Link to="/clients">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                  <Users size={20} />
+                </div>
+                <div className="ml-4">
+                  <h3 className="font-medium">Manage Clients</h3>
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Add or update
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </Link>
+        </Suspense>
+
+        <Suspense fallback={<LoadingScreen />}>
+          <Link to={subscription?.plan === 'basic' ? '/subscription' : '/jobsites'}>
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                  <Map size={20} />
+                </div>
+                <div className="ml-4">
+                  <h3 className="font-medium">
+                    {subscription?.plan === 'basic' ? 'Upgrade Plan' : 'Manage Jobsites'}
+                  </h3>
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {subscription?.plan === 'basic' ? 'Get premium features' : 'View all locations'}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </Link>
+        </Suspense>
+      </div>
     </div>
   );
 };
 
 export default Dashboard;
-
 
 
 
