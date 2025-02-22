@@ -1,8 +1,107 @@
 /* styles/globals.css */
-@font-face {
-    font-family: 'Inter var';
-    src: local('Inter'), url('/fonts/InterVariable.woff2') format('woff2');
-    font-weight: 100 900;
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+/* Base styles */
+body {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
     font-style: normal;
-    font-display: swap;
+    background-color: #f9f9f9;
+    color: #333;
+    line-height: 1.6;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* Links */
+a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Code and Pre */
+code, pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95em;
+    background-color: #f4f4f4;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+/* Dark Mode */
+body.dark {
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+}
+
+.dark a {
+    color: #80caff;
+}
+
+.dark code, .dark pre {
+    background-color: #333;
+}
+
+/* Utility Styles */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.3s;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }

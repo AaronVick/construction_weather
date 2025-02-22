@@ -1,16 +1,16 @@
-/* src/styles/fonts.css */
-@font-face {
-  font-family: 'Inter var';
-  src: url('/fonts/InterVariable.woff2') format('woff2');
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
+/* Use Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+/* Global Font Settings */
+:root {
+    --font-sans: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
 }
 
-@font-face {
-  font-family: 'JetBrains Mono';
-  src: url('/fonts/JetBrainsMono-Regular.woff2') format('woff2');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
+body {
+    font-family: var(--font-sans);
+}
+
+code, pre {
+    font-family: var(--font-mono);
 }
