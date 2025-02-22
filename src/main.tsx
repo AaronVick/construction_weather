@@ -1,9 +1,7 @@
 // src/main.tsx
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { ErrorBoundary } from 'react-error-boundary';
-import type { ErrorInfo } from 'react';
 import App from './App';
 import ErrorFallback from './components/ui/ErrorFallback';
 import './index.css';
