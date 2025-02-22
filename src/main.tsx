@@ -1,4 +1,5 @@
 // src/main.tsx
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -15,32 +16,6 @@ if (!rootElement) {
   console.error('Root element not found - critical error');
 } else {
   console.log('Root element found, proceeding with initialization');
-}
-
-// Register service worker for PWA support
-if ('serviceWorker' in navigator) {
-  console.log('Service Worker API available, setting up listener');
-  window.addEventListener('load', () => {
-    console.log('Window loaded, attempting to register service worker');
-    navigator.serviceWorker.register('/sw.js')
-      .then(registration => {
-        console.log('Service worker registration successful:', {
-          scope: registration.scope,
-          active: !!registration.active,
-          waiting: !!registration.waiting,
-          installing: !!registration.installing
-        });
-      })
-      .catch(error => {
-        console.error('Service worker registration failed:', {
-          error,
-          message: error.message,
-          stack: error.stack
-        });
-      });
-  });
-} else {
-  console.warn('Service Worker API not available in this browser');
 }
 
 // Enhanced error handler for ErrorBoundary
@@ -133,38 +108,3 @@ window.addEventListener('error', (event) => {
     timestamp: new Date().toISOString()
   });
 });
-
-
-/* before update */
-
-// import React from 'react';
-// import ReactDOM from 'react-dom/client';
-// import { ErrorBoundary } from 'react-error-boundary';
-// import App from './App';
-// import ErrorFallback from './components/ui/ErrorFallback';
-// import './index.css';
-
-// // Register service worker for PWA support
-// if ('serviceWorker' in navigator) {
-//   window.addEventListener('load', () => {
-//     navigator.serviceWorker.register('/sw.js').catch(error => {
-//       console.error('Service worker registration failed:', error);
-//     });
-//   });
-// }
-
-// // Render app with error boundary
-// ReactDOM.createRoot(document.getElementById('root')!).render(
-//   <React.StrictMode>
-//     <ErrorBoundary
-//       FallbackComponent={ErrorFallback}
-//       onReset={() => window.location.reload()}
-//       onError={(error, info) => {
-//         // Log error to monitoring service in production
-//         console.error('Unhandled error:', error, info);
-//       }}
-//     >
-//       <App />
-//     </ErrorBoundary>
-//   </React.StrictMode>
-// );
