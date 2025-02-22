@@ -26,7 +26,7 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
-          },
+          }
         ],
       },
     }),
@@ -77,9 +77,6 @@ export default defineConfig({
         assetFileNames: (assetInfo) => {
           const info = assetInfo.name.split('.');
           const ext = info[info.length - 1];
-          if (/\.(woff2?|eot|ttf|otf)$/i.test(assetInfo.name)) {
-            return `fonts/[name].[hash].[ext]`;
-          }
           if (/\.(png|jpe?g|gif|svg|ico|webp)$/i.test(assetInfo.name)) {
             return `images/[name].[hash].[ext]`;
           }
