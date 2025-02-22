@@ -1,17 +1,14 @@
 // src/pages/dashboard/Dashboard.tsx
 
-
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/hooks/useTheme';
-import { Users, Briefcase, Mail, Cloud, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Users, Briefcase, Mail, Cloud, AlertTriangle, CheckCircle, BarChart2 } from 'lucide-react';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 
-const Dashboard = () => {
-  // Debug logging
-  console.log('Dashboard component initializing');
-
+const Dashboard: React.FC = () => {
   const { darkMode } = useTheme();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState({
     activeClients: 0,
     activeWorkers: 0,
@@ -19,7 +16,6 @@ const Dashboard = () => {
     weatherAlerts: 0
   });
 
-  // Simulated data fetch
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -33,6 +29,7 @@ const Dashboard = () => {
           pendingEmails: 3,
           weatherAlerts: 2
         });
+        setError(null);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
         setError('Failed to load dashboard data');
@@ -45,14 +42,7 @@ const Dashboard = () => {
   }, []);
 
   if (loading) {
-    return (
-      <div className="min-h-[50vh] flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-600 dark:text-gray-300">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Loading dashboard..." />;
   }
 
   if (error) {
@@ -73,7 +63,7 @@ const Dashboard = () => {
       </div>
     );
   }
-
+  
   return (
     <div className="space-y-6">
       {/* Welcome Section */}

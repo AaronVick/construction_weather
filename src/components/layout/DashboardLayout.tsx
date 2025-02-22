@@ -3,14 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { Outlet } from 'react-router-dom';
 import { Moon, Sun, Bell, Menu, X, Home, Users, Briefcase, Cloud, Mail, Settings, MapPin, CreditCard, BarChart2 } from 'lucide-react';
 import CollapsibleSidebar from './CollapsibleSidebar';
 
-interface DashboardLayoutProps {
-  children: React.ReactNode;
-}
-
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+// Since we're using Outlet, we don't need children prop anymore
+const DashboardLayout: React.FC = () => {
   // Debug logging for initial render
   console.log('DashboardLayout initializing');
 
@@ -131,7 +129,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         <div className="flex-1 p-6">
           {/* Content wrapper with max width and auto margins */}
           <div className="max-w-7xl mx-auto">
-            {children}
+            <Outlet />
           </div>
         </div>
       </main>
