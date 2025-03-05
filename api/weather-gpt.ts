@@ -1,25 +1,56 @@
-// api/weather-gpt.ts
+// api/weather-gpt-firebase.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import axios from 'axios';
+import { auth } from './lib/firebaseAdmin';
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_API_URL = 'https://api.openai.com/v1';
-
-export default async function handler(
-  request: VercelRequest,
-  response: VercelResponse
-) {
-  if (request.method !== 'POST') {
-    return response.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const { currentWeather, forecast, triggeredConditions } = request.body;
-
-  if (!currentWeather || !forecast || !triggeredConditions) {
-    return response.status(400).json({ error: 'Missing required weather data' });
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method not allowed' });
   }
 
   try {
+    // Get the authorization token from the request headers
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    
+    // Verify the token
+    await auth.verifyIdToken(token);
+
+    const { currentWeather, forecast, triggeredConditions } = req.body;
+
+    if (!currentWeather || !forecast || !triggeredConditions) {
+      return res.status(400).json({ message: 'Missing required data' });
+    }
+
+    const weatherDescription = await generateWeatherDescription(
+      currentWeather,
+      forecast,
+      triggeredConditions
+    );
+
+    return res.status(200).json({ weatherDescription });
+  } catch (error) {
+    console.error('Error generating weather description:', error);
+    return res.status(500).json({ message: 'Failed to generate weather description' });
+  }
+}
+
+/**
+ * Generates a weather description using OpenAI
+ */
+async function generateWeatherDescription(
+  currentWeather: any,
+  forecast: any,
+  triggeredConditions: string[]
+): Promise<string> {
+  try {
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    const OPENAI_API_URL = 'https://api.openai.com/v1';
+
     const prompt = `
       You are a helpful assistant that provides clear and professional weather notifications for construction crews.
       
@@ -43,7 +74,7 @@ export default async function handler(
       Focus specifically on the triggered conditions. Be factual and avoid being alarmist. Don't mention construction specifically - this is for all outdoor work.
     `;
 
-    const openAIResponse = await axios.post(
+    const response = await axios.post(
       `${OPENAI_API_URL}/chat/completions`,
       {
         model: 'gpt-4',
@@ -68,15 +99,12 @@ export default async function handler(
       }
     );
 
-    const weatherDescription = openAIResponse.data.choices[0].message.content.trim();
-    return response.status(200).json({ weatherDescription });
+    return response.data.choices[0].message.content.trim();
   } catch (error) {
-    console.error('Weather GPT API Error:', error);
+    console.error('Error generating weather description:', error);
     
-    // Provide fallback response
+    // Fallback description if API call fails
     const conditions = triggeredConditions.join(' and ');
-    const fallbackDescription = `Due to ${conditions} conditions, outdoor work may be challenging today. Please use caution and follow safety protocols.`;
-    
-    return response.status(200).json({ weatherDescription: fallbackDescription });
+    return `Due to ${conditions} conditions, outdoor work may be challenging today. Please use caution and follow safety protocols.`;
   }
 }

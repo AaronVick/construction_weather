@@ -1,12 +1,23 @@
 // src/pages/dashboard/Subscription.tsx
 
+/**
+ * Subscription Management Component
+ * 
+ * Handles all subscription-related functionality including:
+ * - Viewing and changing subscription plans
+ * - Managing billing details
+ * - Viewing billing history
+ * - Handling plan upgrades/downgrades
+ * - Processing subscription cancellations
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { useSubscription } from '../../hooks/useSubscription';
 import { useToast } from '../../hooks/useToast';
 import { getSubscriptionDetails, updateSubscriptionPlan, getBillingHistory } from '../../services/subscriptionService';
-import { supabase } from '../../lib/supabaseClient';
+import { db, auth } from '../../lib/firebaseClient';
 
 // Components
 import Card from '../../components/ui/Card';
@@ -15,18 +26,19 @@ import BillingHistory from '../../components/subscription/BillingHistory';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
-import { 
-  createUpdatedSubscription,
-  getNextBillingDate 
-} from '../../utils/subscriptionHelpers';
+// Utils
+import { createUpdatedSubscription, getNextBillingDate } from '../../utils/subscriptionHelpers';
 
-import { 
-  Subscription,
+// Use type-only imports to avoid naming conflicts
+import type { 
+  Subscription as SubscriptionType,
   SubscriptionPlan,
   SubscriptionStatus,
   BillingCycle,
   PlanOption,
-  BillingHistoryItem
+  BillingHistoryItem,
+  PaymentMethodData,
+  SubscriptionFeatures
 } from '../../types/subscription';
 
 // Icons
@@ -49,44 +61,56 @@ import {
   XCircle
 } from 'lucide-react';
 
+interface PlanDetailsWithUI extends PlanOption {
+  icon: React.ReactNode;
+  recommendedFor: string;
+  features: string[];
+  limitations: string[];
+}
+
+/**
+ * Feature category interface for the comparison table
+ */
+interface FeatureCategory {
+  category: string;
+  features: {
+    name: string;
+    description: string;
+    basic: boolean | string;
+    premium: boolean | string;
+    enterprise: boolean | string;
+    icon: React.ReactNode;
+  }[];
+}
 
 const Subscription: React.FC = () => {
+  // Hooks and Context
   const theme = useTheme();
-  const darkMode = theme ? theme.darkMode : false;
+  const darkMode = theme?.darkMode ?? false;
   const navigate = useNavigate();
   const { subscription, setSubscription } = useSubscription();
   const { showToast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
-  const [downgradeDialogOpen, setDowngradeDialogOpen] = useState(false);
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+
+  // Component State
+  const [loading, setLoading] = useState<boolean>(true);
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState<boolean>(false);
+  const [downgradeDialogOpen, setDowngradeDialogOpen] = useState<boolean>(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState<boolean>(false);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [billingHistory, setBillingHistory] = useState<BillingHistoryItem[]>([]);
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [activeTab, setActiveTab] = useState<'plans' | 'details' | 'history'>('plans');
   const [user, setUser] = useState<any>(null);
-  
-  const plans: Array<{
-    id: SubscriptionPlan;
-    name: string;
-    description: string;
-    price: {
-      monthly: number;
-      annually: number;
-    };
-    features: string[];
-    limitations: string[];
-    icon: React.ReactNode;
-    recommendedFor: string;
-  }> = [
+
+  // Plan Definitions
+  const plans: PlanDetailsWithUI[] = [
     {
       id: 'basic',
       name: 'Basic',
       description: 'Essential features for small teams and simple workflows',
       price: {
-        monthly: 9.99,
-        annually: 99.99,
+        monthly: 29.99,
+        annually: 287.99,
       },
       features: [
         'Unlimited clients',
@@ -108,8 +132,8 @@ const Subscription: React.FC = () => {
       name: 'Premium',
       description: 'Advanced features for growing businesses',
       price: {
-        monthly: 24.99,
-        annually: 249.99,
+        monthly: 59.99,
+        annually: 575.99,
       },
       features: [
         'Everything in Basic',
@@ -131,8 +155,8 @@ const Subscription: React.FC = () => {
       name: 'Enterprise',
       description: 'Comprehensive solution for large organizations',
       price: {
-        monthly: 49.99,
-        annually: 499.99,
+        monthly: 199.99,
+        annually: 1919.99,
       },
       features: [
         'Everything in Premium',
@@ -150,160 +174,11 @@ const Subscription: React.FC = () => {
     }
   ];
 
-  const featureComparison = [
-    {
-      category: 'Core Features',
-      features: [
-        {
-          name: 'Client Management',
-          description: 'Add, edit, and manage clients',
-          basic: true,
-          premium: true,
-          enterprise: true,
-          icon: <Users size={18} />
-        },
-        {
-          name: 'Worker Management',
-          description: 'Manage crew members and their contact information',
-          basic: true,
-          premium: true,
-          enterprise: true,
-          icon: <Users size={18} />
-        },
-        {
-          name: 'Weather Monitoring',
-          description: 'Automated weather condition checking',
-          basic: true,
-          premium: true,
-          enterprise: true,
-          icon: <Cloud size={18} />
-        }
-      ]
-    },
-    {
-      category: 'Jobsites',
-      features: [
-        {
-          name: 'Number of Jobsites',
-          description: 'How many locations you can manage',
-          basic: '1',
-          premium: '10',
-          enterprise: 'Unlimited',
-          icon: <MapPin size={18} />
-        },
-        {
-          name: 'Jobsite-specific Notifications',
-          description: 'Send targeted notifications per jobsite',
-          basic: false,
-          premium: true,
-          enterprise: true,
-          icon: <Mail size={18} />
-        },
-        {
-          name: 'Crew Assignment',
-          description: 'Assign workers to specific jobsites',
-          basic: false,
-          premium: true,
-          enterprise: true,
-          icon: <Users size={18} />
-        }
-      ]
-    },
-    {
-      category: 'Notifications',
-      features: [
-        {
-          name: 'Email Notifications',
-          description: 'Automated emails based on weather conditions',
-          basic: true,
-          premium: true,
-          enterprise: true,
-          icon: <Mail size={18} />
-        },
-        {
-          name: 'Custom Email Templates',
-          description: 'Create and save multiple email templates',
-          basic: '1 template',
-          premium: '5 templates',
-          enterprise: 'Unlimited',
-          icon: <FileCog size={18} />
-        },
-        {
-          name: 'SMS Notifications',
-          description: 'Text message alerts for critical conditions',
-          basic: false,
-          premium: true,
-          enterprise: true,
-          icon: <MessageSquare size={18} />
-        }
-      ]
-    },
-    {
-      category: 'Analytics & Reporting',
-      features: [
-        {
-          name: 'Basic Dashboard',
-          description: 'Simple overview of system activity',
-          basic: true,
-          premium: true,
-          enterprise: true,
-          icon: <BarChart2 size={18} />
-        },
-        {
-          name: 'Advanced Analytics',
-          description: 'Detailed insights and historical data',
-          basic: false,
-          premium: true,
-          enterprise: true,
-          icon: <BarChart2 size={18} />
-        },
-        {
-          name: 'Custom Reports',
-          description: 'Generate and schedule custom reports',
-          basic: false,
-          premium: false,
-          enterprise: true,
-          icon: <FileText size={18} />
-        }
-      ]
-    },
-    {
-      category: 'Support & Security',
-      features: [
-        {
-          name: 'Customer Support',
-          description: 'Access to help and technical assistance',
-          basic: 'Email support',
-          premium: 'Priority support',
-          enterprise: 'Dedicated support',
-          icon: <Headphones size={18} />
-        },
-        {
-          name: 'SLA Response Time',
-          description: 'Guaranteed response time for issues',
-          basic: '48 hours',
-          premium: '12 hours',
-          enterprise: '4 hours',
-          icon: <Clock size={18} />
-        },
-        {
-          name: 'Advanced Security',
-          description: 'Enhanced security features',
-          basic: 'Standard',
-          premium: 'Advanced',
-          enterprise: 'Enterprise-grade',
-          icon: <Shield size={18} />
-        }
-      ]
-    }
-  ];
 
-  useEffect(() => {
-    fetchSubscriptionDetails();
-    fetchBillingHistory();
-  }, []);
-
-  const fetchSubscriptionDetails = async () => {
+  /**
+   * Fetches subscription details from the backend
+   */
+  const fetchSubscriptionDetails = async (): Promise<void> => {
     try {
       setLoading(true);
       const details = await getSubscriptionDetails();
@@ -317,7 +192,10 @@ const Subscription: React.FC = () => {
     }
   };
 
-  const fetchBillingHistory = async () => {
+  /**
+   * Fetches billing history from the backend
+   */
+  const fetchBillingHistory = async (): Promise<void> => {
     try {
       const history = await getBillingHistory();
       setBillingHistory(history);
@@ -327,10 +205,13 @@ const Subscription: React.FC = () => {
     }
   };
 
-  const handlePlanSelect = (plan: SubscriptionPlan) => {
-    if (plan === subscription?.plan) return;
+  /**
+   * Handles plan selection and shows appropriate dialog
+   */
+  const handlePlanSelect = (plan: SubscriptionPlan): void => {
+    if (!subscription || plan === subscription.plan) return;
 
-    const currentPlanIndex = plans.findIndex((p) => p.id === subscription?.plan);
+    const currentPlanIndex = plans.findIndex((p) => p.id === subscription.plan);
     const newPlanIndex = plans.findIndex((p) => p.id === plan);
 
     setSelectedPlan(plan);
@@ -342,12 +223,10 @@ const Subscription: React.FC = () => {
     }
   };
 
-  const handleCancelSubscription = () => {
-    setCancelDialogOpen(true);
-  };
-
-
-  const confirmPlanChange = async () => {
+  /**
+   * Confirms plan change and processes the update
+   */
+  const confirmPlanChange = async (): Promise<void> => {
     if (!selectedPlan || !subscription) return;
     
     try {
@@ -356,8 +235,7 @@ const Subscription: React.FC = () => {
       
       const nextBillingDate = getNextBillingDate(billingCycle);
       
-      // Create the full updated subscription object
-      const updatedSubscription: Subscription = {
+      const updatedSubscription: SubscriptionType = {
         ...subscription,
         plan: selectedPlan,
         billing_cycle: billingCycle,
@@ -378,8 +256,11 @@ const Subscription: React.FC = () => {
       setLoading(false);
     }
   };
-  
-  const confirmCancelSubscription = async () => {
+
+  /**
+   * Handles subscription cancellation
+   */
+  const confirmCancelSubscription = async (): Promise<void> => {
     if (!subscription) return;
     
     try {
@@ -389,7 +270,7 @@ const Subscription: React.FC = () => {
       const nextBillingDate = getNextBillingDate(subscription.billing_cycle);
       const endDate = getEndOfCurrentBillingPeriod();
       
-      const updatedSubscription: Subscription = {
+      const updatedSubscription: SubscriptionType = {
         ...subscription,
         plan: 'none',
         status: 'canceled',
@@ -408,25 +289,12 @@ const Subscription: React.FC = () => {
       setLoading(false);
     }
   };
-  
 
-  const getNextBillingDate = (cycle: BillingCycle): string => {
-    const today = new Date();
-    if (cycle === 'monthly') {
-      today.setMonth(today.getMonth() + 1);
-    } else {
-      today.setFullYear(today.getFullYear() + 1);
-    }
-    return today.toISOString();
-  };
-
-  const getEndOfCurrentBillingPeriod = (): string => {
-    const currentBillingEndDate = new Date(subscription?.next_billing_date || '');
-    return currentBillingEndDate.toISOString();
-  };
-
+  /**
+   * Calculates prorated credit for plan changes
+   */
   const calculateProratedCredit = (): number => {
-    if (!selectedPlan) return 0;
+    if (!selectedPlan || !subscription) return 0;
 
     const currentPlanPrice = getCurrentPlanPrice();
     const daysLeft = getDaysLeftInBillingCycle();
@@ -435,6 +303,9 @@ const Subscription: React.FC = () => {
     return parseFloat((currentPlanPrice * (daysLeft / totalDays)).toFixed(2));
   };
 
+  /**
+   * Calculates the charge for today based on plan change
+   */
   const calculateTodaysCharge = (): number => {
     if (!selectedPlan) return 0;
 
@@ -443,41 +314,50 @@ const Subscription: React.FC = () => {
 
     const newPlanPrice = billingCycle === 'monthly' ? planDetails.price.monthly : planDetails.price.annually;
     const proratedCredit = calculateProratedCredit();
-    const charge = Math.max(0, newPlanPrice - proratedCredit);
 
-    return parseFloat(charge.toFixed(2));
+    return parseFloat((Math.max(0, newPlanPrice - proratedCredit)).toFixed(2));
   };
 
+  // Utility methods
   const getCurrentPlanPrice = (): number => {
-    const currentPlan = plans.find((p) => p.id === subscription?.plan);
-    if (!currentPlan) return 0;
-
-    return subscription?.billing_cycle === 'monthly' ? currentPlan.price.monthly : currentPlan.price.annually;
+    if (!subscription) return 0;
+    const currentPlan = plans.find((p) => p.id === subscription.plan);
+    return currentPlan ? (subscription.billing_cycle === 'monthly' ? currentPlan.price.monthly : currentPlan.price.annually) : 0;
   };
 
   const getDaysLeftInBillingCycle = (): number => {
+    if (!subscription?.next_billing_date) return 0;
     const today = new Date();
-    const nextBilling = new Date(subscription?.next_billing_date || '');
+    const nextBilling = new Date(subscription.next_billing_date);
     const diffTime = nextBilling.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    return Math.max(0, diffDays);
+    return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
   };
 
   const getTotalDaysInBillingCycle = (): number => {
     return subscription?.billing_cycle === 'monthly' ? 30 : 365;
   };
 
+  const getEndOfCurrentBillingPeriod = (): string => {
+    return subscription?.next_billing_date || new Date().toISOString();
+  };
+
+  // Effects
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (!error && data?.user) {
-        setUser(data.user);
-      }
-    };
-    fetchUser();
+    fetchSubscriptionDetails();
+    fetchBillingHistory();
   }, []);
 
+  useEffect(() => {
+    const getUser = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        setUser(currentUser);
+      }
+    };
+    getUser();
+  }, []);
+
+  // Loading state
   if (loading && !subscription) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -486,7 +366,13 @@ const Subscription: React.FC = () => {
     );
   }
 
-  const renderUpgradeDialogContent = () => {
+  // Render methods for dialogs
+  // Inside Subscription.tsx
+
+  /**
+   * Renders the upgrade dialog content
+   */
+  const renderUpgradeDialogContent = (): React.ReactNode => {
     if (!selectedPlan) return null;
     const planDetails = plans.find(p => p.id === selectedPlan);
     if (!planDetails) return null;
@@ -496,7 +382,7 @@ const Subscription: React.FC = () => {
         <div className="mb-4">
           <h3 className="text-lg font-medium mb-2">Upgrade to {planDetails.name}</h3>
           <p className="text-gray-500 dark:text-gray-400">
-            You're upgrading from {subscription.plan} to {selectedPlan}. Your new features will be available immediately.
+            You're upgrading from {subscription?.plan} to {selectedPlan}. Your new features will be available immediately.
           </p>
         </div>
         
@@ -507,7 +393,7 @@ const Subscription: React.FC = () => {
           </h4>
           <ul className="mt-2 space-y-1">
             {planDetails.features
-              .filter(feature => !plans.find(p => p.id === subscription.plan)?.features.includes(feature))
+              .filter(feature => !plans.find(p => p.id === subscription?.plan)?.features.includes(feature))
               .map((feature, index) => (
                 <li key={index} className="flex items-start">
                   <Check size={14} className="text-green-500 mt-1 mr-2 flex-shrink-0" />
@@ -553,7 +439,7 @@ const Subscription: React.FC = () => {
               <span>${billingCycle === 'monthly' ? planDetails.price.monthly : planDetails.price.annually}</span>
             </div>
             <div className="flex justify-between mb-2 text-gray-500 dark:text-gray-400">
-              <span>Current plan: {subscription.plan} (prorated credit)</span>
+              <span>Current plan: {subscription?.plan} (prorated credit)</span>
               <span>-${calculateProratedCredit()}</span>
             </div>
             <div className="border-t dark:border-gray-700 my-2 pt-2 flex justify-between font-medium">
@@ -569,7 +455,10 @@ const Subscription: React.FC = () => {
     );
   };
 
-  const renderDowngradeDialogContent = () => {
+  /**
+   * Renders the downgrade dialog content
+   */
+  const renderDowngradeDialogContent = (): React.ReactNode => {
     if (!selectedPlan) return null;
     const planDetails = plans.find(p => p.id === selectedPlan);
     if (!planDetails) return null;
@@ -579,7 +468,7 @@ const Subscription: React.FC = () => {
         <div className="mb-4">
           <h3 className="text-lg font-medium mb-2">Downgrade to {planDetails.name}</h3>
           <p className="text-gray-500 dark:text-gray-400">
-            You're downgrading from {subscription.plan} to {selectedPlan}. Changes will take effect at the end of your current billing period.
+            You're downgrading from {subscription?.plan} to {selectedPlan}. Changes will take effect at the end of your current billing period.
           </p>
         </div>
         
@@ -589,7 +478,7 @@ const Subscription: React.FC = () => {
             Features you'll lose
           </h4>
           <ul className="mt-2 space-y-1">
-            {plans.find(p => p.id === subscription.plan)?.features
+            {plans.find(p => p.id === subscription?.plan)?.features
               .filter(feature => !planDetails.features.includes(feature))
               .map((feature, index) => (
                 <li key={index} className="flex items-start">
@@ -632,8 +521,8 @@ const Subscription: React.FC = () => {
           
           <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md">
             <div className="flex justify-between mb-2">
-              <span>Current plan: {subscription.plan}</span>
-              <span>Active until: {new Date(subscription.next_billing_date).toLocaleDateString()}</span>
+              <span>Current plan: {subscription?.plan}</span>
+              <span>Active until: {new Date(subscription?.next_billing_date || '').toLocaleDateString()}</span>
             </div>
             <div className="flex justify-between mb-2">
               <span>New plan: {planDetails.name} ({billingCycle})</span>
@@ -642,7 +531,7 @@ const Subscription: React.FC = () => {
               </span>
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-              Your plan will change on {new Date(subscription.next_billing_date).toLocaleDateString()}.
+              Your plan will change on {new Date(subscription?.next_billing_date || '').toLocaleDateString()}.
               You'll continue to have access to your current features until then.
             </div>
           </div>
@@ -651,7 +540,10 @@ const Subscription: React.FC = () => {
     );
   };
 
-  const renderCancelDialogContent = () => {
+  /**
+   * Renders the cancel dialog content
+   */
+  const renderCancelDialogContent = (): React.ReactNode => {
     return (
       <>
         <div className="mb-4">
@@ -667,7 +559,7 @@ const Subscription: React.FC = () => {
             What you'll lose
           </h4>
           <ul className="mt-2 space-y-1">
-            {subscription.plan !== 'basic' && plans.find(p => p.id === subscription.plan)?.features
+            {subscription?.plan !== 'basic' && plans.find(p => p.id === subscription?.plan)?.features
               .filter(feature => !plans.find(p => p.id === 'basic')?.features.includes(feature))
               .map((feature, index) => (
                 <li key={index} className="flex items-start">
@@ -681,8 +573,8 @@ const Subscription: React.FC = () => {
         <div className="mb-4">
           <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md">
             <div className="flex justify-between mb-2">
-              <span>Current plan: {subscription.plan}</span>
-              <span>Active until: {new Date(subscription.next_billing_date).toLocaleDateString()}</span>
+              <span>Current plan: {subscription?.plan}</span>
+              <span>Active until: {new Date(subscription?.next_billing_date || '').toLocaleDateString()}</span>
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
               Your subscription will remain active until the end of your current billing period. 
@@ -694,28 +586,9 @@ const Subscription: React.FC = () => {
     );
   };
 
-  if (loading && !subscription) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (!error && data?.user) {
-        setUser(data.user);
-      }
-    };
-    getUser();
-  }, []);
-
-
   return (
     <div className="space-y-8">
-      {/* Upgrade/Downgrade Dialogs */}
+      {/* Dialog components */}
       <ConfirmDialog
         isOpen={upgradeDialogOpen}
         onClose={() => setUpgradeDialogOpen(false)}
@@ -758,7 +631,7 @@ const Subscription: React.FC = () => {
         {renderCancelDialogContent()}
       </ConfirmDialog>
 
-      {/* Header */}
+      {/* Main content */}
       <div>
         <h1 className="text-2xl font-semibold">Subscription & Billing</h1>
         <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
@@ -773,6 +646,7 @@ const Subscription: React.FC = () => {
             <h2 className="text-lg font-medium mb-1">
               Current Plan: {subscription?.plan.charAt(0).toUpperCase() + subscription?.plan.slice(1)}
             </h2>
+
             <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               {subscription?.status === 'active' ? (
                 <>
@@ -803,7 +677,7 @@ const Subscription: React.FC = () => {
                   </span>
                   {subscription?.end_date && (
                     <span>
-                      Active until {new Date(subscription?.end_date).toLocaleDateString()}
+                      Active until {new Date(subscription.end_date).toLocaleDateString()}
                     </span>
                   )}
                 </>
@@ -812,7 +686,7 @@ const Subscription: React.FC = () => {
           </div>
           <div className="flex gap-2">
             {subscription?.status === 'active' && (
-              <Button variant="danger" onClick={handleCancelSubscription}>
+              <Button variant="danger" onClick={() => setCancelDialogOpen(true)}>
                 Cancel Subscription
               </Button>
             )}
@@ -856,6 +730,114 @@ const Subscription: React.FC = () => {
         </div>
       </div>
 
+      {/* Plans Tab Content */}
+      {activeTab === 'plans' && (
+        <div className="space-y-6">
+          {/* Billing Cycle Toggle */}
+          <div className="flex justify-end">
+            <div className="inline-flex rounded-md shadow-sm">
+              <button
+                onClick={() => setBillingCycle('monthly')}
+                className={`px-4 py-2 text-sm font-medium rounded-l-md border ${
+                  billingCycle === 'monthly'
+                    ? 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBillingCycle('annually')}
+                className={`px-4 py-2 text-sm font-medium rounded-r-md border-t border-r border-b ${
+                  billingCycle === 'annually'
+                    ? 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300'
+                }`}
+              >
+                Annually
+                <span className="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                  Save 20%
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Plan Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {plans.map((plan) => (
+              <Card key={plan.id} className={`relative ${
+                plan.id === subscription?.plan ? 'ring-2 ring-blue-500' : ''
+              }`}>
+                {plan.id === subscription?.plan && (
+                  <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                      Current Plan
+                    </span>
+                  </div>
+                )}
+                <div className="p-6">
+                  <div className="flex items-center mb-4">
+                    <div className="mr-3">{plan.icon}</div>
+                    <div>
+                      <h3 className="text-lg font-medium">{plan.name}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {plan.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <div className="flex items-baseline">
+                      <span className="text-3xl font-bold">
+                        ${billingCycle === 'monthly' ? plan.price.monthly : plan.price.annually}
+                      </span>
+                      <span className="ml-1 text-gray-500 dark:text-gray-400">
+                        /{billingCycle === 'monthly' ? 'month' : 'year'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 mb-6">
+                    <h4 className="font-medium">Features:</h4>
+                    <ul className="space-y-2">
+                      {plan.features.map((feature, index) => (
+                        <li key={index} className="flex items-start">
+                          <Check size={16} className="text-green-500 mt-1 mr-2 flex-shrink-0" />
+                          <span className="text-sm">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {plan.limitations.length > 0 && (
+                      <>
+                        <h4 className="font-medium">Limitations:</h4>
+                        <ul className="space-y-2">
+                          {plan.limitations.map((limitation, index) => (
+                            <li key={index} className="flex items-start">
+                              <XCircle size={16} className="text-red-500 mt-1 mr-2 flex-shrink-0" />
+                              <span className="text-sm">{limitation}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </div>
+
+                  <Button
+                    variant={plan.id === subscription?.plan ? 'secondary' : 'primary'}
+                    className="w-full"
+                    disabled={plan.id === subscription?.plan}
+                    onClick={() => handlePlanSelect(plan.id)}
+                  >
+                    {plan.id === subscription?.plan ? 'Current Plan' : 'Select Plan'}
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Billing History Tab */}
       {activeTab === 'history' && (
         <Card>
@@ -878,4 +860,3 @@ const Subscription: React.FC = () => {
 };
 
 export default Subscription;
-

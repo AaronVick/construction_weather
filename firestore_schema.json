@@ -1,0 +1,737 @@
+[
+    {
+      "table_name": "system_settings",
+      "column_name": "email_config",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "worker_jobsites",
+      "column_name": "worker_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "worker_jobsites",
+      "column_name": "jobsite_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "worker_jobsites",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "jobsites",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "jobsites",
+      "column_name": "client_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "jobsites",
+      "column_name": "is_active",
+      "data_type": "boolean"
+    },
+    {
+      "table_name": "jobsites",
+      "column_name": "weather_monitoring",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "jobsites",
+      "column_name": "location",
+      "data_type": "USER-DEFINED"
+    },
+    {
+      "table_name": "jobsites",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "jobsites",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "jobsites",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "workers",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "workers",
+      "column_name": "is_active",
+      "data_type": "boolean"
+    },
+    {
+      "table_name": "workers",
+      "column_name": "emergency_contact",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "workers",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "workers",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "workers",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "email_logs",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "email_logs",
+      "column_name": "client_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "email_logs",
+      "column_name": "worker_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "email_logs",
+      "column_name": "scheduled_for",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "email_logs",
+      "column_name": "jobsite_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "email_logs",
+      "column_name": "sent_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "weather_checks",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "weather_checks",
+      "column_name": "jobsite_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "weather_checks",
+      "column_name": "weather_data",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "weather_checks",
+      "column_name": "notification_sent",
+      "data_type": "boolean"
+    },
+    {
+      "table_name": "weather_checks",
+      "column_name": "checked_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "subscriptions",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "subscriptions",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "subscriptions",
+      "column_name": "start_date",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "subscriptions",
+      "column_name": "end_date",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "subscriptions",
+      "column_name": "trial_end",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "subscriptions",
+      "column_name": "next_billing_date",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "subscriptions",
+      "column_name": "cancellation_date",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "subscriptions",
+      "column_name": "payment_method",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "subscriptions",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "subscriptions",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "subscriptions",
+      "column_name": "features",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "billing_history",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "billing_history",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "billing_history",
+      "column_name": "amount",
+      "data_type": "numeric"
+    },
+    {
+      "table_name": "billing_history",
+      "column_name": "date",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "system_settings",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "system_settings",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "system_settings",
+      "column_name": "notification_preferences",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "system_settings",
+      "column_name": "ui_preferences",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "system_settings",
+      "column_name": "api_keys",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "system_settings",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "system_settings",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "analytics_data",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "analytics_data",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "analytics_data",
+      "column_name": "start_date",
+      "data_type": "date"
+    },
+    {
+      "table_name": "analytics_data",
+      "column_name": "end_date",
+      "data_type": "date"
+    },
+    {
+      "table_name": "analytics_data",
+      "column_name": "data",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "analytics_data",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "onboarding_completed",
+      "data_type": "boolean"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "notification_channels",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "admin",
+      "data_type": "boolean"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "email_templates",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "email_templates",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "email_templates",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "email_templates",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "geography_columns",
+      "column_name": "coord_dimension",
+      "data_type": "integer"
+    },
+    {
+      "table_name": "geography_columns",
+      "column_name": "srid",
+      "data_type": "integer"
+    },
+    {
+      "table_name": "geometry_columns",
+      "column_name": "coord_dimension",
+      "data_type": "integer"
+    },
+    {
+      "table_name": "geometry_columns",
+      "column_name": "srid",
+      "data_type": "integer"
+    },
+    {
+      "table_name": "spatial_ref_sys",
+      "column_name": "srid",
+      "data_type": "integer"
+    },
+    {
+      "table_name": "spatial_ref_sys",
+      "column_name": "auth_srid",
+      "data_type": "integer"
+    },
+    {
+      "table_name": "clients",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "clients",
+      "column_name": "is_active",
+      "data_type": "boolean"
+    },
+    {
+      "table_name": "clients",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "clients",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "clients",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "worker_jobsites",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "email_logs",
+      "column_name": "recipient_email",
+      "data_type": "text"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "phone",
+      "data_type": "text"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "timezone",
+      "data_type": "text"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "zip_code",
+      "data_type": "text"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "avatar_url",
+      "data_type": "text"
+    },
+    {
+      "table_name": "analytics_data",
+      "column_name": "data_type",
+      "data_type": "text"
+    },
+    {
+      "table_name": "analytics_data",
+      "column_name": "time_period",
+      "data_type": "text"
+    },
+    {
+      "table_name": "email_logs",
+      "column_name": "subject",
+      "data_type": "text"
+    },
+    {
+      "table_name": "email_logs",
+      "column_name": "body",
+      "data_type": "text"
+    },
+    {
+      "table_name": "email_logs",
+      "column_name": "recipient_name",
+      "data_type": "text"
+    },
+    {
+      "table_name": "email_logs",
+      "column_name": "status",
+      "data_type": "text"
+    },
+    {
+      "table_name": "geography_columns",
+      "column_name": "type",
+      "data_type": "text"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "email",
+      "data_type": "text"
+    },
+    {
+      "table_name": "email_logs",
+      "column_name": "trigger",
+      "data_type": "text"
+    },
+    {
+      "table_name": "geometry_columns",
+      "column_name": "type",
+      "data_type": "character varying"
+    },
+    {
+      "table_name": "email_logs",
+      "column_name": "weather_condition",
+      "data_type": "text"
+    },
+    {
+      "table_name": "spatial_ref_sys",
+      "column_name": "auth_name",
+      "data_type": "character varying"
+    },
+    {
+      "table_name": "email_templates",
+      "column_name": "body",
+      "data_type": "text"
+    },
+    {
+      "table_name": "spatial_ref_sys",
+      "column_name": "srtext",
+      "data_type": "character varying"
+    },
+    {
+      "table_name": "spatial_ref_sys",
+      "column_name": "proj4text",
+      "data_type": "character varying"
+    },
+    {
+      "table_name": "email_logs",
+      "column_name": "error_message",
+      "data_type": "text"
+    },
+    {
+      "table_name": "clients",
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "table_name": "clients",
+      "column_name": "email",
+      "data_type": "text"
+    },
+    {
+      "table_name": "clients",
+      "column_name": "phone",
+      "data_type": "text"
+    },
+    {
+      "table_name": "clients",
+      "column_name": "company",
+      "data_type": "text"
+    },
+    {
+      "table_name": "clients",
+      "column_name": "address",
+      "data_type": "text"
+    },
+    {
+      "table_name": "clients",
+      "column_name": "city",
+      "data_type": "text"
+    },
+    {
+      "table_name": "clients",
+      "column_name": "state",
+      "data_type": "text"
+    },
+    {
+      "table_name": "clients",
+      "column_name": "zip_code",
+      "data_type": "text"
+    },
+    {
+      "table_name": "billing_history",
+      "column_name": "description",
+      "data_type": "text"
+    },
+    {
+      "table_name": "clients",
+      "column_name": "notes",
+      "data_type": "text"
+    },
+    {
+      "table_name": "billing_history",
+      "column_name": "status",
+      "data_type": "text"
+    },
+    {
+      "table_name": "billing_history",
+      "column_name": "invoice_url",
+      "data_type": "text"
+    },
+    {
+      "table_name": "weather_checks",
+      "column_name": "conditions_checked",
+      "data_type": "ARRAY"
+    },
+    {
+      "table_name": "weather_checks",
+      "column_name": "conditions_triggered",
+      "data_type": "ARRAY"
+    },
+    {
+      "table_name": "billing_history",
+      "column_name": "receipt_url",
+      "data_type": "text"
+    },
+    {
+      "table_name": "billing_history",
+      "column_name": "payment_method_id",
+      "data_type": "text"
+    },
+    {
+      "table_name": "email_templates",
+      "column_name": "variables",
+      "data_type": "ARRAY"
+    },
+    {
+      "table_name": "email_templates",
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "table_name": "jobsites",
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "table_name": "email_templates",
+      "column_name": "subject",
+      "data_type": "text"
+    },
+    {
+      "table_name": "jobsites",
+      "column_name": "address",
+      "data_type": "text"
+    },
+    {
+      "table_name": "jobsites",
+      "column_name": "city",
+      "data_type": "text"
+    },
+    {
+      "table_name": "jobsites",
+      "column_name": "state",
+      "data_type": "text"
+    },
+    {
+      "table_name": "jobsites",
+      "column_name": "zip_code",
+      "data_type": "text"
+    },
+    {
+      "table_name": "subscriptions",
+      "column_name": "plan",
+      "data_type": "text"
+    },
+    {
+      "table_name": "subscriptions",
+      "column_name": "status",
+      "data_type": "text"
+    },
+    {
+      "table_name": "subscriptions",
+      "column_name": "billing_cycle",
+      "data_type": "text"
+    },
+    {
+      "table_name": "jobsites",
+      "column_name": "notes",
+      "data_type": "text"
+    },
+    {
+      "table_name": "subscriptions",
+      "column_name": "price_id",
+      "data_type": "text"
+    },
+    {
+      "table_name": "subscriptions",
+      "column_name": "customer_id",
+      "data_type": "text"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "full_name",
+      "data_type": "text"
+    },
+    {
+      "table_name": "workers",
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "table_name": "workers",
+      "column_name": "email",
+      "data_type": "text"
+    },
+    {
+      "table_name": "workers",
+      "column_name": "phone",
+      "data_type": "text"
+    },
+    {
+      "table_name": "workers",
+      "column_name": "position",
+      "data_type": "text"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "company",
+      "data_type": "text"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "job_title",
+      "data_type": "text"
+    },
+    {
+      "table_name": "workers",
+      "column_name": "notes",
+      "data_type": "text"
+    },
+    {
+      "table_name": "geography_columns",
+      "column_name": "f_table_name",
+      "data_type": "name"
+    },
+    {
+      "table_name": "geography_columns",
+      "column_name": "f_geography_column",
+      "data_type": "name"
+    },
+    {
+      "table_name": "geometry_columns",
+      "column_name": "f_geometry_column",
+      "data_type": "name"
+    },
+    {
+      "table_name": "geography_columns",
+      "column_name": "f_table_schema",
+      "data_type": "name"
+    },
+    {
+      "table_name": "geography_columns",
+      "column_name": "f_table_catalog",
+      "data_type": "name"
+    },
+    {
+      "table_name": "geometry_columns",
+      "column_name": "f_table_catalog",
+      "data_type": "character varying"
+    },
+    {
+      "table_name": "geometry_columns",
+      "column_name": "f_table_schema",
+      "data_type": "name"
+    },
+    {
+      "table_name": "geometry_columns",
+      "column_name": "f_table_name",
+      "data_type": "name"
+    }
+  ]

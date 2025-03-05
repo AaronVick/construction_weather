@@ -3,13 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, AlertCircle, CheckCircle } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
-import { useSupabase } from '../../contexts/SupabaseContext';
+import { useFirebaseAuth } from '../../hooks/useFirebaseAuth';
+import { handleFirebaseError } from '../../lib/firebaseClient';
 import Button from '../../components/ui/Button';
 
 const ResetPassword: React.FC = () => {
   const theme = useTheme();
 const darkMode = theme ? theme.darkMode : false;
-  const { updatePassword } = useSupabase();
+  const { updatePassword } = useFirebaseAuth();
   const navigate = useNavigate();
   
   const [password, setPassword] = useState('');
@@ -52,7 +53,10 @@ const darkMode = theme ? theme.darkMode : false;
       const { error: updateError } = await updatePassword(password);
       
       if (updateError) {
-        throw updateError;
+        const errorInfo = handleFirebaseError(updateError);
+        setError(errorInfo.message || 'Failed to reset password. Please try again.');
+        setLoading(false);
+        return;
       }
       
       setSuccess(true);
@@ -63,8 +67,7 @@ const darkMode = theme ? theme.darkMode : false;
       }, 3000);
     } catch (err: any) {
       console.error('Password reset error:', err);
-      setError(err.message || 'Failed to reset password. Please try again.');
-    } finally {
+      setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
   };

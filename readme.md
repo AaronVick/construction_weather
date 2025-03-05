@@ -202,3 +202,95 @@ Automation:
 Trigger for updating updated_at timestamps
 New user onboarding automation
 Default email template creation
+
+
+
+# Supabase Initial Schema
+ ```
+ -- Enable UUID extension (needed for unique identifiers)
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Users Table
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email TEXT UNIQUE NOT NULL,
+    name TEXT,
+    team_id UUID NOT NULL,
+    subscription_id UUID,
+    subscription_status TEXT DEFAULT 'inactive',
+    created_at TIMESTAMP DEFAULT now(),
+    FOREIGN KEY (team_id) REFERENCES teams (id) ON DELETE CASCADE,
+    FOREIGN KEY (subscription_id) REFERENCES subscriptions (id) ON DELETE SET NULL
+);
+
+-- Teams Table (Every user gets a default team)
+CREATE TABLE teams (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    owner_id UUID UNIQUE NOT NULL, -- Ensures one owner per team
+    created_at TIMESTAMP DEFAULT now(),
+    FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+-- Subscriptions Table (Links to Stripe)
+CREATE TABLE subscriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID UNIQUE NOT NULL,
+    price_id TEXT NOT NULL, -- Links to Stripe pricing ID
+    status TEXT DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT now(),
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+-- Admin Table (Tracks Admin Roles)
+CREATE TABLE admin (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID UNIQUE NOT NULL,
+    role TEXT CHECK (role IN ('superadmin', 'moderator')),
+    created_at TIMESTAMP DEFAULT now(),
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+-- Indexes for Performance
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_team ON users(team_id);
+CREATE INDEX idx_users_subscription ON users(subscription_id);
+CREATE INDEX idx_teams_owner ON teams(owner_id);
+CREATE INDEX idx_subscriptions_user ON subscriptions(user_id);
+
+-- Enable Row-Level Security (RLS)
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE admin ENABLE ROW LEVEL SECURITY;
+
+-- User RLS Policy: Users can only see their own data
+CREATE POLICY "Allow user access to own data"
+ON users
+FOR SELECT USING (auth.uid() = id);
+
+-- Teams RLS Policy: Users can only access their own team
+CREATE POLICY "Allow user access to their own team"
+ON teams
+FOR SELECT USING (auth.uid() = owner_id);
+
+-- Subscriptions RLS Policy: Users can only access their own subscriptions
+CREATE POLICY "Allow user access to their subscription"
+ON subscriptions
+FOR SELECT USING (auth.uid() = user_id);
+
+-- Admin RLS Policy: Only Admins can see all user data
+CREATE POLICY "Allow admin access to users"
+ON users
+FOR SELECT USING (
+  EXISTS (SELECT 1 FROM admin WHERE admin.user_id = auth.uid() AND admin.role = 'superadmin')
+);
+
+-- Admin RLS Policy: Only Admins can access admin table
+CREATE POLICY "Allow admin access to admin table"
+ON admin
+FOR SELECT USING (
+  EXISTS (SELECT 1 FROM admin WHERE admin.user_id = auth.uid() AND admin.role = 'superadmin')
+);
+
+ ```

@@ -1,0 +1,157 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+             exists(/databases/$(database)/documents/admins/$(request.auth.email));
+    }
+    
+    function hasRole(role) {
+      let adminDoc = get(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return adminDoc.data.role == role;
+    }
+    
+    // Allow list queries for user's own data
+    function isUserData() {
+      return request.auth.uid == resource.data.user_id;
+    }
+    
+    // Admin collection - only admins can read, only super_admins can write
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() && hasRole('super_admin');
+    }
+    
+    // User profiles - users can read/write their own, admins can read/write all
+    match /user_profiles/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+    
+    // Clients - users can read/write their own, admins can read/write all
+    match /clients/{clientId} {
+      allow read, write: if resource.data.user_id == request.auth.uid || isAdmin();
+      allow create: if request.resource.data.user_id == request.auth.uid || isAdmin();
+      // Allow list and aggregation queries
+      allow list: if request.auth != null;
+    }
+    
+    // Jobsites - users can read/write their own, admins can read/write all
+    match /jobsites/{jobsiteId} {
+      allow read, write: if resource.data.user_id == request.auth.uid || isAdmin();
+      allow create: if request.resource.data.user_id == request.auth.uid || isAdmin();
+      // Allow list and aggregation queries
+      allow list: if request.auth != null;
+    }
+    
+    // Workers - users can read/write their own, admins can read/write all
+    match /workers/{workerId} {
+      allow read, write: if resource.data.user_id == request.auth.uid || isAdmin();
+      allow create: if request.resource.data.user_id == request.auth.uid || isAdmin();
+      // Allow list and aggregation queries
+      allow list: if request.auth != null;
+    }
+    
+    // Worker-jobsite relationships - users can read/write their own, admins can read/write all
+    match /worker_jobsites/{relationId} {
+      allow read, write: if resource.data.user_id == request.auth.uid || isAdmin();
+      allow create: if request.resource.data.user_id == request.auth.uid || isAdmin();
+      // Allow list and aggregation queries
+      allow list: if request.auth != null;
+    }
+    
+    // Subscriptions - users can read their own, admins can read/write all
+    match /subscriptions/{subscriptionId} {
+      allow read: if resource.data.user_id == request.auth.uid || isAdmin();
+      allow write: if isAdmin();
+      // Allow list and aggregation queries
+      allow list: if request.auth != null;
+    }
+    
+    // Billing history - users can read their own, admins can read/write all
+    match /billing_history/{billingId} {
+      allow read: if resource.data.user_id == request.auth.uid || isAdmin();
+      allow write: if isAdmin();
+      // Allow list and aggregation queries
+      allow list: if request.auth != null;
+    }
+    
+    // Email logs - users can read their own, admins can read/write all
+    match /email_logs/{logId} {
+      allow read: if resource.data.user_id == request.auth.uid || isAdmin();
+      allow write: if isAdmin();
+      // Allow list and aggregation queries
+      allow list: if request.auth != null;
+    }
+    
+    // Email templates - admins can read/write all, users can read
+    match /email_templates/{templateId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+      // Allow list and aggregation queries
+      allow list: if request.auth != null;
+    }
+    
+    // Weather checks - users can read/write their own, admins can read/write all
+    match /weather_checks/{checkId} {
+      allow read, write: if resource.data.user_id == request.auth.uid || isAdmin();
+      allow create: if request.resource.data.user_id == request.auth.uid || isAdmin();
+      // Allow list and aggregation queries
+      allow list: if request.auth != null;
+    }
+    
+    // Weather alerts - users can read/write their own, admins can read/write all
+    match /weather_alerts/{alertId} {
+      allow read, write: if resource.data.user_id == request.auth.uid || isAdmin();
+      allow create: if request.resource.data.user_id == request.auth.uid || isAdmin();
+      // Allow list and aggregation queries
+      allow list: if request.auth != null;
+    }
+    
+    // Emails collection - users can read/write their own, admins can read/write all
+    match /emails/{emailId} {
+      allow read, write: if resource.data.user_id == request.auth.uid || isAdmin();
+      allow create: if request.resource.data.user_id == request.auth.uid || isAdmin();
+      // Allow list and aggregation queries
+      allow list: if request.auth != null;
+    }
+    
+    // Analytics data - only admins can read/write
+    match /analytics_data/{dataId} {
+      allow read, write: if isAdmin();
+      // Allow list and aggregation queries for admins
+      allow list: if isAdmin();
+    }
+    
+    // System settings - only admins can read/write
+    match /system_settings/{settingId} {
+      allow read, write: if isAdmin();
+      // Allow list and aggregation queries for admins
+      allow list: if isAdmin();
+    }
+    
+    // Geography and geometry columns - read-only for all authenticated users
+    match /geography_columns/{columnId} {
+      allow read: if isSignedIn();
+      allow list: if isSignedIn();
+    }
+    
+    match /geometry_columns/{columnId} {
+      allow read: if isSignedIn();
+      allow list: if isSignedIn();
+    }
+    
+    match /spatial_ref_sys/{refId} {
+      allow read: if isSignedIn();
+      allow list: if isSignedIn();
+    }
+  }
+}

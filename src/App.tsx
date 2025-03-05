@@ -1,10 +1,14 @@
+// src/App.tsx
+
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { SupabaseProvider } from './contexts/SupabaseContext';
+import { FirebaseProvider } from './contexts/FirebaseContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import { ToastProvider } from './contexts/ToastContext';
-import { useSupabaseAuth } from './hooks/useSupabaseAuth';
+import { AdminProvider } from './contexts/AdminContext';
+import { useFirebaseAuth } from './hooks/useFirebaseAuth';
+import { useAdmin } from './contexts/AdminContext';
 import './index.css'; // Ensure this imports Tailwind CSS
 import './styles/globals.css'; // Import global styles if you have them
 
@@ -32,16 +36,46 @@ const Subscription = lazy(() => import('./pages/dashboard/Subscription'));
 const Settings = lazy(() => import('./pages/dashboard/Settings'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const ProtectedRoute = lazy(() => import('./components/auth/ProtectedRoute'));
+const AdminProtectedRoute = lazy(() => import('./components/auth/AdminProtectedRoute'));
 const PremiumFeature = lazy(() => import('./components/subscription/PremiumFeature'));
 const LoadingScreen = lazy(() => import('./components/ui/LoadingScreen'));
 const ErrorBoundary = lazy(() => import('./components/ErrorBoundary'));
 
-const AppRoutes: React.FC = () => {
-  console.log('AppRoutes: Rendering...');
-  const { user, loading, error } = useSupabaseAuth();
+// Admin components
+const AdminLayout = lazy(() => import('./components/layout/AdminLayout'));
+const AdminLogin = lazy(() => import('./pages/admin/Login'));
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
+const AdminSubscriptions = lazy(() => import('./pages/admin/Subscriptions'));
+const AdminRevenue = lazy(() => import('./pages/admin/Revenue'));
+const AdminUsers = lazy(() => import('./pages/admin/Users'));
+const AdminBilling = lazy(() => import('./pages/admin/Billing'));
+const AdminReports = lazy(() => import('./pages/admin/Reports'));
+const AdminSettings = lazy(() => import('./pages/admin/Settings'));
 
-  if (loading) {
-    console.log('AppRoutes: Loading user data...');
+const AppRoutes: React.FC = () => {
+  const { user, isLoading: loading } = useFirebaseAuth();
+  const { isAdmin, isLoading: adminLoading } = useAdmin();
+  
+  console.log('AppRoutes - Auth State:', { 
+    user: user?.email, 
+    loading, 
+    isAdmin, 
+    adminLoading,
+    path: window.location.pathname
+  });
+  
+  const isPublicRoute = window.location.pathname === '/' || 
+                       window.location.pathname === '/login' || 
+                       window.location.pathname === '/register' ||
+                       window.location.pathname === '/forgot-password' ||
+                       window.location.pathname === '/reset-password' ||
+                       window.location.pathname === '/admin/login';
+  
+  const isAdminRoute = window.location.pathname.startsWith('/admin/');
+
+  // Only show loading screen for authenticated routes
+  if ((loading || adminLoading) && !isPublicRoute) {
+    console.log('AppRoutes - Showing loading screen for authenticated route');
     return (
       <Suspense fallback={<div>Loading...</div>}>
         <LoadingScreen />
@@ -49,24 +83,13 @@ const AppRoutes: React.FC = () => {
     );
   }
 
-  if (error) {
-    console.error('AppRoutes: Auth error:', error);
-    return (
-      <div className="p-4 bg-red-50 text-red-700 rounded">
-        Authentication error: {error.message}
-      </div>
-    );
-  }
-
-  console.log('AppRoutes: User:', user ? 'Authenticated' : 'Not authenticated');
-
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
-        {/* Public Routes */}
+        {/* Public Routes - No auth check needed */}
         <Route
           path="/"
-          element={user ? <Navigate to="/dashboard" /> : <LandingPage />}
+          element={<LandingPage />}
         />
         <Route
           path="/login"
@@ -78,6 +101,9 @@ const AppRoutes: React.FC = () => {
         />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        
+        {/* Admin Login - Separate from user login */}
+        <Route path="/admin/login" element={<AdminLogin />} />
 
         {/* Protected Dashboard Routes */}
         <Route element={<ProtectedRoute />}>
@@ -90,14 +116,7 @@ const AppRoutes: React.FC = () => {
               path="/clients/:id/edit"
               element={<ClientDetail isEdit={true} />}
             />
-            <Route
-              path="/jobsites"
-              element={
-                <PremiumFeature requiredPlan="premium" fallback="/subscription">
-                  <Jobsites />
-                </PremiumFeature>
-              }
-            />
+            <Route path="/jobsites" element={<Jobsites />} />
             <Route
               path="/jobsites/new"
               element={
@@ -123,16 +142,23 @@ const AppRoutes: React.FC = () => {
             />
             <Route path="/weather" element={<WeatherAutomation />} />
             <Route path="/email" element={<EmailConfiguration />} />
-            <Route
-              path="/analytics"
-              element={
-                <PremiumFeature requiredPlan="premium" fallback="/subscription">
-                  <Analytics />
-                </PremiumFeature>
-              }
-            />
+            <Route path="/analytics" element={<Analytics />} />
             <Route path="/subscription" element={<Subscription />} />
             <Route path="/settings" element={<Settings />} />
+          </Route>
+        </Route>
+
+        {/* Admin Routes */}
+        <Route element={<AdminProtectedRoute />}>
+          <Route element={<AdminLayout />}>
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
+            <Route path="/admin/billing" element={<AdminBilling />} />
+            <Route path="/admin/revenue" element={<AdminRevenue />} />
+            <Route path="/admin/reports" element={<AdminReports />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           </Route>
         </Route>
 
@@ -148,13 +174,15 @@ const App: React.FC = () => {
     <ErrorBoundary>
       <BrowserRouter>
         <ThemeProvider>
-          <SupabaseProvider>
+          <FirebaseProvider>
             <SubscriptionProvider>
-              <ToastProvider>
-                <AppRoutes />
-              </ToastProvider>
+              <AdminProvider>
+                <ToastProvider>
+                  <AppRoutes />
+                </ToastProvider>
+              </AdminProvider>
             </SubscriptionProvider>
-          </SupabaseProvider>
+          </FirebaseProvider>
         </ThemeProvider>
       </BrowserRouter>
     </ErrorBoundary>
@@ -162,168 +190,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-
-
-
-// before console logging
-
-// import React, { useEffect } from 'react';
-// import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-// import { SupabaseProvider } from './contexts/SupabaseContext';
-// import { ThemeProvider } from './contexts/ThemeContext';
-// import { SubscriptionProvider } from './contexts/SubscriptionContext';
-// import { ToastProvider } from './contexts/ToastContext';
-// import { useSupabaseAuth } from './hooks/useSupabaseAuth';
-
-// // Landing Page
-// import LandingPage from './pages/LandingPage';
-
-// // Layouts
-// import DashboardLayout from './components/layout/DashboardLayout';
-
-// // Auth Pages
-// import Login from './pages/auth/Login';
-// import Register from './pages/auth/Register';
-// import ForgotPassword from './pages/auth/ForgotPassword';
-// import ResetPassword from './pages/auth/ResetPassword';
-
-// // Dashboard Pages
-// import Dashboard from './pages/dashboard/Dashboard';
-// import Clients from './pages/dashboard/Clients';
-// import ClientDetail from './pages/dashboard/ClientDetail';
-// import Jobsites from './pages/dashboard/Jobsites';
-// import JobsiteDetail from './pages/dashboard/JobsiteDetail';
-// import Workers from './pages/dashboard/Workers';
-// import WorkerDetail from './pages/dashboard/WorkerDetail';
-// import WeatherAutomation from './pages/dashboard/WeatherAutomation';
-// import EmailConfiguration from './pages/dashboard/EmailConfiguration';
-// import Analytics from './pages/dashboard/Analytics';
-// import Subscription from './pages/dashboard/Subscription';
-// import Settings from './pages/dashboard/Settings';
-
-// // Utility components
-// import ProtectedRoute from './components/auth/ProtectedRoute';
-// import PremiumFeature from './components/subscription/PremiumFeature';
-// import LoadingScreen from './components/ui/LoadingScreen';
-// import NotFound from './pages/NotFound';
-
-// // error boundary
-// import ErrorBoundary from './components/ErrorBoundary';
-
-// const AppRoutes: React.FC = () => {
-//   console.log('App initializing');
-//   const { user, loading } = useSupabaseAuth();
-  
-//   if (loading) {
-//     return <LoadingScreen />;
-//   }
-  
-//   return (
-//     <Routes>
-//       {/* Public Routes */}
-//       <Route path="/" element={<LandingPage />} />
-//       <Route 
-//         path="/login" 
-//         element={user ? <Navigate to="/dashboard" /> : <Login />} 
-//       />
-//       <Route 
-//         path="/register" 
-//         element={user ? <Navigate to="/dashboard" /> : <Register />} 
-//       />
-//       <Route path="/forgot-password" element={<ForgotPassword />} />
-//       <Route path="/reset-password" element={<ResetPassword />} />
-
-//       {/* Protected Dashboard Routes */}
-//       <Route element={<ProtectedRoute />}>
-//         <Route element={<DashboardLayout />}>
-//           <Route path="/dashboard" element={<Dashboard />} />
-          
-//           {/* Client Routes */}
-//           <Route path="/clients" element={<Clients />} />
-//           <Route path="/clients/new" element={<ClientDetail />} />
-//           <Route path="/clients/:id" element={<ClientDetail />} />
-//           <Route 
-//             path="/clients/:id/edit" 
-//             element={<ClientDetail isEdit={true} />} 
-//           />
-          
-//           {/* Jobsite Routes - Premium Feature */}
-//           <Route 
-//             path="/jobsites" 
-//             element={
-//               <PremiumFeature requiredPlan="premium" fallback="/subscription">
-//                 <Jobsites />
-//               </PremiumFeature>
-//             } 
-//           />
-//           <Route 
-//             path="/jobsites/new" 
-//             element={
-//               <PremiumFeature requiredPlan="premium" fallback="/subscription">
-//                 <JobsiteDetail />
-//               </PremiumFeature>
-//             } 
-//           />
-//           <Route 
-//             path="/jobsites/:id" 
-//             element={
-//               <PremiumFeature requiredPlan="premium" fallback="/subscription">
-//                 <JobsiteDetail />
-//               </PremiumFeature>
-//             } 
-//           />
-          
-//           {/* Worker Routes */}
-//           <Route path="/workers" element={<Workers />} />
-//           <Route path="/workers/new" element={<WorkerDetail />} />
-//           <Route path="/workers/:id" element={<WorkerDetail />} />
-//           <Route 
-//             path="/workers/:id/edit" 
-//             element={<WorkerDetail isEdit={true} />} 
-//           />
-          
-//           {/* Configuration Routes */}
-//           <Route path="/weather" element={<WeatherAutomation />} />
-//           <Route path="/email" element={<EmailConfiguration />} />
-          
-//           {/* Analytics - Premium Feature */}
-//           <Route 
-//             path="/analytics" 
-//             element={
-//               <PremiumFeature requiredPlan="premium" fallback="/subscription">
-//                 <Analytics />
-//               </PremiumFeature>
-//             } 
-//           />
-          
-//           {/* Settings Routes */}
-//           <Route path="/subscription" element={<Subscription />} />
-//           <Route path="/settings" element={<Settings />} />
-//         </Route>
-//       </Route>
-
-//       {/* 404 Route */}
-//       <Route path="*" element={<NotFound />} />
-//     </Routes>
-//   );
-// };
-
-// const App: React.FC = () => {
-//   return (
-//     <ErrorBoundary> 
-//     <BrowserRouter>
-//       <ThemeProvider>
-//         <SupabaseProvider>
-//           <SubscriptionProvider>
-//             <ToastProvider>
-//               <AppRoutes />
-//             </ToastProvider>
-//           </SubscriptionProvider>
-//         </SupabaseProvider>
-//       </ThemeProvider>
-//     </BrowserRouter>
-//    </ErrorBoundary>
-//   );
-// };
-
-// export default App;

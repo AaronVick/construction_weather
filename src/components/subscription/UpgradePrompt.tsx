@@ -65,7 +65,7 @@ const darkMode = theme ? theme.darkMode : false;
   const displayFeatures = features || defaultFeatures;
   
   const handleUpgradeClick = () => {
-    navigate('/dashboard/subscription');
+    navigate('/subscription');
   };
   
   if (compact) {

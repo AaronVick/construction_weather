@@ -3,13 +3,14 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, AlertCircle } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
-import { useSupabase } from '../../contexts/SupabaseContext';
+import { useFirebaseAuth } from '../../hooks/useFirebaseAuth';
+import { handleFirebaseError } from '../../lib/firebaseClient';
 import Button from '../../components/ui/Button';
 
 const Register: React.FC = () => {
   const theme = useTheme();
 const darkMode = theme ? theme.darkMode : false;
-  const { signUp } = useSupabase();
+  const { signUp } = useFirebaseAuth();
   const navigate = useNavigate();
   
   const [email, setEmail] = useState('');
@@ -40,15 +41,17 @@ const darkMode = theme ? theme.darkMode : false;
       const { error: signUpError } = await signUp(email, password);
       
       if (signUpError) {
-        throw signUpError;
+        const errorInfo = handleFirebaseError(signUpError);
+        setError(errorInfo.message || 'Failed to create account. Please try again.');
+        setLoading(false);
+        return;
       }
       
-      // Redirect to confirmation page or login
-      navigate('/register-success');
+      // Firebase automatically signs in the user after registration
+      navigate('/dashboard');
     } catch (err: any) {
       console.error('Registration error:', err);
-      setError(err.message || 'Failed to create account. Please try again.');
-    } finally {
+      setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
   };

@@ -35,7 +35,7 @@ const darkMode = theme ? theme.darkMode : false;
     (requiredPlan === 'enterprise' && subscription.plan === 'enterprise');
   
   const handleUpgrade = () => {
-    navigate('/dashboard/subscription');
+    navigate('/subscription');
   };
   
   // If the user has access, render the children

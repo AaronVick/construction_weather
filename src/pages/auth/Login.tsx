@@ -3,13 +3,14 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
-import { useSupabase } from '../../contexts/SupabaseContext';
+import { useFirebaseAuth } from '../../hooks/useFirebaseAuth';
+import { handleFirebaseError } from '../../lib/firebaseClient';
 import Button from '../../components/ui/Button';
 
 const Login: React.FC = () => {
   const theme = useTheme();
 const darkMode = theme ? theme.darkMode : false;
-  const { signIn } = useSupabase();
+  const { signIn } = useFirebaseAuth();
   const navigate = useNavigate();
   
   const [email, setEmail] = useState('');
@@ -26,14 +27,16 @@ const darkMode = theme ? theme.darkMode : false;
       const { error: signInError } = await signIn(email, password);
       
       if (signInError) {
-        throw signInError;
+        const errorInfo = handleFirebaseError(signInError);
+        setError(errorInfo.message || 'Failed to sign in. Please check your credentials.');
+        setLoading(false);
+        return;
       }
       
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || 'Failed to sign in. Please check your credentials.');
-    } finally {
+      setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
   };

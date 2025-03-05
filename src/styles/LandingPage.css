@@ -219,3 +219,97 @@
   color: red;
   margin-bottom: 1rem;
 }
+
+/* Feature Comparison Section */
+.feature-comparison-section {
+  padding: 4rem 2rem;
+  background-color: #f9fafb;
+  text-align: center;
+}
+
+.feature-comparison {
+  margin-top: 2rem;
+  overflow-x: auto;
+}
+
+.feature-comparison table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.feature-comparison th,
+.feature-comparison td {
+  padding: 1rem;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+}
+
+.feature-comparison th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+}
+
+.feature-comparison td {
+  color: #6b7280;
+}
+
+.feature-comparison .text-green-500 {
+  color: #10b981;
+}
+
+.feature-comparison .text-red-500 {
+  color: #ef4444;
+}
+
+
+.pricing-modal {
+  @apply fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center;
+}
+
+.pricing-modal-content {
+  @apply bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 relative;
+}
+
+.checkout-modal {
+  @apply fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center;
+}
+
+.checkout-content {
+  @apply bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 relative;
+}
+
+.close-button {
+  @apply absolute top-4 right-4 text-gray-400 hover:text-gray-500 transition-colors;
+}
+
+.error-message {
+  @apply mt-4 p-4 bg-red-50 text-red-700 rounded-md;
+}
+
+/* Add hover effects to pricing cards */
+.pricing-card {
+  @apply transition-transform duration-300 hover:-translate-y-2;
+}
+
+/* Add subtle animation to checkmark icons */
+.pricing-card svg {
+  @apply transition-transform duration-300;
+}
+
+.pricing-card:hover svg {
+  @apply transform scale-110;
+}
+
+/* Add loading spinner for Checkout */
+.loading-spinner {
+  @apply animate-spin h-5 w-5 text-white;
+}
+
+/* Add focus styles for accessibility */
+.pricing-card button:focus {
+  @apply outline-none ring-2 ring-offset-2 ring-indigo-500;
+}

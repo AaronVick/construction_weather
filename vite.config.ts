@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import type { UserConfig } from 'vite';
 
 export default defineConfig({
-  base: "/", // ✅ Ensures React Router works correctly
+  base: "/",
   plugins: [
     react(),
   ],
@@ -48,12 +49,16 @@ export default defineConfig({
           state: ['zustand', 'swr'],
         },
         assetFileNames: (assetInfo) => {
+          if (!assetInfo.name) return 'assets/[name].[hash][extname]';
+          
           const info = assetInfo.name.split('.');
-          const ext = info[info.length - 1];
+          const ext = info.pop() || '';
+          const name = info.join('.');
+          
           if (/\.(png|jpe?g|gif|svg|ico|webp)$/i.test(assetInfo.name)) {
-            return `images/[name].[hash].[ext]`;
+            return `images/${name}.[hash].${ext}`;
           }
-          return `assets/[name].[hash].[ext]`;
+          return `assets/${name}.[hash].${ext}`;
         },
         chunkFileNames: 'js/[name].[hash].js',
         entryFileNames: 'js/[name].[hash].js',
@@ -73,12 +78,6 @@ export default defineConfig({
     port: 3000,
     open: true,
   },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
-    css: true,
-  },
   optimizeDeps: {
     include: [
       'react',
@@ -90,4 +89,4 @@ export default defineConfig({
       'lodash',
     ],
   },
-});
+} as UserConfig);

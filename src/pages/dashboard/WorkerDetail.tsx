@@ -6,11 +6,13 @@ import { useTheme } from '../../hooks/useTheme';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 
+
 interface WorkerDetailProps {
   isEdit?: boolean;
 }
 
 const WorkerDetail: React.FC<WorkerDetailProps> = ({ isEdit = false }) => {
+
 
   const theme = useTheme();
 const darkMode = theme ? theme.darkMode : false;
@@ -19,7 +21,7 @@ const darkMode = theme ? theme.darkMode : false;
   const [loading, setLoading] = useState(false);
   
   const handleBack = () => {
-    navigate('/dashboard/workers');
+    navigate('/workers');
   };
   
   return (

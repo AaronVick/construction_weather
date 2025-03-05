@@ -1,35 +1,42 @@
 // src/hooks/useSubscription.ts
 import { useState, useEffect } from 'react';
-import { useSupabaseAuth } from './useSupabaseAuth';
-import { supabase } from '../lib/supabaseClient';
+import { useFirebaseAuth } from './useFirebaseAuth';
+import { db } from '../lib/firebaseClient';
 import { Subscription } from '../types/subscription';
 import { defaultSubscription } from '../defaults/subscriptionDefaults';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 export function useSubscription() {
-  const { user } = useSupabaseAuth();
+  const { user } = useFirebaseAuth();
   const [subscription, setSubscription] = useState<Subscription>(defaultSubscription);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchSubscription() {
       try {
-        if (!user?.id) return;
+        if (!user?.uid) return;
 
-        const { data, error } = await supabase
-          .from('subscriptions')
-          .select('*, features')
-          .eq('user_id', user.id)
-          .single();
+        const subscriptionsQuery = query(
+          collection(db, 'subscriptions'),
+          where('user_id', '==', user.uid)
+        );
 
-        if (error) {
-          console.error('Error fetching subscription:', error);
+        const querySnapshot = await getDocs(subscriptionsQuery);
+        
+        if (querySnapshot.empty) {
+          console.log('No subscription found for user');
+          setLoading(false);
           return;
         }
+
+        // Get the first subscription document
+        const subscriptionDoc = querySnapshot.docs[0];
+        const data = subscriptionDoc.data();
 
         if (data) {
           // Transform to match our Subscription type
           const transformedData: Subscription = {
-            id: data.id,
+            id: subscriptionDoc.id,
             user_id: data.user_id,
             plan: data.plan,
             status: data.status,
@@ -50,7 +57,7 @@ export function useSubscription() {
           setSubscription(transformedData);
         }
       } catch (error) {
-        console.error('Error in subscription hook:', error);
+        console.error('Error fetching user subscription:', error);
       } finally {
         setLoading(false);
       }

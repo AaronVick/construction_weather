@@ -3,13 +3,14 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
-import { useSupabase } from '../../contexts/SupabaseContext';
+import { useFirebaseAuth } from '../../hooks/useFirebaseAuth';
+import { handleFirebaseError } from '../../lib/firebaseClient';
 import Button from '../../components/ui/Button';
 
 const ForgotPassword: React.FC = () => {
   const theme = useTheme();
 const darkMode = theme ? theme.darkMode : false;
-  const { resetPassword } = useSupabase();
+  const { resetPassword } = useFirebaseAuth();
   
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,14 +27,17 @@ const darkMode = theme ? theme.darkMode : false;
       const { error: resetError } = await resetPassword(email);
       
       if (resetError) {
-        throw resetError;
+        const errorInfo = handleFirebaseError(resetError);
+        setError(errorInfo.message || 'Failed to send password reset email. Please try again.');
+        setLoading(false);
+        return;
       }
       
       setSuccess(true);
+      setLoading(false);
     } catch (err: any) {
       console.error('Password reset error:', err);
-      setError(err.message || 'Failed to send password reset email. Please try again.');
-    } finally {
+      setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
   };

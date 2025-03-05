@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { useToast } from '../../hooks/useToast';
 import { createClient, updateClient, getClient } from '../../services/clientService';
-import { supabase } from '../../lib/supabaseClient';
+import { auth } from '../../lib/firebaseClient';
+import { useFirebaseAuth } from '../../hooks/useFirebaseAuth';
 
 
 // Components
@@ -26,14 +27,14 @@ interface ClientFormProps {
 }
 
 export async function getCurrentUserId(): Promise<string | null> {
-  const { data, error } = await supabase.auth.getUser();
-
-  if (error || !data?.user) {
-    console.error('Error fetching user:', error?.message);
+  const user = auth.currentUser;
+  
+  if (!user) {
+    console.error('No authenticated user found');
     return null;
   }
 
-  return data.user.id;
+  return user.uid;
 }
 
 const ClientForm: React.FC<ClientFormProps> = ({ clientId, isEdit = false }) => {

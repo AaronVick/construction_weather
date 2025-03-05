@@ -1,569 +1,370 @@
-// src/services/dataService.ts
-import { supabase } from '../lib/supabaseClient';
-import { ClientStats } from '../types/client';
-import { JobsiteStats } from '../types/jobsite';
-import { WorkerStats } from '../types/worker';
-import { NotificationStats } from '../types/notification';
+// src/services/firebaseDataService.ts
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  getDoc, 
+  doc, 
+  getCountFromServer,
+  Timestamp
+} from 'firebase/firestore';
+import { db, auth } from '../lib/firebaseClient';
 
-
-interface EmailLog {
-  id: number;
-  trigger: string;
-  subject: string;
-  recipient_name: string;
-  sent_at: string;
-  status: string;
-}
-
-interface ActivityItem {
-  id: number;
-  type: string;
-  message: string;
-  timestamp: string;
-  status: string;
-}
-
-
-export interface DashboardData {
-  clientStats: ClientStats;
-  jobsiteStats: JobsiteStats;
-  workerStats: WorkerStats;
-  notificationStats: NotificationStats;
-  recentActivity: Array<{
-    id: number;
-    type: string;
-    message: string;
-    timestamp: string;
-    status: string;
-  }>;
-  weatherAlertMetrics: Array<{
-    month: string;
-    count: number;
-  }>;
-}
-
-export async function getDashboardData(): Promise<{
-  data: DashboardData | null;
-  error: Error | null;
-}> {
-  console.log('getDashboardData: Starting data fetch');
+/**
+ * Get client statistics for the current user
+ */
+export async function getClientStats() {
   try {
-    // Get authenticated user
-    console.log('getDashboardData: Fetching authenticated user');
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError) {
-      console.error('getDashboardData: User auth error:', userError);
-      throw userError;
-    }
-    
-    if (!user) {
-      console.error('getDashboardData: No authenticated user found');
-      throw new Error('Not authenticated');
-    }
+    const user = auth.currentUser;
+    if (!user) throw new Error('Not authenticated');
 
-    console.log('getDashboardData: User authenticated successfully:', {
-      userId: user.id,
-      email: user.email
-    });
-    
-    // Use the existing helper functions to get all stats in parallel
-    const [
-      clientStats,
-      jobsiteStats,
-      workerStats,
-      notificationStats,
-      recentActivity,
-      weatherAlertMetrics
-    ] = await Promise.all([
-      getClientStats(user.id),
-      getJobsiteStats(user.id),
-      getWorkerStats(user.id),
-      getNotificationStats(user.id),
-      getRecentActivity(user.id),
-      getWeatherAlertMetrics(user.id)
-    ]);
+    // Get total clients
+    const totalQuery = query(
+      collection(db, 'clients'),
+      where('user_id', '==', user.uid)
+    );
+    const totalSnapshot = await getCountFromServer(totalQuery);
+    const total = totalSnapshot.data().count;
 
-    return {
-      data: {
-        clientStats,
-        jobsiteStats,
-        workerStats,
-        notificationStats,
-        recentActivity,
-        weatherAlertMetrics
-      },
-      error: null
-    };
-  } catch (error) {
-    console.error('Error fetching dashboard data:', error);
-    return {
-      data: null,
-      error: error as Error
-    };
-  }
-}
+    // Get active clients
+    const activeQuery = query(
+      collection(db, 'clients'),
+      where('user_id', '==', user.uid),
+      where('is_active', '==', true)
+    );
+    const activeSnapshot = await getCountFromServer(activeQuery);
+    const active = activeSnapshot.data().count;
 
-/**
- * Gets client statistics
- */
-async function getClientStats(userId: string): Promise<ClientStats> {
-  // Get total clients
-  const { count: total } = await supabase
-    .from('clients')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId);
-  
-  // Get active clients
-  const { count: active } = await supabase
-    .from('clients')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('is_active', true);
-  
-  // Get inactive clients
-  const { count: inactive } = await supabase
-    .from('clients')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('is_active', false);
-  
-  // Get recently added clients (last 30 days)
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
-  const { count: recentlyAdded } = await supabase
-    .from('clients')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .gte('created_at', thirtyDaysAgo.toISOString());
-  
-  return {
-    total: total || 0,
-    active: active || 0,
-    inactive: inactive || 0,
-    recentlyAdded: recentlyAdded || 0,
-  };
-}
+    // Get inactive clients
+    const inactiveQuery = query(
+      collection(db, 'clients'),
+      where('user_id', '==', user.uid),
+      where('is_active', '==', false)
+    );
+    const inactiveSnapshot = await getCountFromServer(inactiveQuery);
+    const inactive = inactiveSnapshot.data().count;
 
-// get active clients
-export async function getActiveClients(userId: string): Promise<number> {
-  const { count, error } = await supabase
-    .from('clients')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('is_active', true);
-
-  if (error) {
-    console.error('Error fetching active clients:', error);
-    return 0;
-  }
-
-  return count || 0;
-}
-
-
-
-
-/**
- * Gets jobsite statistics
- */
-async function getJobsiteStats(userId: string): Promise<JobsiteStats> {
-  // Get total jobsites
-  const { count: total } = await supabase
-    .from('jobsites')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId);
-  
-  // Get jobsites with weather monitoring enabled
-  const { count: withWeatherMonitoring } = await supabase
-    .from('jobsites')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('weather_monitoring->>enabled', 'true');
-  
-  // Get jobsites with active alerts in the last 7 days
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  
-  const { count: withRecentAlerts } = await supabase
-    .from('email_logs')
-    .select('*', { count: 'exact', head: true })
-    .eq('trigger', 'weather')
-    .gte('sent_at', sevenDaysAgo.toISOString());
-  
-  return {
-    total: total || 0,
-    withWeatherMonitoring: withWeatherMonitoring || 0,
-    withRecentAlerts: withRecentAlerts || 0,
-  };
-}
-
-/**
- * Gets worker statistics
- */
-async function getWorkerStats(userId: string): Promise<WorkerStats> {
-  // Get total workers
-  const { count: total } = await supabase
-    .from('workers')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId);
-
-  // Get active workers
-  const { count: active } = await supabase
-    .from('workers')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('is_active', true);
-
-  // Fetch jobsite IDs first
-  const { data: jobsiteIds, error: jobsiteError } = await supabase
-    .from('jobsites')
-    .select('id')
-    .eq('user_id', userId);
-
-  if (jobsiteError || !jobsiteIds) {
-    console.error('Error fetching jobsites:', jobsiteError);
-    return { total: total || 0, active: active || 0, assigned: 0 };
-  }
-
-  // Extract jobsite IDs
-  const jobsiteIdList = jobsiteIds.map(j => j.id);
-
-  // Get assigned workers (Only if there are jobsites)
-  let assigned = 0;
-  if (jobsiteIdList.length > 0) {
-    const { count: assignedCount, error: assignedError } = await supabase
-      .from('worker_jobsites')
-      .select('worker_id', { count: 'exact', head: true })
-      .in('jobsite_id', jobsiteIdList);
-
-    if (assignedError) {
-      console.error('Error fetching assigned workers:', assignedError);
-    } else {
-      assigned = assignedCount || 0;
-    }
-  }
-
-  return {
-    total: total || 0,
-    active: active || 0,
-    assigned: assigned || 0,
-  };
-}
-
-
-
-// get active work
-export async function getActiveWorkers(userId: string): Promise<number> {
-  const { count, error } = await supabase
-    .from('workers')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('is_active', true);
-
-  if (error) {
-    console.error('Error fetching active workers:', error);
-    return 0;
-  }
-
-  return count || 0;
-}
-
-
-
-/**
- * Gets notification statistics
- */
-async function getNotificationStats(userId: string): Promise<NotificationStats> {
-  // Fetch client IDs
-  const { data: clientIds, error: clientError } = await supabase
-    .from('clients')
-    .select('id')
-    .eq('user_id', userId);
-
-  if (clientError || !clientIds) {
-    console.error('Error fetching client IDs:', clientError);
-    return { totalSent: 0, weatherNotifications: 0, last30Days: 0 };
-  }
-
-  // Fetch worker IDs
-  const { data: workerIds, error: workerError } = await supabase
-    .from('workers')
-    .select('id')
-    .eq('user_id', userId);
-
-  if (workerError || !workerIds) {
-    console.error('Error fetching worker IDs:', workerError);
-    return { totalSent: 0, weatherNotifications: 0, last30Days: 0 };
-  }
-
-  // Extract IDs into arrays
-  const clientIdList = clientIds.map(c => c.id);
-  const workerIdList = workerIds.map(w => w.id);
-
-  // Fetch total notifications sent
-  let totalSent = 0;
-  if (clientIdList.length > 0 || workerIdList.length > 0) {
-    const { count, error } = await supabase
-      .from('email_logs')
-      .select('*', { count: 'exact', head: true })
-      .or(clientIdList.length > 0 ? `client_id.in.(${clientIdList.join(',')})` : '')
-      .or(workerIdList.length > 0 ? `worker_id.in.(${workerIdList.join(',')})` : '');
-
-    if (error) {
-      console.error('Error fetching total notifications:', error);
-    } else {
-      totalSent = count || 0;
-    }
-  }
-
-  // Fetch weather notifications sent
-  let weatherNotifications = 0;
-  if (clientIdList.length > 0 || workerIdList.length > 0) {
-    const { count, error } = await supabase
-      .from('email_logs')
-      .select('*', { count: 'exact', head: true })
-      .or(clientIdList.length > 0 ? `client_id.in.(${clientIdList.join(',')})` : '')
-      .or(workerIdList.length > 0 ? `worker_id.in.(${workerIdList.join(',')})` : '')
-      .eq('trigger', 'weather');
-
-    if (error) {
-      console.error('Error fetching weather notifications:', error);
-    } else {
-      weatherNotifications = count || 0;
-    }
-  }
-
-  // Fetch notifications sent in last 30 days
-  let last30Days = 0;
-  if (clientIdList.length > 0 || workerIdList.length > 0) {
+    // Get recently added clients (last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const recentQuery = query(
+      collection(db, 'clients'),
+      where('user_id', '==', user.uid),
+      where('created_at', '>=', Timestamp.fromDate(thirtyDaysAgo))
+    );
+    const recentSnapshot = await getCountFromServer(recentQuery);
+    const recentlyAdded = recentSnapshot.data().count;
 
-    const { count, error } = await supabase
-      .from('email_logs')
-      .select('*', { count: 'exact', head: true })
-      .or(clientIdList.length > 0 ? `client_id.in.(${clientIdList.join(',')})` : '')
-      .or(workerIdList.length > 0 ? `worker_id.in.(${workerIdList.join(',')})` : '')
-      .gte('sent_at', thirtyDaysAgo.toISOString());
-
-    if (error) {
-      console.error('Error fetching notifications in last 30 days:', error);
-    } else {
-      last30Days = count || 0;
-    }
-  }
-
-  return {
-    totalSent,
-    weatherNotifications,
-    last30Days,
-  };
-}
-
-
-// get pendingEmails
-/**
- * Fetches the count of pending emails for a given user.
- */
-export async function getPendingEmails(userId: string): Promise<number> {
-  try {
-    const { count, error } = await supabase
-      .from('email_logs')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('status', 'pending');
-
-    if (error) {
-      console.error('Error fetching pending emails:', error);
-      return 0;
-    }
-
-    return count || 0;
-  } catch (err) {
-    console.error('Unexpected error in getPendingEmails:', err);
-    return 0;
+    return {
+      total,
+      active,
+      inactive,
+      recentlyAdded
+    };
+  } catch (error) {
+    console.error('Error fetching client stats:', error);
+    return {
+      total: 0,
+      active: 0,
+      inactive: 0,
+      recentlyAdded: 0
+    };
   }
 }
 
 /**
- * Fetches the recent activity of email notifications for a given user.
+ * Get jobsite statistics for the current user
  */
-export async function getRecentActivity(userId: string): Promise<ActivityItem[]> {
+export async function getJobsiteStats() {
   try {
-    // Fetch client IDs associated with the user
-    const { data: clientData, error: clientError } = await supabase
-      .from('clients')
-      .select('id')
-      .eq('user_id', userId);
+    const user = auth.currentUser;
+    if (!user) throw new Error('Not authenticated');
 
-    if (clientError) {
-      console.error('Error fetching client IDs:', clientError);
-      return [];
-    }
+    // Get total jobsites
+    const totalQuery = query(
+      collection(db, 'jobsites'),
+      where('user_id', '==', user.uid)
+    );
+    const totalSnapshot = await getCountFromServer(totalQuery);
+    const total = totalSnapshot.data().count;
 
-    const clientIds = clientData?.map(client => client.id) || [];
+    // Get jobsites with weather monitoring
+    const monitoringQuery = query(
+      collection(db, 'jobsites'),
+      where('user_id', '==', user.uid),
+      where('weather_monitoring.enabled', '==', true)
+    );
+    const monitoringSnapshot = await getCountFromServer(monitoringQuery);
+    const withWeatherMonitoring = monitoringSnapshot.data().count;
 
-    // Fetch worker IDs associated with the user
-    const { data: workerData, error: workerError } = await supabase
-      .from('workers')
-      .select('id')
-      .eq('user_id', userId);
+    // Get jobsites with recent alerts (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const alertsQuery = query(
+      collection(db, 'weather_checks'),
+      where('user_id', '==', user.uid),
+      where('notification_sent', '==', true),
+      where('created_at', '>=', Timestamp.fromDate(sevenDaysAgo))
+    );
+    const alertsSnapshot = await getDocs(alertsQuery);
+    
+    // Get unique jobsite IDs from alerts
+    const jobsiteIds = new Set();
+    alertsSnapshot.forEach(doc => {
+      jobsiteIds.add(doc.data().jobsite_id);
+    });
+    
+    const withRecentAlerts = jobsiteIds.size;
 
-    if (workerError) {
-      console.error('Error fetching worker IDs:', workerError);
-      return [];
-    }
+    return {
+      total,
+      withWeatherMonitoring,
+      withRecentAlerts
+    };
+  } catch (error) {
+    console.error('Error fetching jobsite stats:', error);
+    return {
+      total: 0,
+      withWeatherMonitoring: 0,
+      withRecentAlerts: 0
+    };
+  }
+}
 
-    const workerIds = workerData?.map(worker => worker.id) || [];
+/**
+ * Get worker statistics for the current user
+ */
+export async function getWorkerStats() {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Not authenticated');
 
-    // Construct email log query
-    const query = supabase
-      .from('email_logs')
-      .select(`
-        id,
-        trigger,
-        subject,
-        recipient_name,
-        sent_at,
-        status
-      `)
-      .order('sent_at', { ascending: false })
-      .limit(10);
+    // Get total workers
+    const totalQuery = query(
+      collection(db, 'workers'),
+      where('user_id', '==', user.uid)
+    );
+    const totalSnapshot = await getCountFromServer(totalQuery);
+    const total = totalSnapshot.data().count;
 
-    // Apply filters based on user-related clients/workers
-    if (clientIds.length > 0) {
-      query.in('client_id', clientIds);
-    }
+    // Get active workers
+    const activeQuery = query(
+      collection(db, 'workers'),
+      where('user_id', '==', user.uid),
+      where('is_active', '==', true)
+    );
+    const activeSnapshot = await getCountFromServer(activeQuery);
+    const active = activeSnapshot.data().count;
 
-    // Use a type-safe approach for filtering worker IDs
+    // Get workers assigned to jobsites
+    // First, get all worker IDs
+    const workersQuery = query(
+      collection(db, 'workers'),
+      where('user_id', '==', user.uid)
+    );
+    const workersSnapshot = await getDocs(workersQuery);
+    const workerIds = workersSnapshot.docs.map(doc => doc.id);
+
+    // Then count worker_jobsite associations
+    let assignedCount = 0;
     if (workerIds.length > 0) {
-      query.or(`worker_id.in.(${workerIds.join(',')})`);
+      // Due to Firestore limitations, we need to check each worker ID individually
+      // or use batched queries for large sets
+      for (const workerId of workerIds) {
+        const assignedQuery = query(
+          collection(db, 'worker_jobsites'),
+          where('worker_id', '==', workerId)
+        );
+        const assignedSnapshot = await getCountFromServer(assignedQuery);
+        if (assignedSnapshot.data().count > 0) {
+          assignedCount++;
+        }
+      }
     }
 
-    // Fetch the email logs
-    const { data, error } = await query;
+    return {
+      total,
+      active,
+      assigned: assignedCount
+    };
+  } catch (error) {
+    console.error('Error fetching worker stats:', error);
+    return {
+      total: 0,
+      active: 0,
+      assigned: 0
+    };
+  }
+}
 
-    if (error) {
-      console.error('Error fetching recent activity:', error);
-      return [];
-    }
+/**
+ * Get email statistics for the current user
+ */
+export async function getEmailStats() {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Not authenticated');
 
-    if (!data || data.length === 0) {
-      return [];
-    }
+    // Get total emails sent
+    const totalQuery = query(
+      collection(db, 'email_logs'),
+      where('user_id', '==', user.uid)
+    );
+    const totalSnapshot = await getCountFromServer(totalQuery);
+    const total = totalSnapshot.data().count;
 
-    // Transform the data into the expected format
-    return (data as EmailLog[]).map((log) => ({
-      id: log.id,
-      type: log.trigger === 'weather' ? 'weather_alert' : 'email_notification',
-      message: `${log.trigger === 'weather' ? 'Weather alert' : 'Email'} sent to ${log.recipient_name}: ${log.subject}`,
-      timestamp: log.sent_at,
-      status: log.status,
+    // Get emails sent in the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const recentQuery = query(
+      collection(db, 'email_logs'),
+      where('user_id', '==', user.uid),
+      where('sentAt', '>=', Timestamp.fromDate(thirtyDaysAgo))
+    );
+    const recentSnapshot = await getCountFromServer(recentQuery);
+    const last30Days = recentSnapshot.data().count;
+
+    // Get emails by status
+    const sentQuery = query(
+      collection(db, 'email_logs'),
+      where('user_id', '==', user.uid),
+      where('status', '==', 'sent')
+    );
+    const sentSnapshot = await getCountFromServer(sentQuery);
+    const sent = sentSnapshot.data().count;
+
+    const deliveredQuery = query(
+      collection(db, 'email_logs'),
+      where('user_id', '==', user.uid),
+      where('status', '==', 'delivered')
+    );
+    const deliveredSnapshot = await getCountFromServer(deliveredQuery);
+    const delivered = deliveredSnapshot.data().count;
+
+    const openedQuery = query(
+      collection(db, 'email_logs'),
+      where('user_id', '==', user.uid),
+      where('status', '==', 'opened')
+    );
+    const openedSnapshot = await getCountFromServer(openedQuery);
+    const opened = openedSnapshot.data().count;
+
+    const failedQuery = query(
+      collection(db, 'email_logs'),
+      where('user_id', '==', user.uid),
+      where('status', '==', 'failed')
+    );
+    const failedSnapshot = await getCountFromServer(failedQuery);
+    const failed = failedSnapshot.data().count;
+
+    return {
+      total,
+      last30Days,
+      byStatus: {
+        sent,
+        delivered,
+        opened,
+        failed
+      }
+    };
+  } catch (error) {
+    console.error('Error fetching email stats:', error);
+    return {
+      total: 0,
+      last30Days: 0,
+      byStatus: {
+        sent: 0,
+        delivered: 0,
+        opened: 0,
+        failed: 0
+      }
+    };
+  }
+}
+
+/**
+ * Get recent activity for the current user
+ */
+export async function getRecentActivity(limit = 10) {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Not authenticated');
+
+    // Get recent clients
+    const clientsQuery = query(
+      collection(db, 'clients'),
+      where('user_id', '==', user.uid),
+      where('created_at', '!=', null)
+    );
+    const clientsSnapshot = await getDocs(clientsQuery);
+    const clients = clientsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      type: 'client',
+      action: 'created',
+      name: doc.data().name,
+      timestamp: doc.data().created_at instanceof Timestamp 
+        ? doc.data().created_at.toDate().toISOString() 
+        : doc.data().created_at,
     }));
-  } catch (err) {
-    console.error('Unexpected error in getRecentActivity:', err);
+
+    // Get recent jobsites
+    const jobsitesQuery = query(
+      collection(db, 'jobsites'),
+      where('user_id', '==', user.uid),
+      where('created_at', '!=', null)
+    );
+    const jobsitesSnapshot = await getDocs(jobsitesQuery);
+    const jobsites = jobsitesSnapshot.docs.map(doc => ({
+      id: doc.id,
+      type: 'jobsite',
+      action: 'created',
+      name: doc.data().name,
+      timestamp: doc.data().created_at instanceof Timestamp 
+        ? doc.data().created_at.toDate().toISOString() 
+        : doc.data().created_at,
+    }));
+
+    // Get recent weather alerts
+    const alertsQuery = query(
+      collection(db, 'weather_checks'),
+      where('user_id', '==', user.uid),
+      where('notification_sent', '==', true)
+    );
+    const alertsSnapshot = await getDocs(alertsQuery);
+    
+    // For each alert, get the jobsite name
+    const alerts = [];
+    for (const alertDoc of alertsSnapshot.docs) {
+      const jobsiteId = alertDoc.data().jobsite_id;
+      const jobsiteRef = doc(db, 'jobsites', jobsiteId);
+      const jobsiteSnapshot = await getDoc(jobsiteRef);
+      
+      if (jobsiteSnapshot.exists()) {
+        alerts.push({
+          id: alertDoc.id,
+          type: 'weather_alert',
+          action: 'triggered',
+          name: jobsiteSnapshot.data().name,
+          timestamp: alertDoc.data().created_at instanceof Timestamp 
+            ? alertDoc.data().created_at.toDate().toISOString() 
+            : alertDoc.data().created_at,
+          conditions: alertDoc.data().conditions_triggered,
+        });
+      }
+    }
+
+    // Combine all activities, sort by timestamp, and limit
+    const allActivities = [...clients, ...jobsites, ...alerts]
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, limit);
+
+    return allActivities;
+  } catch (error) {
+    console.error('Error fetching recent activity:', error);
     return [];
   }
 }
-
-
-/**
- * Gets weather alert metrics over time
- */
-async function getWeatherAlertMetrics(userId: string): Promise<Array<{
-  month: string;
-  count: number;
-}>> {
-  // Get weather alerts grouped by month for the last 6 months
-  const sixMonthsAgo = new Date();
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-  
-  const { data } = await supabase
-  .from('email_logs')
-  .select('sent_at')
-  .eq('trigger', 'weather')
-  .in('client_id', 
-    await supabase
-      .from('clients')
-      .select('id')
-      .eq('user_id', userId)
-      .then(result => result.data?.map(client => client.id) || [])
-  );
-  
-  if (!data || data.length === 0) {
-    // Return sample data if no actual data
-    return getSampleWeatherMetrics();
-  }
-  
-  // Group by month
-  const groupedByMonth: Record<string, number> = {};
-  
-  data.forEach((log) => {
-    const date = new Date(log.sent_at);
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    
-    if (!groupedByMonth[monthKey]) {
-      groupedByMonth[monthKey] = 0;
-    }
-    
-    groupedByMonth[monthKey]++;
-  });
-  
-  // Convert to array and sort by month
-  return Object.entries(groupedByMonth)
-    .map(([month, count]) => ({
-      month: formatMonthLabel(month),
-      count,
-    }))
-    .sort((a, b) => {
-      const monthA = getMonthFromLabel(a.month);
-      const monthB = getMonthFromLabel(b.month);
-      return monthA.localeCompare(monthB);
-    });
-}
-
-/**
- * Helper function to format month label
- */
-function formatMonthLabel(monthKey: string): string {
-  const [year, month] = monthKey.split('-');
-  const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-  return date.toLocaleString('default', { month: 'short' });
-}
-
-/**
- * Helper function to get original month value from label
- */
-function getMonthFromLabel(label: string): string {
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-  const index = months.indexOf(label);
-  return String(index + 1).padStart(2, '0');
-}
-
-/**
- * Returns sample weather metrics for demo purposes
- */
-function getSampleWeatherMetrics(): Array<{
-  month: string;
-  count: number;
-}> {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-  
-  return months.map((month) => ({
-    month,
-    count: Math.floor(Math.random() * 10) + 1, // Random count between 1-10
-  }));
-}
-
-export {
-  getClientStats,
-  getJobsiteStats,
-  getWorkerStats,
-  getNotificationStats,
-  getWeatherAlertMetrics
-};
