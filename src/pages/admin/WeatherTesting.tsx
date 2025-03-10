@@ -37,6 +37,7 @@ import TestResultsView from '../../components/admin/weather-testing/TestResultsV
 import TestHistoryList from '../../components/admin/weather-testing/TestHistoryList';
 
 const WeatherTesting: React.FC = () => {
+  console.log('WeatherTesting component rendering');
   // State for test results
   const [testResults, setTestResults] = useState<WeatherTestResult | null>(null);
   const [loading, setLoading] = useState<boolean>(false);

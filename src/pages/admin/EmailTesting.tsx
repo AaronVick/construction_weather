@@ -49,6 +49,7 @@ interface EmailTestResult {
 }
 
 const EmailTesting: React.FC = () => {
+  console.log('EmailTesting component rendering');
   // State for test results
   const [testResult, setTestResult] = useState<EmailTestResult | null>(null);
   const [loading, setLoading] = useState<boolean>(false);

@@ -54,6 +54,20 @@ const AdminSettings: React.FC = () => {
     return <LoadingScreen />;
   }
   
+  // Add console logging to help debug
+  console.log('AdminSettings - Rendering with activeTab:', activeTab);
+  
+  // Define tabs with their labels
+  const tabs = [
+    { label: "General", id: "settings-tab-0", component: <GeneralSettings /> },
+    { label: "Billing & Subscriptions", id: "settings-tab-1", component: <BillingSettings /> },
+    { label: "Email", id: "settings-tab-2", component: <EmailSettings /> },
+    { label: "Security", id: "settings-tab-3", component: <SecuritySettings /> },
+    { label: "Admin Users", id: "settings-tab-4", component: <AdminUsersSettings /> },
+    { label: "Email Testing", id: "settings-tab-5", component: <EmailTesting /> },
+    { label: "Weather Testing", id: "settings-tab-6", component: <WeatherTesting /> }
+  ];
+  
   return (
     <Box sx={{ width: '100%' }}>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
@@ -64,44 +78,23 @@ const AdminSettings: React.FC = () => {
           variant="scrollable"
           scrollButtons="auto"
         >
-          <Tab label="General" id="settings-tab-0" aria-controls="settings-tabpanel-0" />
-          <Tab label="Billing & Subscriptions" id="settings-tab-1" aria-controls="settings-tabpanel-1" />
-          <Tab label="Email" id="settings-tab-2" aria-controls="settings-tabpanel-2" />
-          <Tab label="Security" id="settings-tab-3" aria-controls="settings-tabpanel-3" />
-          <Tab label="Admin Users" id="settings-tab-4" aria-controls="settings-tabpanel-4" />
-          <Tab label="Email Testing" id="settings-tab-5" aria-controls="settings-tabpanel-5" />
-          <Tab label="Weather Testing" id="settings-tab-6" aria-controls="settings-tabpanel-6" />
+          {tabs.map((tab, index) => (
+            <Tab 
+              key={tab.id}
+              label={tab.label} 
+              id={tab.id} 
+              aria-controls={`settings-tabpanel-${index}`} 
+            />
+          ))}
         </Tabs>
       </Box>
       
       <Paper elevation={2}>
-        <TabPanel value={activeTab} index={0}>
-          <GeneralSettings />
-        </TabPanel>
-        
-        <TabPanel value={activeTab} index={1}>
-          <BillingSettings />
-        </TabPanel>
-        
-        <TabPanel value={activeTab} index={2}>
-          <EmailSettings />
-        </TabPanel>
-        
-        <TabPanel value={activeTab} index={3}>
-          <SecuritySettings />
-        </TabPanel>
-        
-        <TabPanel value={activeTab} index={4}>
-          <AdminUsersSettings />
-        </TabPanel>
-        
-        <TabPanel value={activeTab} index={5}>
-          <EmailTesting />
-        </TabPanel>
-        
-        <TabPanel value={activeTab} index={6}>
-          <WeatherTesting />
-        </TabPanel>
+        {tabs.map((tab, index) => (
+          <TabPanel key={`panel-${index}`} value={activeTab} index={index}>
+            {tab.component}
+          </TabPanel>
+        ))}
       </Paper>
     </Box>
   );
