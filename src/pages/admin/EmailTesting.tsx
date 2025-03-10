@@ -19,7 +19,7 @@ import {
   Send as SendIcon,
   CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
-import AdminLayoutWrapper from '../../components/layout/AdminLayoutWrapper';
+// No need to import AdminLayoutWrapper as it's handled by the route structure
 import { useFirebaseAuth } from '../../hooks/useFirebaseAuth';
 import { format } from 'date-fns';
 
@@ -83,7 +83,7 @@ const EmailTesting: React.FC = () => {
     const checkApiStatus = async () => {
       try {
         const token = await getIdToken();
-        const response = await fetch('/api/consolidated/admin/api-status', {
+        const response = await fetch('/api/admin/api-status', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -168,7 +168,7 @@ const EmailTesting: React.FC = () => {
   const handleRefreshApiStatus = async () => {
     try {
       const token = await getIdToken();
-      const response = await fetch('/api/consolidated/admin/api-status', {
+      const response = await fetch('/api/admin/api-status', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -245,8 +245,7 @@ const EmailTesting: React.FC = () => {
   };
   
   return (
-    <AdminLayoutWrapper>
-      <Box mb={4}>
+    <Box mb={4}>
         <Typography variant="h4" gutterBottom>Email Notification Testing</Typography>
         <Typography variant="body1" color="text.secondary" paragraph>
           Test the email notification system to ensure SendGrid is properly configured and working for general users.
@@ -418,7 +417,6 @@ const EmailTesting: React.FC = () => {
             )}
           </Paper>
         )}
-      </Box>
       
       {/* Success Snackbar */}
       <Snackbar
@@ -427,7 +425,7 @@ const EmailTesting: React.FC = () => {
         onClose={() => setSuccessSnackbar(false)}
         message="Test email sent successfully"
       />
-    </AdminLayoutWrapper>
+    </Box>
   );
 };
 
