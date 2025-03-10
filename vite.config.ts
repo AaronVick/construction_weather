@@ -41,14 +41,13 @@ export default defineConfig({
       output: {
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom'],
-          supabase: ['@supabase/supabase-js'],
           ui: ['@tailwindcss/forms', '@tailwindcss/typography', '@tailwindcss/aspect-ratio'],
           charts: ['recharts'],
           stripe: ['@stripe/react-stripe-js', '@stripe/stripe-js'],
           utils: ['date-fns', 'lodash', 'zod', 'axios'],
           state: ['zustand', 'swr'],
         },
-        assetFileNames: (assetInfo) => {
+        assetFileNames: (assetInfo: any) => {
           if (!assetInfo.name) return 'assets/[name].[hash][extname]';
           
           const info = assetInfo.name.split('.');
@@ -83,7 +82,6 @@ export default defineConfig({
       'react',
       'react-dom',
       'react-router-dom',
-      '@supabase/supabase-js',
       'recharts',
       'date-fns',
       'lodash',

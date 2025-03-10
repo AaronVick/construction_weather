@@ -115,7 +115,8 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ isEdit = false }) => {
       
       // Get the user_id from the client data since it's included in the client object
       if (clientData && clientData.user_id) {
-        const emailData = await getClientEmails(clientId, clientData.user_id);
+        // Pass 50 as the limit count (default value)
+        const emailData = await getClientEmails(clientId);
         setEmailHistory(emailData);
       }
     } catch (error) {

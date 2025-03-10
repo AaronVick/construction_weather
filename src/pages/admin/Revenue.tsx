@@ -35,7 +35,8 @@ const AdminRevenue: React.FC = () => {
     const monthlyRevenue = Array.from({ length: 12 }, (_, i) => {
       // Start with current month revenue and work backwards with some variation
       const baseValue = billingSummary.currentMonthRevenue;
-      const growthFactor = 1 - (subscriptionAnalytics.growthRate / 100);
+      // Use revenueGrowth from billingSummary instead of growthRate
+      const growthFactor = 1 - (billingSummary.revenueGrowth / 100);
       const randomVariation = 0.9 + Math.random() * 0.2; // 0.9 to 1.1
       
       return Math.round(baseValue * Math.pow(growthFactor, i) * randomVariation);

@@ -31,7 +31,7 @@ const Checkout: React.FC<CheckoutProps> = ({ priceId, email, plan, billingCycle,
         if (!currentUser) throw new Error('User not authenticated');
 
         // Create a Stripe Checkout session
-        const response = await fetch('/api/stripe/create-checkout-session', {
+        const response = await fetch('/api/consolidated/stripe/create-checkout-session', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

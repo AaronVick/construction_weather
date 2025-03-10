@@ -129,8 +129,8 @@ const LandingPage: React.FC = () => {
       
       // Use the appropriate checkout endpoint based on user authentication
       const endpoint = user 
-        ? '/api/stripe/create-checkout-session'
-        : '/api/stripe/create-guest-checkout';
+        ? '/api/consolidated/stripe/create-checkout-session'
+        : '/api/consolidated/stripe/create-guest-checkout';
       
       const requestBody = user 
         ? {

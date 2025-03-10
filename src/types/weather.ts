@@ -45,20 +45,89 @@ export interface WeatherWidgetForecast {
   icon: string;
 }
 
+export interface PrecipitationThresholds {
+  enabled: boolean;
+  thresholdPercentage: number; // Probability threshold
+  amountThreshold: number; // Amount in inches
+}
+
+export interface TemperatureThresholds {
+  enabled: boolean;
+  minThresholdFahrenheit: number; // Minimum safe temperature
+  maxThresholdFahrenheit: number; // Maximum safe temperature
+}
+
+export interface WindThresholds {
+  enabled: boolean;
+  thresholdMph: number; // Wind speed in MPH
+}
+
+export interface SpecialAlertThresholds {
+  enabled: boolean;
+  includeStorms: boolean;
+  includeLightning: boolean;
+  includeFlooding: boolean;
+  includeExtreme: boolean; // Extreme weather events
+}
+
+export interface AirQualityThresholds {
+  enabled: boolean;
+  thresholdIndex: number; // AQI threshold
+}
+
+export interface NotificationRecipient {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: 'owner' | 'manager' | 'worker' | 'client';
+  notificationMethods: {
+    email: boolean;
+    sms: boolean;
+    push: boolean;
+  };
+}
+
+export interface ForecastTimeframe {
+  hoursAhead: 2 | 4 | 6 | 12 | 24;
+  workingHoursOnly: boolean;
+  workingHoursStart: string; // Format: "HH:MM" in 24-hour time
+  workingHoursEnd: string; // Format: "HH:MM" in 24-hour time
+  includeDayBefore: boolean;
+  checkDays: ('monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday')[];
+}
+
 export interface WeatherSettings {
-  checkTime: string;
   isEnabled: boolean;
+  checkTime: string; // Format: "HH:MM" in 24-hour time
+  forecastTimeframe: ForecastTimeframe;
   alertThresholds: {
-    rain: { enabled: boolean; thresholdPercentage: number };
-    snow: { enabled: boolean; thresholdInches: number };
-    wind: { enabled: boolean; thresholdMph: number };
-    temperature: { enabled: boolean; thresholdFahrenheit: number };
-    anyRain: { enabled: boolean; thresholdInches: number };
+    rain: PrecipitationThresholds;
+    snow: PrecipitationThresholds;
+    sleet: PrecipitationThresholds;
+    hail: PrecipitationThresholds;
+    wind: WindThresholds;
+    temperature: TemperatureThresholds;
+    specialAlerts: SpecialAlertThresholds;
+    airQuality: AirQualityThresholds;
   };
   notificationSettings: {
     notifyClient: boolean;
     notifyWorkers: boolean;
     notificationLeadHours: number;
     dailySummary: boolean;
+    recipients: NotificationRecipient[];
   };
+  jobTypeSettings?: {
+    [jobType: string]: {
+      name: string;
+      description?: string;
+      alertThresholds: Partial<WeatherSettings['alertThresholds']>;
+    };
+  };
+}
+
+export interface JobsiteWeatherSettings extends WeatherSettings {
+  useGlobalDefaults: boolean;
+  overrideGlobalSettings: boolean;
 }

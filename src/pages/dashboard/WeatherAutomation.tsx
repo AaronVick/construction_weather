@@ -14,18 +14,62 @@ import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/fire
 const defaultWeatherSettings: WeatherSettings = {
   checkTime: '05:00',
   isEnabled: true,
+  forecastTimeframe: {
+    hoursAhead: 24,
+    workingHoursOnly: true,
+    workingHoursStart: '07:00',
+    workingHoursEnd: '17:00',
+    includeDayBefore: false,
+    checkDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+  },
   alertThresholds: {
-    rain: { enabled: true, thresholdPercentage: 50 },
-    snow: { enabled: true, thresholdInches: 1 },
-    wind: { enabled: true, thresholdMph: 25 },
-    temperature: { enabled: true, thresholdFahrenheit: 32 },
-    anyRain: { enabled: false, thresholdInches: 0.1 },
+    rain: { 
+      enabled: true, 
+      thresholdPercentage: 50,
+      amountThreshold: 0.5
+    },
+    snow: { 
+      enabled: true, 
+      thresholdPercentage: 50,
+      amountThreshold: 1
+    },
+    sleet: { 
+      enabled: true, 
+      thresholdPercentage: 50,
+      amountThreshold: 0.5
+    },
+    hail: { 
+      enabled: true, 
+      thresholdPercentage: 50,
+      amountThreshold: 0.5
+    },
+    wind: { 
+      enabled: true, 
+      thresholdMph: 25 
+    },
+    temperature: { 
+      enabled: true, 
+      minThresholdFahrenheit: 32,
+      maxThresholdFahrenheit: 95
+    },
+    specialAlerts: {
+      enabled: true,
+      includeStorms: true,
+      includeLightning: true,
+      includeFlooding: true,
+      includeExtreme: true
+    },
+    airQuality: {
+      enabled: true,
+      thresholdIndex: 100
+    }
   },
   notificationSettings: {
     notifyClient: true,
     notifyWorkers: true,
     notificationLeadHours: 2,
     dailySummary: false,
+    recipients: []
   },
 };
 
@@ -36,20 +80,54 @@ const mergeWithDefaults = (settings: any): WeatherSettings => {
   return {
     checkTime: settings.checkTime || defaultWeatherSettings.checkTime,
     isEnabled: settings.isEnabled !== undefined ? settings.isEnabled : defaultWeatherSettings.isEnabled,
+    forecastTimeframe: {
+      hoursAhead: settings.forecastTimeframe?.hoursAhead || defaultWeatherSettings.forecastTimeframe.hoursAhead,
+      workingHoursOnly: settings.forecastTimeframe?.workingHoursOnly !== undefined 
+        ? settings.forecastTimeframe.workingHoursOnly 
+        : defaultWeatherSettings.forecastTimeframe.workingHoursOnly,
+      workingHoursStart: settings.forecastTimeframe?.workingHoursStart || defaultWeatherSettings.forecastTimeframe.workingHoursStart,
+      workingHoursEnd: settings.forecastTimeframe?.workingHoursEnd || defaultWeatherSettings.forecastTimeframe.workingHoursEnd,
+      includeDayBefore: settings.forecastTimeframe?.includeDayBefore !== undefined 
+        ? settings.forecastTimeframe.includeDayBefore 
+        : defaultWeatherSettings.forecastTimeframe.includeDayBefore,
+      checkDays: settings.forecastTimeframe?.checkDays || defaultWeatherSettings.forecastTimeframe.checkDays
+    },
     alertThresholds: {
       rain: {
         enabled: settings.alertThresholds?.rain?.enabled !== undefined 
           ? settings.alertThresholds.rain.enabled 
           : defaultWeatherSettings.alertThresholds.rain.enabled,
         thresholdPercentage: settings.alertThresholds?.rain?.thresholdPercentage || 
-          defaultWeatherSettings.alertThresholds.rain.thresholdPercentage
+          defaultWeatherSettings.alertThresholds.rain.thresholdPercentage,
+        amountThreshold: settings.alertThresholds?.rain?.amountThreshold || 
+          defaultWeatherSettings.alertThresholds.rain.amountThreshold
       },
       snow: {
         enabled: settings.alertThresholds?.snow?.enabled !== undefined 
           ? settings.alertThresholds.snow.enabled 
           : defaultWeatherSettings.alertThresholds.snow.enabled,
-        thresholdInches: settings.alertThresholds?.snow?.thresholdInches || 
-          defaultWeatherSettings.alertThresholds.snow.thresholdInches
+        thresholdPercentage: settings.alertThresholds?.snow?.thresholdPercentage || 
+          defaultWeatherSettings.alertThresholds.snow.thresholdPercentage,
+        amountThreshold: settings.alertThresholds?.snow?.amountThreshold || 
+          defaultWeatherSettings.alertThresholds.snow.amountThreshold
+      },
+      sleet: {
+        enabled: settings.alertThresholds?.sleet?.enabled !== undefined 
+          ? settings.alertThresholds.sleet.enabled 
+          : defaultWeatherSettings.alertThresholds.sleet.enabled,
+        thresholdPercentage: settings.alertThresholds?.sleet?.thresholdPercentage || 
+          defaultWeatherSettings.alertThresholds.sleet.thresholdPercentage,
+        amountThreshold: settings.alertThresholds?.sleet?.amountThreshold || 
+          defaultWeatherSettings.alertThresholds.sleet.amountThreshold
+      },
+      hail: {
+        enabled: settings.alertThresholds?.hail?.enabled !== undefined 
+          ? settings.alertThresholds.hail.enabled 
+          : defaultWeatherSettings.alertThresholds.hail.enabled,
+        thresholdPercentage: settings.alertThresholds?.hail?.thresholdPercentage || 
+          defaultWeatherSettings.alertThresholds.hail.thresholdPercentage,
+        amountThreshold: settings.alertThresholds?.hail?.amountThreshold || 
+          defaultWeatherSettings.alertThresholds.hail.amountThreshold
       },
       wind: {
         enabled: settings.alertThresholds?.wind?.enabled !== undefined 
@@ -62,16 +140,35 @@ const mergeWithDefaults = (settings: any): WeatherSettings => {
         enabled: settings.alertThresholds?.temperature?.enabled !== undefined 
           ? settings.alertThresholds.temperature.enabled 
           : defaultWeatherSettings.alertThresholds.temperature.enabled,
-        thresholdFahrenheit: settings.alertThresholds?.temperature?.thresholdFahrenheit || 
-          defaultWeatherSettings.alertThresholds.temperature.thresholdFahrenheit
+        minThresholdFahrenheit: settings.alertThresholds?.temperature?.minThresholdFahrenheit || 
+          defaultWeatherSettings.alertThresholds.temperature.minThresholdFahrenheit,
+        maxThresholdFahrenheit: settings.alertThresholds?.temperature?.maxThresholdFahrenheit || 
+          defaultWeatherSettings.alertThresholds.temperature.maxThresholdFahrenheit
       },
-      anyRain: {
-        enabled: settings.alertThresholds?.anyRain?.enabled !== undefined 
-          ? settings.alertThresholds.anyRain.enabled 
-          : defaultWeatherSettings.alertThresholds.anyRain.enabled,
-        thresholdInches: settings.alertThresholds?.anyRain?.thresholdInches || 
-          defaultWeatherSettings.alertThresholds.anyRain.thresholdInches
+      specialAlerts: {
+        enabled: settings.alertThresholds?.specialAlerts?.enabled !== undefined 
+          ? settings.alertThresholds.specialAlerts.enabled 
+          : defaultWeatherSettings.alertThresholds.specialAlerts.enabled,
+        includeStorms: settings.alertThresholds?.specialAlerts?.includeStorms !== undefined 
+          ? settings.alertThresholds.specialAlerts.includeStorms 
+          : defaultWeatherSettings.alertThresholds.specialAlerts.includeStorms,
+        includeLightning: settings.alertThresholds?.specialAlerts?.includeLightning !== undefined 
+          ? settings.alertThresholds.specialAlerts.includeLightning 
+          : defaultWeatherSettings.alertThresholds.specialAlerts.includeLightning,
+        includeFlooding: settings.alertThresholds?.specialAlerts?.includeFlooding !== undefined 
+          ? settings.alertThresholds.specialAlerts.includeFlooding 
+          : defaultWeatherSettings.alertThresholds.specialAlerts.includeFlooding,
+        includeExtreme: settings.alertThresholds?.specialAlerts?.includeExtreme !== undefined 
+          ? settings.alertThresholds.specialAlerts.includeExtreme 
+          : defaultWeatherSettings.alertThresholds.specialAlerts.includeExtreme
       },
+      airQuality: {
+        enabled: settings.alertThresholds?.airQuality?.enabled !== undefined 
+          ? settings.alertThresholds.airQuality.enabled 
+          : defaultWeatherSettings.alertThresholds.airQuality.enabled,
+        thresholdIndex: settings.alertThresholds?.airQuality?.thresholdIndex || 
+          defaultWeatherSettings.alertThresholds.airQuality.thresholdIndex
+      }
     },
     notificationSettings: {
       notifyClient: settings.notificationSettings?.notifyClient !== undefined 
@@ -85,6 +182,7 @@ const mergeWithDefaults = (settings: any): WeatherSettings => {
       dailySummary: settings.notificationSettings?.dailySummary !== undefined 
         ? settings.notificationSettings.dailySummary 
         : defaultWeatherSettings.notificationSettings.dailySummary,
+      recipients: settings.notificationSettings?.recipients || []
     },
   };
 };
@@ -285,20 +383,20 @@ const WeatherAutomation: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Any Rain */}
+                  {/* Sleet */}
                   <div className="flex items-start">
                     <input
                       type="checkbox"
-                      id="any-rain"
+                      id="sleet"
                       className={`mt-1 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}
-                      checked={weatherSettings.alertThresholds.anyRain.enabled}
+                      checked={weatherSettings.alertThresholds.sleet.enabled}
                       onChange={(e) =>
                         setWeatherSettings({
                           ...weatherSettings,
                           alertThresholds: {
                             ...weatherSettings.alertThresholds,
-                            anyRain: {
-                              ...weatherSettings.alertThresholds.anyRain,
+                            sleet: {
+                              ...weatherSettings.alertThresholds.sleet,
                               enabled: e.target.checked,
                             },
                           },
@@ -306,11 +404,11 @@ const WeatherAutomation: React.FC = () => {
                       }
                     />
                     <div className="ml-3">
-                      <label htmlFor="any-rain" className="font-medium text-sm">
-                        Any Rain
+                      <label htmlFor="sleet" className="font-medium text-sm">
+                        Sleet
                       </label>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Any amount of rain
+                        Any sleet accumulation
                       </p>
                     </div>
                   </div>
@@ -395,12 +493,100 @@ const WeatherAutomation: React.FC = () => {
                         })
                       }
                     />
-                    <div className="ml-3">
+                    <div className="ml-3 w-full">
                       <label htmlFor="extreme-temp" className="font-medium text-sm">
                         Extreme Temperatures
                       </label>
+                      
+                      {weatherSettings.alertThresholds.temperature.enabled ? (
+                        <div className="mt-2 flex flex-col space-y-2">
+                          <div className="flex items-center">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 w-24">Min Temp (°F):</span>
+                            <input
+                              type="number"
+                              className={`ml-2 px-2 py-1 text-sm rounded-md w-20 ${
+                                darkMode
+                                  ? 'bg-gray-700 border-gray-600 text-white'
+                                  : 'bg-white border-gray-300 text-gray-900'
+                              }`}
+                              value={weatherSettings.alertThresholds.temperature.minThresholdFahrenheit}
+                              onChange={(e) =>
+                                setWeatherSettings({
+                                  ...weatherSettings,
+                                  alertThresholds: {
+                                    ...weatherSettings.alertThresholds,
+                                    temperature: {
+                                      ...weatherSettings.alertThresholds.temperature,
+                                      minThresholdFahrenheit: Number(e.target.value),
+                                    },
+                                  },
+                                })
+                              }
+                              min="-100"
+                              max="150"
+                            />
+                          </div>
+                          <div className="flex items-center">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 w-24">Max Temp (°F):</span>
+                            <input
+                              type="number"
+                              className={`ml-2 px-2 py-1 text-sm rounded-md w-20 ${
+                                darkMode
+                                  ? 'bg-gray-700 border-gray-600 text-white'
+                                  : 'bg-white border-gray-300 text-gray-900'
+                              }`}
+                              value={weatherSettings.alertThresholds.temperature.maxThresholdFahrenheit}
+                              onChange={(e) =>
+                                setWeatherSettings({
+                                  ...weatherSettings,
+                                  alertThresholds: {
+                                    ...weatherSettings.alertThresholds,
+                                    temperature: {
+                                      ...weatherSettings.alertThresholds.temperature,
+                                      maxThresholdFahrenheit: Number(e.target.value),
+                                    },
+                                  },
+                                })
+                              }
+                              min="-100"
+                              max="150"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Below {weatherSettings.alertThresholds.temperature.minThresholdFahrenheit}°F or above {weatherSettings.alertThresholds.temperature.maxThresholdFahrenheit}°F
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Special Alerts */}
+                  <div className="flex items-start">
+                    <input
+                      type="checkbox"
+                      id="special-alerts"
+                      className={`mt-1 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}
+                      checked={weatherSettings.alertThresholds.specialAlerts.enabled}
+                      onChange={(e) =>
+                        setWeatherSettings({
+                          ...weatherSettings,
+                          alertThresholds: {
+                            ...weatherSettings.alertThresholds,
+                            specialAlerts: {
+                              ...weatherSettings.alertThresholds.specialAlerts,
+                              enabled: e.target.checked,
+                            },
+                          },
+                        })
+                      }
+                    />
+                    <div className="ml-3">
+                      <label htmlFor="special-alerts" className="font-medium text-sm">
+                        Special Weather Alerts
+                      </label>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Below 32°F or above 95°F
+                        Storms, lightning, flooding, etc.
                       </p>
                     </div>
                   </div>

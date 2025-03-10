@@ -11,6 +11,8 @@ export interface Jobsite {
   is_active: boolean;
   weather_monitoring: any; // Schema shows this as JSON
   location?: string;
+  latitude?: number;
+  longitude?: number;
   notes?: string;
   created_at: string;
   updated_at?: string;
@@ -52,6 +54,8 @@ export interface Jobsite {
     city?: string;
     state?: string;
     zipCode: string;
+    latitude?: number;
+    longitude?: number;
     isActive: boolean;
     notes?: string;
     weatherMonitoring: WeatherMonitoringSettings;

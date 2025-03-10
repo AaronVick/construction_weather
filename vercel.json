@@ -3,14 +3,9 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "devCommand": "npm run dev",
-  "framework": "vite",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/dist/index.html" }
-  ],
-  "routes": [
-    { "src": "/api/.*", "dest": "/api" },
-    { "src": "/.*", "dest": "/dist/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
@@ -36,20 +31,26 @@
   ],
   "env": {
     "WEATHER_API": "${WEATHER_API}",
-    "SUPABASE_URL": "${SUPABASE_URL}",
-    "SUPABASE_KEY": "${SUPABASE_KEY}",
     "OPENAI_API_KEY": "${OPENAI_API_KEY}",
     "VITE_WEATHER_API": "${VITE_WEATHER_API}",
     "VITE_OPENAI_API": "${VITE_OPENAI_API}",
-    "VITE_SUPABASE_URL": "${VITE_SUPABASE_URL}",
-    "VITE_SUPABASE_ANON_API": "${VITE_SUPABASE_ANON_API}",
+    "FIREBASE_PROJECT_ID": "${FIREBASE_PROJECT_ID}",
+    "FIREBASE_CLIENT_EMAIL": "${FIREBASE_CLIENT_EMAIL}",
+    "FIREBASE_PRIVATE_KEY": "${FIREBASE_PRIVATE_KEY}",
+    "VITE_FIREBASE_API_KEY": "${VITE_FIREBASE_API_KEY}",
+    "VITE_FIREBASE_AUTH_DOMAIN": "${VITE_FIREBASE_AUTH_DOMAIN}",
+    "VITE_FIREBASE_PROJECT_ID": "${VITE_FIREBASE_PROJECT_ID}",
+    "VITE_FIREBASE_STORAGE_BUCKET": "${VITE_FIREBASE_STORAGE_BUCKET}",
+    "VITE_FIREBASE_MESSAGING_SENDER_ID": "${VITE_FIREBASE_MESSAGING_SENDER_ID}",
+    "VITE_FIREBASE_APP_ID": "${VITE_FIREBASE_APP_ID}",
     "STRIPE_SECRET_KEY": "${STRIPE_SECRET_KEY}",
     "STRIPE_WEBHOOK_SECRET": "${STRIPE_WEBHOOK_SECRET}",
-    "NEXT_PUBLIC_BASE_URL": "${NEXT_PUBLIC_BASE_URL}"
-  },
-  "functions": {
-    "api/*.ts": {
-      "runtime": "nodejs18.x"
-    }
+    "NEXT_PUBLIC_BASE_URL": "${NEXT_PUBLIC_BASE_URL}",
+    "STRIPE_BASIC_MONTHLY_PRICE_ID": "${STRIPE_BASIC_MONTHLY_PRICE_ID}",
+    "STRIPE_PREMIUM_MONTHLY_PRICE_ID": "${STRIPE_PREMIUM_MONTHLY_PRICE_ID}",
+    "STRIPE_ENTERPRISE_MONTHLY_PRICE_ID": "${STRIPE_ENTERPRISE_MONTHLY_PRICE_ID}",
+    "STRIPE_BASIC_ANNUAL_PRICE_ID": "${STRIPE_BASIC_ANNUAL_PRICE_ID}",
+    "STRIPE_PREMIUM_ANNUAL_PRICE_ID": "${STRIPE_PREMIUM_ANNUAL_PRICE_ID}",
+    "STRIPE_ENTERPRISE_ANNUAL_PRICE_ID": "${STRIPE_ENTERPRISE_ANNUAL_PRICE_ID}"
   }
 }

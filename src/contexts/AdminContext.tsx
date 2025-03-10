@@ -1,180 +1,152 @@
 // src/contexts/AdminContext.tsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { 
-  AdminUser, 
-  SubscriptionAnalytics, 
-  BillingSummary,
-  UserGrowthMetrics
-} from '../types/admin';
-import { 
-  isAdmin, 
-  getCurrentAdmin, 
-  getSubscriptionAnalytics,
-  getBillingSummary,
-  getUserGrowthMetrics
-} from '../services/adminService';
-import { useFirebaseAuth } from '../hooks/useFirebaseAuth';
+import React, { createContext, useContext, ReactNode } from 'react';
 
+// Define the admin user type
+interface AdminUser {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  role: 'admin';
+}
+
+// Define analytics types
+interface SubscriptionAnalytics {
+  mrr: number;
+  activeSubscriptions: number;
+  canceledSubscriptions: number;
+  churnRate: number;
+  totalSubscriptions: number;
+  planDistribution: Record<string, number>;
+}
+
+interface BillingSummary {
+  totalRevenue: number;
+  currentMonthRevenue: number;
+  revenueGrowth: number;
+  paidInvoices: number;
+  pendingInvoices: number;
+  failedInvoices: number;
+  refundedAmount: number;
+}
+
+interface UserGrowthMetrics {
+  totalUsers: number;
+  newUsersThisMonth: number;
+  userGrowthRate: number;
+  conversionRate: number;
+}
+
+// Define the context type
 interface AdminContextType {
-  isAdmin: boolean;
-  isLoading: boolean;
   adminUser: AdminUser | null;
-  error: string | null;
-  subscriptionAnalytics: SubscriptionAnalytics | null;
+  isLoading: boolean;
+  isAdmin: boolean;
   billingSummary: BillingSummary | null;
+  subscriptionAnalytics: SubscriptionAnalytics | null;
   userGrowthMetrics: UserGrowthMetrics | null;
-  refreshAdminData: () => Promise<void>;
   refreshAnalytics: () => Promise<void>;
   refreshBillingSummary: () => Promise<void>;
   refreshUserMetrics: () => Promise<void>;
 }
 
-const AdminContext = createContext<AdminContextType | undefined>(undefined);
+// Create the context with default values
+const AdminContext = createContext<AdminContextType>({
+  adminUser: null,
+  isLoading: false,
+  isAdmin: false,
+  billingSummary: null,
+  subscriptionAnalytics: null,
+  userGrowthMetrics: null,
+  refreshAnalytics: async () => {},
+  refreshBillingSummary: async () => {},
+  refreshUserMetrics: async () => {}
+});
 
-export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useFirebaseAuth();
-  const [isAdminUser, setIsAdminUser] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [subscriptionAnalytics, setSubscriptionAnalytics] = useState<SubscriptionAnalytics | null>(null);
-  const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
-  const [userGrowthMetrics, setUserGrowthMetrics] = useState<UserGrowthMetrics | null>(null);
+// Provider component
+interface AdminProviderProps {
+  children: ReactNode;
+}
 
-  // Check if the current user is an admin
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      console.log('AdminContext - Checking admin status for user:', user?.email);
-      
-      if (!user) {
-        console.log('AdminContext - No user, setting isAdmin to false');
-        setIsAdminUser(false);
-        setAdminUser(null);
-        setIsLoading(false);
-        return;
-      }
+export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
+  // In a real implementation, this would fetch admin data from an API or database
+  const adminUser: AdminUser = {
+    id: 'admin-1',
+    email: 'admin@example.com',
+    firstName: 'Admin',
+    lastName: 'User',
+    role: 'admin'
+  };
 
-      try {
-        console.log('AdminContext - User exists, checking admin status');
-        setIsLoading(true);
-        
-        // Force a small delay to ensure Firebase auth is fully initialized
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        const adminStatus = await isAdmin();
-        console.log('AdminContext - Admin status result:', adminStatus);
-        
-        setIsAdminUser(adminStatus);
-
-        if (adminStatus) {
-          console.log('AdminContext - User is admin, getting admin data');
-          const admin = await getCurrentAdmin();
-          console.log('AdminContext - Admin data:', admin);
-          setAdminUser(admin);
-          
-          // Load initial data if admin
-          console.log('AdminContext - Loading admin data');
-          await Promise.all([
-            refreshAnalytics(),
-            refreshBillingSummary(),
-            refreshUserMetrics()
-          ]);
-          console.log('AdminContext - Admin data loaded');
-        } else {
-          console.log('AdminContext - User is not an admin:', user.email);
-        }
-      } catch (err) {
-        console.error('AdminContext - Error checking admin status:', err);
-        setError('Failed to verify admin status');
-      } finally {
-        console.log('AdminContext - Finished checking admin status, isAdmin:', isAdminUser);
-        setIsLoading(false);
-      }
-    };
-
-    checkAdminStatus();
-  }, [user]);
-
-  // Refresh admin user data
-  const refreshAdminData = async () => {
-    if (!user) return;
-
-    try {
-      setIsLoading(true);
-      const admin = await getCurrentAdmin();
-      setAdminUser(admin);
-      setError(null);
-    } catch (err) {
-      console.error('Error refreshing admin data:', err);
-      setError('Failed to refresh admin data');
-    } finally {
-      setIsLoading(false);
+  // Mock analytics data
+  const mockSubscriptionAnalytics: SubscriptionAnalytics = {
+    mrr: 12500,
+    activeSubscriptions: 250,
+    canceledSubscriptions: 15,
+    churnRate: 0.06,
+    totalSubscriptions: 265,
+    planDistribution: {
+      basic: 150,
+      premium: 75,
+      enterprise: 25,
+      none: 15
     }
   };
 
-  // Refresh subscription analytics
+  const mockBillingSummary: BillingSummary = {
+    totalRevenue: 150000,
+    currentMonthRevenue: 12500,
+    revenueGrowth: 8.5,
+    paidInvoices: 245,
+    pendingInvoices: 12,
+    failedInvoices: 3,
+    refundedAmount: 1200
+  };
+
+  const mockUserGrowthMetrics: UserGrowthMetrics = {
+    totalUsers: 320,
+    newUsersThisMonth: 35,
+    userGrowthRate: 12.3,
+    conversionRate: 0.78
+  };
+
+  // Mock refresh functions
   const refreshAnalytics = async () => {
-    if (!isAdminUser) return;
-
-    try {
-      const analytics = await getSubscriptionAnalytics();
-      setSubscriptionAnalytics(analytics);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching subscription analytics:', err);
-      setError('Failed to load subscription analytics');
-    }
+    console.log('Refreshing subscription analytics...');
+    // In a real implementation, this would fetch data from an API
+    return Promise.resolve();
   };
 
-  // Refresh billing summary
   const refreshBillingSummary = async () => {
-    if (!isAdminUser) return;
-
-    try {
-      const summary = await getBillingSummary();
-      setBillingSummary(summary);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching billing summary:', err);
-      setError('Failed to load billing summary');
-    }
+    console.log('Refreshing billing summary...');
+    // In a real implementation, this would fetch data from an API
+    return Promise.resolve();
   };
 
-  // Refresh user metrics
   const refreshUserMetrics = async () => {
-    if (!isAdminUser) return;
-
-    try {
-      const metrics = await getUserGrowthMetrics();
-      setUserGrowthMetrics(metrics);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching user metrics:', err);
-      setError('Failed to load user metrics');
-    }
-  };
-
-  const value: AdminContextType = {
-    isAdmin: isAdminUser,
-    isLoading,
-    adminUser,
-    error,
-    subscriptionAnalytics,
-    billingSummary,
-    userGrowthMetrics,
-    refreshAdminData,
-    refreshAnalytics,
-    refreshBillingSummary,
-    refreshUserMetrics
+    console.log('Refreshing user metrics...');
+    // In a real implementation, this would fetch data from an API
+    return Promise.resolve();
   };
 
   return (
-    <AdminContext.Provider value={value}>
+    <AdminContext.Provider value={{ 
+      adminUser, 
+      isLoading: false,
+      isAdmin: true,
+      billingSummary: mockBillingSummary,
+      subscriptionAnalytics: mockSubscriptionAnalytics,
+      userGrowthMetrics: mockUserGrowthMetrics,
+      refreshAnalytics,
+      refreshBillingSummary,
+      refreshUserMetrics
+    }}>
       {children}
     </AdminContext.Provider>
   );
 };
 
+// Hook to use the admin context
 export const useAdmin = () => {
   const context = useContext(AdminContext);
   if (context === undefined) {

@@ -1,7 +1,7 @@
 // src/pages/auth/Register.tsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, AlertCircle, MapPin } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { useFirebaseAuth } from '../../hooks/useFirebaseAuth';
 import { handleFirebaseError } from '../../lib/firebaseClient';
@@ -9,13 +9,14 @@ import Button from '../../components/ui/Button';
 
 const Register: React.FC = () => {
   const theme = useTheme();
-const darkMode = theme ? theme.darkMode : false;
+  const darkMode = theme ? theme.darkMode : false;
   const { signUp } = useFirebaseAuth();
   const navigate = useNavigate();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [zipCode, setZipCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -35,16 +36,44 @@ const darkMode = theme ? theme.darkMode : false;
       return;
     }
     
+    // Validate ZIP code
+    const zipCodeRegex = /^\d{5}(-\d{4})?$/; // US ZIP code format
+    if (!zipCodeRegex.test(zipCode)) {
+      setError('Please enter a valid ZIP code (e.g., 12345 or 12345-6789)');
+      return;
+    }
+    
     setLoading(true);
     
     try {
-      const { error: signUpError } = await signUp(email, password);
+      const { error: signUpError, data } = await signUp(email, password);
       
       if (signUpError) {
         const errorInfo = handleFirebaseError(signUpError);
         setError(errorInfo.message || 'Failed to create account. Please try again.');
         setLoading(false);
         return;
+      }
+      
+      // Store the ZIP code in the user profile
+      if (data && data.user) {
+        try {
+          // Create user profile with ZIP code
+          const userProfileData = {
+            user_id: data.user.uid,
+            email: data.user.email,
+            zip_code: zipCode,
+            onboarding_completed: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          
+          // This would typically be handled by a cloud function or backend service
+          // For now, we'll just navigate to the dashboard
+          console.log('Creating user profile with data:', userProfileData);
+        } catch (profileError) {
+          console.error('Error creating user profile:', profileError);
+        }
       }
       
       // Firebase automatically signs in the user after registration
@@ -186,6 +215,40 @@ const darkMode = theme ? theme.darkMode : false;
                   placeholder="••••••••"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label 
+                htmlFor="zip-code" 
+                className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
+              >
+                ZIP Code
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                  <MapPin className={`h-5 w-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                </div>
+                <input
+                  id="zip-code"
+                  type="text"
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value)}
+                  required
+                  className={`
+                    block w-full pl-10 pr-3 py-2 rounded-md 
+                    focus:outline-none focus:ring-2 focus:ring-blue-500
+                    ${
+                      darkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                    }
+                  `}
+                  placeholder="Enter your ZIP code"
+                />
+              </div>
+              <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Used for local weather forecasts
+              </p>
             </div>
             
             <div className="flex items-center">

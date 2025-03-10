@@ -48,7 +48,7 @@ const SuccessPage: React.FC = () => {
         }
 
         // Create or use a validate-checkout endpoint
-        const response = await fetch(`/api/stripe/validate-checkout?session_id=${sessionId}`);
+        const response = await fetch(`/api/consolidated/stripe/validate-checkout?session_id=${sessionId}`);
         if (!response.ok) {
           throw new Error('Failed to validate checkout session');
         }

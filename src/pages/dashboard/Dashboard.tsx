@@ -2,16 +2,31 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/hooks/useTheme';
-import { Users, Briefcase, Mail, Cloud, AlertTriangle, CheckCircle, BarChart2 } from 'lucide-react';
-import LoadingScreen from '@/components/ui/LoadingScreen';
+import { 
+  CurrentWeather, 
+  ForecastDay, 
+  WeatherWidgetForecast 
+} from '@/types/weather';
+import { 
+  Users, Briefcase, Mail, Cloud, AlertTriangle, CheckCircle, BarChart2,
+  Sun, CloudRain, CloudLightning, CloudSnow, CloudFog, AlertCircle, CloudOff,
+  Thermometer, Wind
+} from 'lucide-react';import LoadingScreen from '@/components/ui/LoadingScreen';
 import { collection, query, where, getDocs, getCountFromServer } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebaseClient';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
+
+
 
 const Dashboard: React.FC = () => {
   const { darkMode } = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [forecastData, setForecastData] = useState<WeatherWidgetForecast[]>([]);
+  const [currentWeather, setCurrentWeather] = useState<CurrentWeather | null>(null);
+  const [userZipCode, setUserZipCode] = useState<string | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState<string | null>(null);
   const [data, setData] = useState({
     activeClients: 0,
     activeWorkers: 0,
@@ -21,6 +36,61 @@ const Dashboard: React.FC = () => {
 
   const { user } = useFirebaseAuth();
 
+  const fetchWeatherData = async (zipCode: string) => {
+    try {
+      setWeatherLoading(true);
+      
+      // Direct call to WeatherAPI.com as a backup solution
+      // This bypasses your API infrastructure but will work for dashboard display
+      const weatherApiKey = process.env.NEXT_PUBLIC_WEATHER_API_KEY; // Make sure this is exposed to the client
+      const apiUrl = `https://api.weatherapi.com/v1/forecast.json?key=${weatherApiKey}&q=${zipCode}&days=5&aqi=no&alerts=yes`;
+      
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Weather API error: ${response.status}`);
+      }
+      
+      const weatherData = await response.json();
+      
+      // Process current weather data
+      const current: CurrentWeather = {
+        temperature: Math.round(weatherData.current.temp_f),
+        feelsLike: Math.round(weatherData.current.feelslike_f),
+        condition: weatherData.current.condition.text,
+        humidity: weatherData.current.humidity,
+        windSpeed: weatherData.current.wind_mph,
+        precipitation: weatherData.current.precip_in,
+        isRainy: weatherData.current.precip_in > 0 && weatherData.current.condition.text.toLowerCase().includes('rain'),
+        isSnowy: weatherData.current.condition.text.toLowerCase().includes('snow'),
+        icon: weatherData.current.condition.icon
+      };
+      
+      setCurrentWeather(current);
+      
+      // Process forecast data
+      const forecast: WeatherWidgetForecast[] = weatherData.forecast.forecastday.map((day: any): WeatherWidgetForecast => ({
+        date: day.date,
+        temperature: {
+          min: Math.round(day.day.mintemp_f),
+          max: Math.round(day.day.maxtemp_f)
+        },
+        condition: day.day.condition.text,
+        precipitation: day.day.daily_chance_of_rain / 100, // Convert percentage to decimal
+        icon: day.day.condition.icon
+      }));
+      
+      setForecastData(forecast);
+      setWeatherError(null);
+    } catch (err) {
+      console.error('Error fetching weather data:', err);
+      setWeatherError('Unable to load weather data');
+    } finally {
+      setWeatherLoading(false);
+    }
+  };
+  
+  // Complete useEffect implementation
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -32,7 +102,7 @@ const Dashboard: React.FC = () => {
           setLoading(false);
           return;
         }
-
+  
         // Get active clients count
         const clientsQuery = query(
           collection(db, 'clients'),
@@ -41,7 +111,7 @@ const Dashboard: React.FC = () => {
         );
         const clientsSnapshot = await getCountFromServer(clientsQuery);
         const activeClients = clientsSnapshot.data().count;
-
+  
         // Get active workers count
         const workersQuery = query(
           collection(db, 'workers'),
@@ -50,7 +120,7 @@ const Dashboard: React.FC = () => {
         );
         const workersSnapshot = await getCountFromServer(workersQuery);
         const activeWorkers = workersSnapshot.data().count;
-
+  
         // Get pending emails count
         const emailsQuery = query(
           collection(db, 'emails'),
@@ -59,7 +129,7 @@ const Dashboard: React.FC = () => {
         );
         const emailsSnapshot = await getCountFromServer(emailsQuery);
         const pendingEmails = emailsSnapshot.data().count;
-
+  
         // Get weather alerts count
         const alertsQuery = query(
           collection(db, 'weather_alerts'),
@@ -68,6 +138,24 @@ const Dashboard: React.FC = () => {
         );
         const alertsSnapshot = await getCountFromServer(alertsQuery);
         const weatherAlerts = alertsSnapshot.data().count;
+  
+        // Get user profile for zip code
+        const profileQuery = query(
+          collection(db, 'user_profiles'),
+          where('user_id', '==', user.uid)
+        );
+        
+        const profileSnapshot = await getDocs(profileQuery);
+        
+        if (!profileSnapshot.empty) {
+          const userProfile = profileSnapshot.docs[0].data();
+          const zipCode = userProfile.zip_code;
+          
+          if (zipCode) {
+            setUserZipCode(zipCode);
+            fetchWeatherData(zipCode);
+          }
+        }
         
         setData({
           activeClients,
@@ -83,7 +171,7 @@ const Dashboard: React.FC = () => {
         setLoading(false);
       }
     };
-
+  
     if (user) {
       fetchData();
     }
@@ -111,6 +199,33 @@ const Dashboard: React.FC = () => {
       </div>
     );
   }
+
+  const getWeatherIcon = (iconCode: string) => {
+    // Map your weather API icon codes to Lucide icons
+    // You'll need to customize this based on your API's icon system
+    if (iconCode.includes('sunny') || iconCode.includes('clear')) {
+      return <Sun className="w-5 h-5 text-yellow-500 dark:text-yellow-400 mr-3" />;
+    } else if (iconCode.includes('rain')) {
+      return <CloudRain className="w-5 h-5 text-blue-500 dark:text-blue-400 mr-3" />;
+    } else if (iconCode.includes('thunder') || iconCode.includes('lightning')) {
+      return <CloudLightning className="w-5 h-5 text-purple-500 dark:text-purple-400 mr-3" />;
+    } else if (iconCode.includes('snow')) {
+      return <CloudSnow className="w-5 h-5 text-blue-300 dark:text-blue-200 mr-3" />;
+    } else if (iconCode.includes('fog') || iconCode.includes('mist')) {
+      return <CloudFog className="w-5 h-5 text-gray-500 dark:text-gray-400 mr-3" />;
+    } else if (iconCode.includes('cloud')) {
+      return <Cloud className="w-5 h-5 text-blue-500 dark:text-blue-400 mr-3" />;
+    } else {
+      return <Cloud className="w-5 h-5 text-blue-500 dark:text-blue-400 mr-3" />;
+    }
+  };
+  
+  // Function to format date from ISO string
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+  
   
   return (
     <div className="space-y-6">
@@ -334,25 +449,88 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Weather Forecast */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            5-Day Forecast
-          </h2>
-          <div className="space-y-4">
-            {[...Array(5)].map((_, index) => (
-              <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-750">
-                <div className="flex items-center">
-                  <Cloud className="w-5 h-5 text-blue-500 dark:text-blue-400 mr-3" />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    {new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { weekday: 'short' })}
-                  </span>
-                </div>
-                <span className="text-gray-600 dark:text-gray-400">72°F</span>
-              </div>
-            ))}
-          </div>
+<div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+  <div className="flex justify-between items-center mb-4">
+    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+      5-Day Forecast {userZipCode && `(${userZipCode})`}
+    </h2>
+    {currentWeather && (
+      <div className="flex items-center bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg">
+        <div className="flex items-center mr-3">
+          {getWeatherIcon(currentWeather.icon)}
+          <span className="text-blue-700 dark:text-blue-300 font-medium">
+            {currentWeather.temperature}°F
+          </span>
+        </div>
+        <div className="flex items-center text-xs text-blue-600 dark:text-blue-400">
+          <span className="mr-2">Now</span>
+          <span>{currentWeather.condition}</span>
         </div>
       </div>
+    )}
+  </div>
+  
+  {weatherLoading ? (
+    <div className="flex justify-center items-center h-48">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    </div>
+  ) : weatherError ? (
+    <div className="flex items-center justify-center h-48 text-red-500">
+      <AlertTriangle className="w-5 h-5 mr-2" />
+      <span>{weatherError}</span>
+    </div>
+  ) : !userZipCode ? (
+    <div className="flex items-center justify-center h-48 text-amber-500">
+      <AlertCircle className="w-5 h-5 mr-2" />
+      <span>No zip code available in profile</span>
+    </div>
+  ) : forecastData.length === 0 ? (
+    <div className="flex items-center justify-center h-48 text-gray-500">
+      <CloudOff className="w-5 h-5 mr-2" />
+      <span>No forecast data available</span>
+    </div>
+  ) : (
+    <div className="space-y-4">
+      {forecastData.map((day, index) => (
+        <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-750">
+          <div className="flex items-center">
+            {getWeatherIcon(day.icon)}
+            <span className="text-gray-700 dark:text-gray-300">
+              {formatDate(day.date)}
+            </span>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center text-xs">
+              <Thermometer className="w-4 h-4 text-red-500 mr-1" />
+              <span className="text-gray-600 dark:text-gray-400">
+                {day.temperature.max}°
+              </span>
+              <span className="mx-1 text-gray-400">/</span>
+              <span className="text-gray-500 dark:text-gray-500">
+                {day.temperature.min}°
+              </span>
+            </div>
+            
+            {day.precipitation > 0 && (
+              <div className="flex items-center text-xs">
+                <CloudRain className="w-4 h-4 text-blue-500 mr-1" />
+                <span className="text-gray-600 dark:text-gray-400">
+                  {Math.round(day.precipitation * 100)}%
+                </span>
+              </div>
+            )}
+            
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {day.condition}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+        </div>
+
 
       {/* Premium Features Banner */}
       <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-sm p-6 text-white">

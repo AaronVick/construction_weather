@@ -1,11 +1,18 @@
-// src/components/settings/AccountSettings.tsx
 import React from 'react';
-import Card from '../../components/ui/Card';
 import { Save } from 'lucide-react';
+import Card from '../../components/ui/Card';
 import LoadingButton from './LoadingButton';
-import { SettingsProps } from './types';
+import { UserProfileFormData } from '../../types/user';
 
-const AccountSettings: React.FC<SettingsProps> = ({
+interface AccountSettingsProps {
+  darkMode: boolean;
+  formData: UserProfileFormData;
+  loading: boolean;
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleSaveProfile: () => Promise<void>;
+}
+
+const AccountSettings: React.FC<AccountSettingsProps> = ({
   darkMode,
   formData,
   loading,
@@ -20,13 +27,14 @@ const AccountSettings: React.FC<SettingsProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label 
-              htmlFor="full-name" 
+              htmlFor="full_name" 
               className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
             >
               Full Name
             </label>
             <input
-              id="full-name"
+              id="full_name"
+              name="full_name"
               type="text"
               value={formData.full_name}
               onChange={handleInputChange}
@@ -50,6 +58,7 @@ const AccountSettings: React.FC<SettingsProps> = ({
             </label>
             <input
               id="email"
+              name="email"
               type="email"
               value={formData.email || ''}
               disabled
@@ -71,15 +80,16 @@ const AccountSettings: React.FC<SettingsProps> = ({
         
         <div>
           <label 
-            htmlFor="zip-code" 
+            htmlFor="zip_code" 
             className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
           >
             Default ZIP Code
           </label>
           <input
-            id="zip-code"
+            id="zip_code"
+            name="zip_code"
             type="text"
-            value={formData.zip_code}
+            value={formData.zip_code || ''}
             onChange={handleInputChange}
             placeholder="Enter ZIP code for weather forecasts"
             className={`

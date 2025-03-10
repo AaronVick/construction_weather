@@ -1,7 +1,7 @@
 // src/pages/dashboard/Jobsites.tsx
 
 import React, { useState, useEffect } from 'react';
-import { Map, CloudRain, Plus, Lock, Loader2, X, Check } from 'lucide-react';
+import { Map, CloudRain, Plus, Lock, Loader2, X, Check, Grid, List, Eye } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { useSubscription } from '../../hooks/useSubscription';
 import { db } from '../../lib/firebaseClient';
@@ -52,6 +52,7 @@ const Jobsites: React.FC = () => {
     notes: '',
     weatherMonitoring: defaultWeatherSettings,
   });
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
   const { user } = useFirebaseAuth();
 
   const hasPremiumAccess = subscription?.plan === 'premium';
@@ -275,10 +276,37 @@ const Jobsites: React.FC = () => {
           </p>
         </div>
 
-        <Button variant="primary" onClick={() => setIsModalOpen(true)}>
-          <Plus className="w-5 h-5 mr-2" />
-          Add Jobsite
-        </Button>
+        <div className="flex items-center space-x-3">
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex">
+            <button
+              onClick={() => setViewMode('card')}
+              className={`px-3 py-1.5 rounded-md flex items-center ${
+                viewMode === 'card'
+                  ? 'bg-white dark:bg-gray-700 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400'
+              }`}
+            >
+              <Grid className="w-4 h-4 mr-1.5" />
+              <span className="text-sm font-medium">Cards</span>
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1.5 rounded-md flex items-center ${
+                viewMode === 'list'
+                  ? 'bg-white dark:bg-gray-700 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400'
+              }`}
+            >
+              <List className="w-4 h-4 mr-1.5" />
+              <span className="text-sm font-medium">List</span>
+            </button>
+          </div>
+
+          <Button variant="primary" onClick={() => setIsModalOpen(true)}>
+            <Plus className="w-5 h-5 mr-2" />
+            Add Jobsite
+          </Button>
+        </div>
       </div>
 
       {jobsites.length === 0 ? (
@@ -292,7 +320,7 @@ const Jobsites: React.FC = () => {
             Add Your First Jobsite
           </Button>
         </div>
-      ) : (
+      ) : viewMode === 'card' ? (
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {jobsites.map((jobsite) => (
             <Link key={jobsite.id} to={`/jobsites/${jobsite.id}`} className="block">
@@ -344,6 +372,86 @@ const Jobsites: React.FC = () => {
               </div>
             </Link>
           ))}
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-800">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Location
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Weather Monitoring
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                {jobsites.map((jobsite) => (
+                  <tr key={jobsite.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {jobsite.name}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {[jobsite.city, jobsite.state].filter(Boolean).join(', ')}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        jobsite.is_active 
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                          : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                      }`}>
+                        {jobsite.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center text-sm">
+                        <CloudRain
+                          className={`w-4 h-4 mr-2 ${
+                            jobsite.weather_monitoring.isEnabled
+                              ? 'text-blue-500 dark:text-blue-400'
+                              : 'text-gray-400 dark:text-gray-500'
+                          }`}
+                        />
+                        <span
+                          className={
+                            jobsite.weather_monitoring.isEnabled
+                              ? 'text-blue-600 dark:text-blue-400'
+                              : 'text-gray-500 dark:text-gray-400'
+                          }
+                        >
+                          {jobsite.weather_monitoring.isEnabled ? 'Active' : 'Disabled'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <Link 
+                        to={`/jobsites/${jobsite.id}`}
+                        className="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors"
+                      >
+                        <Eye className="w-4 h-4 mr-1.5" />
+                        View Details
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

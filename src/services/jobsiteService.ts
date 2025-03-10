@@ -48,6 +48,67 @@ export async function getClientJobsites(clientId: string): Promise<Jobsite[]> {
 }
 
 /**
+ * Fetch all jobsites for the current user
+ */
+export async function getAllJobsites(): Promise<Jobsite[]> {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Not authenticated');
+
+    const jobsitesQuery = query(
+      collection(db, 'jobsites'),
+      where('user_id', '==', user.uid)
+    );
+    
+    const querySnapshot = await getDocs(jobsitesQuery);
+    
+    const jobsites: Jobsite[] = [];
+    querySnapshot.forEach((doc) => {
+      jobsites.push(formatJobsite({
+        id: doc.id,
+        ...doc.data()
+      }));
+    });
+    
+    return jobsites;
+  } catch (error) {
+    console.error('Error fetching all jobsites:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch all active jobsites for the current user
+ */
+export async function getActiveJobsites(): Promise<Jobsite[]> {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Not authenticated');
+
+    const jobsitesQuery = query(
+      collection(db, 'jobsites'),
+      where('user_id', '==', user.uid),
+      where('is_active', '==', true)
+    );
+    
+    const querySnapshot = await getDocs(jobsitesQuery);
+    
+    const jobsites: Jobsite[] = [];
+    querySnapshot.forEach((doc) => {
+      jobsites.push(formatJobsite({
+        id: doc.id,
+        ...doc.data()
+      }));
+    });
+    
+    return jobsites;
+  } catch (error) {
+    console.error('Error fetching active jobsites:', error);
+    return [];
+  }
+}
+
+/**
  * Create a new jobsite
  */
 export async function createJobsite(jobsite: Omit<Jobsite, 'id' | 'created_at' | 'updated_at'>): Promise<Jobsite | null> {
@@ -201,6 +262,8 @@ function formatJobsite(data: any): Jobsite {
       }
     },
     location: data.location || '',
+    latitude: data.latitude || null,
+    longitude: data.longitude || null,
     notes: data.notes || '',
     created_at: created_at,
     updated_at: updated_at || null,
