@@ -11,6 +11,10 @@ import EmailSettings from '../../components/admin/settings/EmailSettings';
 import SecuritySettings from '../../components/admin/settings/SecuritySettings';
 import AdminUsersSettings from '../../components/admin/settings/AdminUsersSettings';
 
+// Import testing components
+import EmailTesting from '../admin/EmailTesting';
+import WeatherTesting from '../admin/WeatherTesting';
+
 // Tab panel component
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -65,6 +69,8 @@ const AdminSettings: React.FC = () => {
           <Tab label="Email" id="settings-tab-2" aria-controls="settings-tabpanel-2" />
           <Tab label="Security" id="settings-tab-3" aria-controls="settings-tabpanel-3" />
           <Tab label="Admin Users" id="settings-tab-4" aria-controls="settings-tabpanel-4" />
+          <Tab label="Email Testing" id="settings-tab-5" aria-controls="settings-tabpanel-5" />
+          <Tab label="Weather Testing" id="settings-tab-6" aria-controls="settings-tabpanel-6" />
         </Tabs>
       </Box>
       
@@ -87,6 +93,14 @@ const AdminSettings: React.FC = () => {
         
         <TabPanel value={activeTab} index={4}>
           <AdminUsersSettings />
+        </TabPanel>
+        
+        <TabPanel value={activeTab} index={5}>
+          <EmailTesting />
+        </TabPanel>
+        
+        <TabPanel value={activeTab} index={6}>
+          <WeatherTesting />
         </TabPanel>
       </Paper>
     </Box>
