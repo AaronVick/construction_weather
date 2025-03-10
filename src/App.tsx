@@ -51,6 +51,8 @@ const AdminUsers = lazy(() => import('./pages/admin/Users'));
 const AdminBilling = lazy(() => import('./pages/admin/Billing'));
 const AdminReports = lazy(() => import('./pages/admin/Reports'));
 const AdminSettings = lazy(() => import('./pages/admin/Settings'));
+const WeatherTesting = lazy(() => import('./pages/admin/WeatherTesting'));
+const EmailTesting = lazy(() => import('./pages/admin/EmailTesting'));
 
 const AppRoutes: React.FC = () => {
   const { user, isLoading: loading } = useFirebaseAuth();
@@ -158,6 +160,9 @@ const AppRoutes: React.FC = () => {
             <Route path="/admin/revenue" element={<AdminRevenue />} />
             <Route path="/admin/reports" element={<AdminReports />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
+            {/* Testing tools */}
+            <Route path="/admin/email-testing" element={<EmailTesting />} />
+            <Route path="/admin/weather-testing" element={<WeatherTesting />} />
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           </Route>
         </Route>

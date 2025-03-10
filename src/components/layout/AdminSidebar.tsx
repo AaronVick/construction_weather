@@ -11,7 +11,9 @@ import {
   DollarSign,
   FileText,
   Bell,
-  ShieldCheck
+  ShieldCheck,
+  Mail,
+  CloudLightning
 } from 'lucide-react';
 
 interface NavItem {
@@ -45,7 +47,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     { name: 'Billing', icon: <DollarSign size={20} />, path: '/admin/billing' },
     { name: 'Revenue', icon: <BarChart2 size={20} />, path: '/admin/revenue' },
     { name: 'Reports', icon: <FileText size={20} />, path: '/admin/reports' },
-    { name: 'System Settings', icon: <Settings size={20} />, path: '/admin/settings' }
+    { name: 'System Settings', icon: <Settings size={20} />, path: '/admin/settings' },
+    // Testing tools
+    { name: 'Email Testing', icon: <Mail size={20} />, path: '/admin/email-testing' },
+    { name: 'Weather Testing', icon: <CloudLightning size={20} />, path: '/admin/weather-testing' }
   ];
 
   return (
