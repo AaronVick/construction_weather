@@ -101,8 +101,10 @@ const ProUserWeatherDashboard: React.FC<ProUserWeatherDashboardProps> = ({
                 location, 
                 3, 
                 true,
-                hasCoordinates ? jobsite.latitude : undefined,
-                hasCoordinates ? jobsite.longitude : undefined
+                {
+                  latitude: hasCoordinates ? jobsite.latitude : undefined,
+                  longitude: hasCoordinates ? jobsite.longitude : undefined
+                }
               )
             ]);
             
@@ -171,8 +173,10 @@ const ProUserWeatherDashboard: React.FC<ProUserWeatherDashboardProps> = ({
           location, 
           3, 
           true,
-          hasCoordinates ? jobsite.latitude : undefined,
-          hasCoordinates ? jobsite.longitude : undefined
+          {
+            latitude: hasCoordinates ? jobsite.latitude : undefined,
+            longitude: hasCoordinates ? jobsite.longitude : undefined
+          }
         )
       ]);
       

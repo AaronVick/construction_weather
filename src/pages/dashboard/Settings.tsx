@@ -290,7 +290,20 @@ const Settings: React.FC = () => {
   };
 
   // Common props for all settings components
-  const settingsProps = {
+  // Ensure email is always a string for AccountSettings
+  const accountSettingsProps = {
+    darkMode,
+    formData: {
+      ...formData,
+      email: formData.email || ''
+    },
+    loading,
+    handleInputChange,
+    handleSaveProfile,
+  };
+
+  // Props for other settings components
+  const otherSettingsProps = {
     darkMode,
     formData,
     loading,
@@ -322,11 +335,11 @@ const Settings: React.FC = () => {
         
         {/* Main Content */}
         <div className="md:col-span-3 space-y-6">
-          {activeTab === 'account' && <AccountSettings {...settingsProps} />}
-          {activeTab === 'notifications' && <NotificationSettings {...settingsProps} />}
-          {activeTab === 'security' && <SecuritySettings {...settingsProps} />}
+          {activeTab === 'account' && <AccountSettings {...accountSettingsProps} />}
+          {activeTab === 'notifications' && <NotificationSettings {...otherSettingsProps} />}
+          {activeTab === 'security' && <SecuritySettings {...otherSettingsProps} />}
           {activeTab === 'appearance' && (
-            <AppearanceSettings {...settingsProps} toggleDarkMode={toggleDarkMode} />
+            <AppearanceSettings {...otherSettingsProps} toggleDarkMode={toggleDarkMode} />
           )}
         </div>
       </div>

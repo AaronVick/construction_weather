@@ -43,7 +43,10 @@ const WeatherWidgetContainer: React.FC<WeatherWidgetContainerProps> = ({
         // Fetch current weather and forecast in parallel
         const [currentWeather, forecastResponse] = await Promise.all([
           getCurrentWeather(location, isPro, latitude, longitude),
-          fetchWeatherForecast(location, 3, isPro, latitude, longitude)
+          fetchWeatherForecast(location, 3, isPro, {
+            latitude,
+            longitude
+          })
         ]);
         
         setCurrent(currentWeather);
