@@ -39,6 +39,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onToggle,
   onSignOut
 }) => {
+  // Check if user has super admin privileges
+  const isSuperAdmin = user?.role === 'admin' || user?.email === 'admin@example.com';
+  
   // Admin navigation items
   const navItems: NavItem[] = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/admin/dashboard' },
@@ -48,10 +51,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     { name: 'Revenue', icon: <BarChart2 size={20} />, path: '/admin/revenue' },
     { name: 'Reports', icon: <FileText size={20} />, path: '/admin/reports' },
     { name: 'System Settings', icon: <Settings size={20} />, path: '/admin/settings' },
-    // Testing tools
-    { name: 'Email Testing', icon: <Mail size={20} />, path: '/admin/email-testing' },
-    { name: 'Weather Testing', icon: <CloudLightning size={20} />, path: '/admin/weather-testing' }
+    // Testing tools - only visible to super admins
+    ...(isSuperAdmin ? [
+      { name: 'Email Testing', icon: <Mail size={20} />, path: '/admin/email-testing' },
+      { name: 'Weather Testing', icon: <CloudLightning size={20} />, path: '/admin/weather-testing' }
+    ] : [])
   ];
+  
+  console.log('Admin sidebar - user role:', user?.role, 'email:', user?.email, 'isSuperAdmin:', isSuperAdmin);
 
   return (
     <>
