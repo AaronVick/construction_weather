@@ -7,7 +7,8 @@ interface AdminUser {
   email: string;
   firstName?: string;
   lastName?: string;
-  role: 'admin';
+  role: 'admin' | 'super_admin';
+  permissions?: string[];
 }
 
 // Define analytics types
@@ -70,13 +71,25 @@ interface AdminProviderProps {
 
 export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   // In a real implementation, this would fetch admin data from an API or database
+  // For testing, we're hardcoding the admin user to match the Firebase admin record
   const adminUser: AdminUser = {
     id: 'admin-1',
-    email: 'admin@example.com',
-    firstName: 'Admin',
-    lastName: 'User',
-    role: 'admin'
+    email: 'me@tokensintl.com',
+    firstName: 'Aaron',
+    lastName: 'V',
+    role: 'super_admin',
+    permissions: [
+      'manage_users',
+      'manage_subscriptions',
+      'view_analytics',
+      'manage_billing',
+      'manage_settings',
+      'manage_admins',
+      'support_access'
+    ]
   };
+  
+  console.log('AdminProvider initialized with user:', adminUser);
 
   // Mock analytics data
   const mockSubscriptionAnalytics: SubscriptionAnalytics = {

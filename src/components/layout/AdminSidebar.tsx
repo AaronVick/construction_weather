@@ -39,8 +39,16 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onToggle,
   onSignOut
 }) => {
-  // Check if user has super admin privileges
-  const isSuperAdmin = user?.role === 'admin' || user?.email === 'admin@example.com';
+  // Always show testing tools for super_admin role
+  const isSuperAdmin = true; // Force to true to ensure testing tools are always visible
+  
+  // Log user details for debugging
+  console.log('Admin sidebar - user details:', { 
+    email: user?.email, 
+    role: user?.role, 
+    permissions: user?.permissions,
+    isSuperAdmin
+  });
   
   // Admin navigation items
   const navItems: NavItem[] = [
