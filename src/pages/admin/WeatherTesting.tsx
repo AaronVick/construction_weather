@@ -16,7 +16,7 @@ import {
   PlayArrow as PlayArrowIcon,
   Send as SendIcon
 } from '@mui/icons-material';
-import AdminLayoutWrapper from '../../components/layout/AdminLayoutWrapper';
+// No need to import AdminLayoutWrapper as it's handled by the route structure
 import { useFirebaseAuth } from '../../hooks/useFirebaseAuth';
 
 // Import types
@@ -100,7 +100,7 @@ const WeatherTesting: React.FC = () => {
     const fetchJobsites = async () => {
       try {
         const token = await getIdToken();
-        const response = await fetch('/api/consolidated/admin/jobsites', {
+        const response = await fetch('/api/admin/jobsites', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -126,7 +126,7 @@ const WeatherTesting: React.FC = () => {
     const checkApiStatus = async () => {
       try {
         const token = await getIdToken();
-        const response = await fetch('/api/consolidated/admin/api-status', {
+        const response = await fetch('/api/admin/api-status', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -160,7 +160,7 @@ const WeatherTesting: React.FC = () => {
     const fetchTestHistory = async () => {
       try {
         const token = await getIdToken();
-        const response = await fetch('/api/consolidated/admin/weather-test-history', {
+        const response = await fetch('/api/admin/weather-test-history', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -240,7 +240,7 @@ const WeatherTesting: React.FC = () => {
       }
       
       // Send request to API
-      const response = await fetch('/api/consolidated/admin/test-weather-notification', {
+      const response = await fetch('/api/admin/test-weather-notification', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -281,7 +281,7 @@ const WeatherTesting: React.FC = () => {
   const handleRefreshApiStatus = async () => {
     try {
       const token = await getIdToken();
-      const response = await fetch('/api/consolidated/admin/api-status', {
+      const response = await fetch('/api/admin/api-status', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -303,7 +303,6 @@ const WeatherTesting: React.FC = () => {
   };
   
   return (
-    <AdminLayoutWrapper>
       <Box mb={4}>
         <Typography variant="h4" gutterBottom>Weather Notification Testing</Typography>
         <Typography variant="body1" color="text.secondary" paragraph>
@@ -391,7 +390,6 @@ const WeatherTesting: React.FC = () => {
           </Paper>
         )}
       </Box>
-    </AdminLayoutWrapper>
   );
 };
 
