@@ -1,6 +1,6 @@
 // api/notifications/preview.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { auth, db } from '../lib/firebaseAdmin';
+import { auth, db } from '../../src/lib/firebaseAdmin';
 import { checkWeatherForNotifications } from '../../src/services/weatherService';
 
 // Define types for notification recipients

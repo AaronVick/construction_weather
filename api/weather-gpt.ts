@@ -1,7 +1,7 @@
 // api/weather-gpt.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import axios, { AxiosError } from 'axios';
-import { auth } from './lib/firebaseAdmin';
+import { auth } from '../src/lib/firebaseAdmin';
 import NodeCache from 'node-cache';
 
 // Cache for storing generated descriptions to reduce API calls

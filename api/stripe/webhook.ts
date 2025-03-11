@@ -1,7 +1,7 @@
 // api/stripe/webhook.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
-import { db } from '../lib/firebaseAdmin';
+import { db } from '../../src/lib/firebaseAdmin';
 import { Timestamp } from 'firebase-admin/firestore';
 
 // Initialize Stripe with the latest API version

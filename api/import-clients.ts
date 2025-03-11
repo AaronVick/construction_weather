@@ -1,6 +1,6 @@
 // api/import-clients-firebase.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { db, auth } from './lib/firebaseAdmin';
+import { db, auth } from '../src/lib/firebaseAdmin';
 
 export const config = {
   api: {

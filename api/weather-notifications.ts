@@ -1,6 +1,6 @@
 // api/weather-notifications.ts
 import { NextApiRequest, NextApiResponse } from 'next';
-import { auth, db } from './lib/firebaseAdmin';
+import { auth, db } from '../src/lib/firebaseAdmin';
 import { WeatherSettings, JobsiteWeatherSettings } from '../src/types/weather';
 
 /**

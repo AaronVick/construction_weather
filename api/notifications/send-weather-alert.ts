@@ -1,6 +1,6 @@
 // api/notifications/send-weather-alert.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { auth, db } from '../lib/firebaseAdmin';
+import { auth, db } from '../../src/lib/firebaseAdmin';
 import * as admin from 'firebase-admin';
 import * as sgMail from '@sendgrid/mail';
 import { checkWeatherForNotifications } from '../../src/services/weatherService';

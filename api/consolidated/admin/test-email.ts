@@ -1,6 +1,6 @@
 // api/consolidated/admin/test-email.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { auth, db } from '../../lib/firebaseAdmin';
+import { auth, db } from '../../../src/lib/firebaseAdmin';
 import sgMail from '@sendgrid/mail';
 
 // Initialize SendGrid

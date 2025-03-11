@@ -1,6 +1,6 @@
 // api/consolidated/admin.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { auth, db } from '../lib/firebaseAdmin';
+import { auth, db } from '../../src/lib/firebaseAdmin';
 import axios from 'axios';
 import sgMail from '@sendgrid/mail';
 import { 
