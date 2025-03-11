@@ -1,6 +1,58 @@
 // api/admin/api-status.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { auth, db } from '../../src/lib/firebaseAdmin';
+import * as admin from 'firebase-admin';
+
+// Define proper types for our response data
+interface SendgridStatus {
+  status: 'ok' | 'error';
+  message: string;
+  lastChecked: string;
+  fromEmail?: string;
+  fromName?: string;
+}
+
+interface FirebaseStatus {
+  status: 'ok' | 'error';
+  message: string;
+  lastChecked: string;
+}
+
+interface ApiStatusResponse {
+  timestamp: string;
+  firebase: FirebaseStatus;
+  sendgrid: SendgridStatus;
+}
+
+// Initialize Firebase Admin directly in this file
+// Check if Firebase Admin is already initialized
+if (!admin.apps.length) {
+  try {
+    // Log environment variables for debugging (without exposing values)
+    console.log('Firebase environment check:');
+    console.log('FIREBASE_PROJECT_ID exists:', !!process.env.FIREBASE_PROJECT_ID);
+    console.log('FIREBASE_CLIENT_EMAIL exists:', !!process.env.FIREBASE_CLIENT_EMAIL);
+    console.log('FIREBASE_PRIVATE_KEY exists:', !!process.env.FIREBASE_PRIVATE_KEY);
+    
+    // Initialize Firebase Admin with service account credentials
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      }),
+      databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`,
+      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+    });
+    
+    console.log('Firebase Admin initialized successfully');
+  } catch (initError) {
+    console.error('Firebase Admin initialization error:', initError);
+  }
+}
+
+// Get Firebase services directly
+const db = admin.firestore();
+const auth = admin.auth();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('Direct API status endpoint called');
@@ -12,8 +64,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Log environment variables (without exposing values)
-    console.log('Environment variables check:');
+    // Log SendGrid environment variables (without exposing values)
+    console.log('SendGrid environment check:');
     console.log('SENDGRID_API_KEY exists:', !!process.env.SENDGRID_API_KEY);
     console.log('SENDGRID_API exists:', !!process.env.SENDGRID_API);
     console.log('SENDGRID_FROM_EMAIL exists:', !!process.env.SENDGRID_FROM_EMAIL);
@@ -63,8 +115,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const apiKey = process.env.SENDGRID_API_KEY || process.env.SENDGRID_API;
           console.log('SendGrid API key configuration status:', apiKey ? 'Configured' : 'Not configured');
           
-          // Create response
-          const response = {
+          // Create response with proper typing
+          const response: ApiStatusResponse = {
+            timestamp: new Date().toISOString(),
+            firebase: {
+              status: 'ok',
+              message: 'Firebase is connected',
+              lastChecked: new Date().toISOString()
+            },
             sendgrid: {
               status: apiKey ? 'ok' : 'error',
               message: apiKey 
@@ -73,6 +131,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               lastChecked: new Date().toISOString()
             }
           };
+          
+          // Now TypeScript knows these properties are allowed
+          if (process.env.SENDGRID_FROM_EMAIL) {
+            response.sendgrid.fromEmail = process.env.SENDGRID_FROM_EMAIL;
+          }
+          
+          if (process.env.SENDGRID_FROM_NAME) {
+            response.sendgrid.fromName = process.env.SENDGRID_FROM_NAME;
+          }
           
           return res.status(200).json(response);
           

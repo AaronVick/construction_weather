@@ -1,9 +1,8 @@
 // api/consolidated/admin/test-email.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { auth, db } from '../../../src/lib/firebaseAdmin'; // Fixed import path
+import * as admin from 'firebase-admin';
 import sgMail from '@sendgrid/mail';
 import { ClientResponse } from '@sendgrid/client/src/response';
-// Removed unused Mail import
 
 // Define interfaces for type safety
 interface SendEmailResponseDetails {
@@ -18,6 +17,37 @@ interface SendEmailResponse {
   details?: SendEmailResponseDetails | Record<string, any>;
   error?: string;
 }
+
+// Initialize Firebase Admin directly in this file
+// Check if Firebase Admin is already initialized
+if (!admin.apps.length) {
+  try {
+    // Log environment variables for debugging (without exposing values)
+    console.log('Firebase environment check:');
+    console.log('FIREBASE_PROJECT_ID exists:', !!process.env.FIREBASE_PROJECT_ID);
+    console.log('FIREBASE_CLIENT_EMAIL exists:', !!process.env.FIREBASE_CLIENT_EMAIL);
+    console.log('FIREBASE_PRIVATE_KEY exists:', !!process.env.FIREBASE_PRIVATE_KEY);
+    
+    // Initialize Firebase Admin with service account credentials
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      }),
+      databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`,
+      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+    });
+    
+    console.log('Firebase Admin initialized successfully in test-email endpoint');
+  } catch (initError) {
+    console.error('Firebase Admin initialization error in test-email endpoint:', initError);
+  }
+}
+
+// Get Firebase services directly
+const db = admin.firestore();
+const auth = admin.auth();
 
 // Initialize SendGrid - try both possible env var names
 const apiKey = process.env.SENDGRID_API_KEY || process.env.SENDGRID_API;
@@ -161,7 +191,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           
           // Create a timeout promise
           const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('SendGrid API request timed out after 10 seconds')), 10000);
+            setTimeout(() => reject(new Error('SendGrid API request timed out after 15 seconds')), 15000);
           });
           
           try {
