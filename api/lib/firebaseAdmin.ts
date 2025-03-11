@@ -1,4 +1,4 @@
-// src/lib/firebaseAdmin.ts
+// api/lib/firebaseAdmin.ts
 import * as admin from 'firebase-admin';
 
 // Check if Firebase Admin is already initialized
