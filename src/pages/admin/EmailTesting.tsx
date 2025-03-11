@@ -144,42 +144,79 @@ const EmailTesting: React.FC = () => {
     }, []);
   
   // Handle form submission
-  const onSubmit = async (data: EmailTestFormData) => {
-    setLoading(true);
-    setError(null);
-    setTestResult(null);
+  // Handle form submission
+const onSubmit = async (data: EmailTestFormData) => {
+  setLoading(true);
+  setError(null);
+  setTestResult(null);
+  
+  try {
+    const token = await getIdToken();
     
+    // Parse recipients
+    const recipients = data.recipients
+      .split(',')
+      .map(email => email.trim())
+      .filter(email => email);
+    
+    if (recipients.length === 0) {
+      throw new Error('At least one valid email recipient is required');
+    }
+    
+    // Prepare request body
+    const requestBody: any = {
+      testEmailRecipients: recipients,
+      emailSubject: data.subject,
+      emailBody: data.body
+    };
+    
+    // Add optional fields if provided
+    if (data.fromEmail) requestBody.fromEmail = data.fromEmail;
+    if (data.fromName) requestBody.fromName = data.fromName;
+    
+    // Try to send request to API - try consolidated endpoint first, then fall back to direct
+    let apiSuccess = false;
+    let result;
+    
+    // Try consolidated endpoint
+    console.log('Attempting to send email via consolidated endpoint...');
     try {
-      const token = await getIdToken();
+      const consolidatedResponse = await fetch('/api/consolidated/admin/test-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(requestBody)
+      });
       
-      // Parse recipients
-      const recipients = data.recipients
-        .split(',')
-        .map(email => email.trim())
-        .filter(email => email);
+      console.log('Consolidated API Response Status:', consolidatedResponse.status);
+      // Convert headers to a plain object
+      const consolidatedHeaders: Record<string, string> = {};
+      consolidatedResponse.headers.forEach((value, key) => {
+        consolidatedHeaders[key] = value;
+      });
+      console.log('Consolidated API Response Headers:', consolidatedHeaders);
       
-      if (recipients.length === 0) {
-        throw new Error('At least one valid email recipient is required');
+      if (consolidatedResponse.ok) {
+        result = await consolidatedResponse.json();
+        console.log('Consolidated API Success:', result);
+        apiSuccess = true;
+      } else {
+        const errorText = await consolidatedResponse.text();
+        console.error('Consolidated API Error Response:', errorText);
+        console.error('Status:', consolidatedResponse.status);
+        // Don't set error yet, try the direct endpoint
       }
-      
-      // Prepare request body
-      const requestBody: any = {
-        testEmailRecipients: recipients,
-        emailSubject: data.subject,
-        emailBody: data.body
-      };
-      
-      // Add optional fields if provided
-      if (data.fromEmail) requestBody.fromEmail = data.fromEmail;
-      if (data.fromName) requestBody.fromName = data.fromName;
-      
-      // Try to send request to API - try consolidated endpoint first, then fall back to direct
-      let apiSuccess = false;
-      let result;
-      
+    } catch (consolidatedError) {
+      console.error('Consolidated endpoint fetch error:', consolidatedError);
+    }
+    
+    // Try direct endpoint if consolidated failed
+    if (!apiSuccess) {
+      console.log('Consolidated endpoint failed, trying direct endpoint...');
       try {
-        // Try consolidated endpoint
-        const consolidatedResponse = await fetch('/api/consolidated/admin/test-email', {
+        const directResponse = await fetch('/api/admin/test-email', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -188,53 +225,44 @@ const EmailTesting: React.FC = () => {
           body: JSON.stringify(requestBody)
         });
         
-        if (consolidatedResponse.ok) {
-          result = await consolidatedResponse.json();
+        console.log('Direct API Response Status:', directResponse.status);
+        // Convert headers to a plain object
+        const directHeaders: Record<string, string> = {};
+        directResponse.headers.forEach((value, key) => {
+          directHeaders[key] = value;
+        });
+        console.log('Direct API Response Headers:', directHeaders);
+        
+        if (directResponse.ok) {
+          result = await directResponse.json();
+          console.log('Direct API Success:', result);
           apiSuccess = true;
         } else {
-          // Try direct endpoint
-          const directResponse = await fetch('/api/admin/test-email', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(requestBody)
-          });
-          
-          if (directResponse.ok) {
-            result = await directResponse.json();
-            apiSuccess = true;
-          }
+          const errorText = await directResponse.text();
+          console.error('Direct API Error Response:', errorText);
+          console.error('Status:', directResponse.status);
         }
-      } catch (fetchError) {
-        console.error('Fetch error:', fetchError);
+      } catch (directError) {
+        console.error('Direct endpoint fetch error:', directError);
       }
-      
-      // If API calls failed, use mock response
-      if (!apiSuccess) {
-        console.log('Using mock email test response');
-        // Create a mock successful response
-        result = {
-          success: true,
-          message: `Test email sent successfully to ${recipients.join(', ')} (Mock Response)`,
-          details: {
-            statusCode: 202,
-            messageId: `mock-message-id-${Date.now()}`
-          }
-        };
-      }
-      
-      // Update test results
-      setTestResult(result);
-      setSuccessSnackbar(true);
-    } catch (error) {
-      console.error('Error sending test email:', error);
-      setError(error instanceof Error ? error.message : 'An unknown error occurred');
-    } finally {
-      setLoading(false);
     }
-  };
+    
+    // If API calls failed, report the error instead of using mock data
+    if (!apiSuccess) {
+      console.error('Both API endpoints failed');
+      throw new Error('Failed to connect to email service. Please check network connection and server logs.');
+    }
+    
+    // Update test results
+    setTestResult(result);
+    setSuccessSnackbar(true);
+  } catch (error) {
+    console.error('Error sending test email:', error);
+    setError(error instanceof Error ? error.message : 'An unknown error occurred');
+  } finally {
+    setLoading(false);
+  }
+};
   
   // Refresh API status
   const handleRefreshApiStatus = async () => {

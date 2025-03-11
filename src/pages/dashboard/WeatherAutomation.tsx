@@ -12,7 +12,9 @@ import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/fire
 
 // Default weather settings
 const defaultWeatherSettings: WeatherSettings = {
-  checkTime: '05:00',
+  checkTime: 'daily',
+  checkTimeDaily: '05:00',
+  timezone: 'America/New_York',
   isEnabled: true,
   forecastTimeframe: {
     hoursAhead: 24,
@@ -79,6 +81,8 @@ const mergeWithDefaults = (settings: any): WeatherSettings => {
   
   return {
     checkTime: settings.checkTime || defaultWeatherSettings.checkTime,
+    checkTimeDaily: settings.checkTimeDaily || defaultWeatherSettings.checkTimeDaily,
+    timezone: settings.timezone || defaultWeatherSettings.timezone,
     isEnabled: settings.isEnabled !== undefined ? settings.isEnabled : defaultWeatherSettings.isEnabled,
     forecastTimeframe: {
       hoursAhead: settings.forecastTimeframe?.hoursAhead || defaultWeatherSettings.forecastTimeframe.hoursAhead,
@@ -317,33 +321,86 @@ const WeatherAutomation: React.FC = () => {
             <h2 className="text-lg font-medium mb-6">Weather Monitoring Settings</h2>
 
             <div className="space-y-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between">
-                <div>
-                  <h3 className="font-medium mb-1">Monitoring Schedule</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Configure when weather checks are performed
-                  </p>
+              <div className="space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between">
+                  <div>
+                    <h3 className="font-medium mb-1">Monitoring Schedule</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Configure when weather checks are performed
+                    </p>
+                  </div>
+                  <div className="flex items-center mt-3 md:mt-0">
+                    <select
+                      className={`px-3 py-2 rounded-md ${
+                        darkMode
+                          ? 'bg-gray-700 border-gray-600 text-white'
+                          : 'bg-white border-gray-300 text-gray-900'
+                      }`}
+                      value={weatherSettings.checkTime}
+                      onChange={(e) =>
+                        setWeatherSettings({ ...weatherSettings, checkTime: e.target.value })
+                      }
+                    >
+                      <option value="hourly">Every Hour</option>
+                      <option value="2hours">Every 2 Hours</option>
+                      <option value="3hours">Every 3 Hours</option>
+                      <option value="6hours">Every 6 Hours</option>
+                      <option value="12hours">Every 12 Hours</option>
+                      <option value="daily">Once Daily</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="flex items-center mt-3 md:mt-0">
-                  <select
-                    className={`px-3 py-2 rounded-md ${
-                      darkMode
-                        ? 'bg-gray-700 border-gray-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-900'
-                    }`}
-                    value={weatherSettings.checkTime}
-                    onChange={(e) =>
-                      setWeatherSettings({ ...weatherSettings, checkTime: e.target.value })
-                    }
-                  >
-                    <option value="hourly">Every Hour</option>
-                    <option value="2hours">Every 2 Hours</option>
-                    <option value="3hours">Every 3 Hours</option>
-                    <option value="6hours">Every 6 Hours</option>
-                    <option value="12hours">Every 12 Hours</option>
-                    <option value="daily">Once Daily (5 AM)</option>
-                  </select>
-                </div>
+                
+                {/* Daily check time and timezone settings */}
+                {weatherSettings.checkTime === 'daily' && (
+                  <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                    <h4 className="font-medium text-sm mb-3">Daily Check Settings</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="checkTimeDaily" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          Time of Day
+                        </label>
+                        <input
+                          type="time"
+                          id="checkTimeDaily"
+                          className={`px-3 py-2 rounded-md w-full ${
+                            darkMode
+                              ? 'bg-gray-700 border-gray-600 text-white'
+                              : 'bg-white border-gray-300 text-gray-900'
+                          }`}
+                          value={weatherSettings.checkTimeDaily}
+                          onChange={(e) =>
+                            setWeatherSettings({ ...weatherSettings, checkTimeDaily: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="timezone" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          Timezone
+                        </label>
+                        <select
+                          id="timezone"
+                          className={`px-3 py-2 rounded-md w-full ${
+                            darkMode
+                              ? 'bg-gray-700 border-gray-600 text-white'
+                              : 'bg-white border-gray-300 text-gray-900'
+                          }`}
+                          value={weatherSettings.timezone}
+                          onChange={(e) =>
+                            setWeatherSettings({ ...weatherSettings, timezone: e.target.value })
+                          }
+                        >
+                          <option value="America/New_York">Eastern Time (ET)</option>
+                          <option value="America/Chicago">Central Time (CT)</option>
+                          <option value="America/Denver">Mountain Time (MT)</option>
+                          <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                          <option value="America/Anchorage">Alaska Time (AKT)</option>
+                          <option value="Pacific/Honolulu">Hawaii Time (HT)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'} pt-6`}>
@@ -745,7 +802,10 @@ const WeatherAutomation: React.FC = () => {
                 <div>
                   <h4 className="font-medium text-sm mb-1">Next Scheduled Check</h4>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Today at {weatherSettings.checkTime}
+                    {weatherSettings.checkTime === 'daily' 
+                      ? `Daily at ${weatherSettings.checkTimeDaily || '05:00'} (${weatherSettings.timezone ? weatherSettings.timezone.split('/')[1].replace('_', ' ') : 'Local Time'})`
+                      : `Every ${weatherSettings.checkTime === 'hourly' ? 'hour' : weatherSettings.checkTime.replace('hours', ' hours')}`
+                    }
                   </p>
                 </div>
               </div>

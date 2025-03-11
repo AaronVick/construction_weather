@@ -99,7 +99,9 @@ export interface ForecastTimeframe {
 
 export interface WeatherSettings {
   isEnabled: boolean;
-  checkTime: string; // Format: "HH:MM" in 24-hour time
+  checkTime: string; // Format: "HH:MM" in 24-hour time or frequency like "hourly", "daily"
+  checkTimeDaily?: string; // Format: "HH:MM" in 24-hour time for daily checks
+  timezone?: string; // IANA timezone string (e.g., "America/New_York")
   forecastTimeframe: ForecastTimeframe;
   alertThresholds: {
     rain: PrecipitationThresholds;
