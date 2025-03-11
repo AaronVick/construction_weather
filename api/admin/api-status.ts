@@ -1,6 +1,6 @@
 // api/admin/api-status.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { auth, db } from '../../lib/firebaseAdmin'; // Fixed import path
+import { auth, db } from '../../src/lib/firebaseAdmin';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('Direct API status endpoint called');
