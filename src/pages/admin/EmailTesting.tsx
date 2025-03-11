@@ -1,4 +1,4 @@
-// src/pages/admin/EmailTesting.tsx (Completed)
+// src/pages/admin/EmailTesting.tsx
 import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { 
@@ -37,6 +37,8 @@ interface ApiStatus {
   status: 'unknown' | 'ok' | 'error';
   message?: string;
   lastChecked?: string;
+  fromEmail?: string;
+  fromName?: string;
 }
 
 interface EmailTestResult {
@@ -56,21 +58,13 @@ const EmailTesting: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [sendgridStatus, setSendgridStatus] = useState<ApiStatus>({ status: 'unknown' });
   const [successSnackbar, setSuccessSnackbar] = useState<boolean>(false);
-  const [apiStatusLoading, setApiStatusLoading] = useState<boolean>(false);
+  const [apiStatusLoading, setApiStatusLoading] = useState<boolean>(true);
   
   // Get auth context
   const { user } = useFirebaseAuth();
   
-  // Function to get ID token
-  const getIdToken = async () => {
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-    return await user.getIdToken();
-  };
-  
-  // Initialize form
-  const { control, handleSubmit, formState: { errors } } = useForm<EmailTestFormData>({
+  // Initialize form with react-hook-form
+  const { control, handleSubmit, formState: { errors }, setValue } = useForm<EmailTestFormData>({
     defaultValues: {
       recipients: '',
       subject: 'Test Email from Construction Weather',
@@ -80,6 +74,14 @@ const EmailTesting: React.FC = () => {
     }
   });
   
+  // Function to get ID token
+  const getIdToken = async () => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+    return await user.getIdToken();
+  };
+  
   // Check SendGrid API status on component mount
   useEffect(() => {
     checkApiStatus();
@@ -88,11 +90,15 @@ const EmailTesting: React.FC = () => {
   // Function to check API status with better error handling
   const checkApiStatus = async () => {
     setApiStatusLoading(true);
+    console.log('Checking API status...');
+    
     try {
       const token = await getIdToken();
+      console.log('Auth token acquired');
       
-      // Try consolidated endpoint first
+      // First try the consolidated endpoint
       try {
+        console.log('Trying consolidated endpoint...');
         const response = await fetch('/api/consolidated/admin/api-status', {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -101,22 +107,44 @@ const EmailTesting: React.FC = () => {
         
         if (response.ok) {
           const data = await response.json();
-          console.log('API status from consolidated endpoint:', data);
-          setSendgridStatus(data.sendgrid);
-          setApiStatusLoading(false);
-          return;
+          console.log('API status response:', data);
+          
+          if (data.sendgrid) {
+            setSendgridStatus({
+              status: data.sendgrid.status,
+              message: data.sendgrid.message,
+              lastChecked: data.sendgrid.lastChecked,
+              fromEmail: data.sendgrid.fromEmail,
+              fromName: data.sendgrid.fromName
+            });
+            
+            // Set form defaults if available
+            if (data.sendgrid.fromEmail) {
+              setValue('fromEmail', data.sendgrid.fromEmail);
+            }
+            if (data.sendgrid.fromName) {
+              setValue('fromName', data.sendgrid.fromName);
+            }
+            
+            setApiStatusLoading(false);
+            return;
+          }
         } else {
-          console.error('Consolidated API status returned non-OK response:', response.status);
-          const errorText = await response.text();
-          console.error('Error details:', errorText);
+          console.error('Consolidated API error:', response.status);
+          try {
+            const errorData = await response.json();
+            console.error('Error details:', errorData);
+          } catch (e) {
+            console.error('Could not parse error response');
+          }
         }
-      } catch (error) {
-        const consolidatedError = error as Error;
-        console.error('Error checking consolidated API status:', consolidatedError);
+      } catch (consolidatedError) {
+        console.error('Consolidated endpoint error:', consolidatedError);
       }
       
-      // Try direct endpoint
+      // Try direct endpoint as fallback
       try {
+        console.log('Trying direct endpoint...');
         const response = await fetch('/api/admin/api-status', {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -125,32 +153,36 @@ const EmailTesting: React.FC = () => {
         
         if (response.ok) {
           const data = await response.json();
-          console.log('API status from direct endpoint:', data);
-          setSendgridStatus(data.sendgrid);
-          setApiStatusLoading(false);
-          return;
+          console.log('Direct API status response:', data);
+          
+          if (data.sendgrid) {
+            setSendgridStatus({
+              status: data.sendgrid.status,
+              message: data.sendgrid.message,
+              lastChecked: data.sendgrid.lastChecked
+            });
+            setApiStatusLoading(false);
+            return;
+          }
         } else {
-          console.error('Direct API status returned non-OK response:', response.status);
-          const errorText = await response.text();
-          console.error('Error details:', errorText);
+          console.error('Direct API error:', response.status);
         }
-      } catch (error) {
-        const directError = error as Error;
-        console.error('Error checking direct API status:', directError);
+      } catch (directError) {
+        console.error('Direct endpoint error:', directError);
       }
       
-      // If both API calls fail
+      // If both endpoints fail
       console.error('Both API status endpoints failed');
       setSendgridStatus({
         status: 'error',
-        message: 'Unable to connect to SendGrid status API',
+        message: 'Unable to connect to API status endpoints',
         lastChecked: new Date().toISOString()
       });
     } catch (error) {
       console.error('Error checking API status:', error);
       setSendgridStatus({
         status: 'error',
-        message: error instanceof Error ? error.message : 'Unknown error occurred',
+        message: error instanceof Error ? error.message : 'Unknown error',
         lastChecked: new Date().toISOString()
       });
     } finally {
@@ -158,11 +190,12 @@ const EmailTesting: React.FC = () => {
     }
   };
   
-  // Handle form submission with better error display
+  // Handle form submission
   const onSubmit = async (data: EmailTestFormData) => {
     setLoading(true);
     setError(null);
     setTestResult(null);
+    console.log('Submitting email test form...');
     
     try {
       const token = await getIdToken();
@@ -177,35 +210,29 @@ const EmailTesting: React.FC = () => {
         throw new Error('At least one valid email recipient is required');
       }
       
-      // Define request body interface
-      interface TestEmailRequestBody {
-        testEmailRecipients: string[];
-        emailSubject: string;
-        emailBody: string;
-        fromEmail?: string;
-        fromName?: string;
-      }
-      
       // Prepare request body
-      const requestBody: TestEmailRequestBody = {
+      const requestBody = {
         testEmailRecipients: recipients,
         emailSubject: data.subject,
-        emailBody: data.body
+        emailBody: data.body,
+        ...(data.fromEmail ? { fromEmail: data.fromEmail } : {}),
+        ...(data.fromName ? { fromName: data.fromName } : {})
       };
       
-      // Add optional fields if provided
-      if (data.fromEmail) requestBody.fromEmail = data.fromEmail;
-      if (data.fromName) requestBody.fromName = data.fromName;
+      console.log('Sending test email with data:', {
+        recipients: recipients.join(', '),
+        subject: data.subject,
+        hasFromEmail: !!data.fromEmail,
+        hasFromName: !!data.fromName
+      });
       
-      // Try to send request to API - try consolidated endpoint first, then fall back to direct
+      // Try consolidated endpoint first
       let apiSuccess = false;
       let result;
-      let errorDetails = null;
       
-      // Try consolidated endpoint
-      console.log('Attempting to send email via consolidated endpoint...');
       try {
-        const consolidatedResponse = await fetch('/api/consolidated/admin/test-email', {
+        console.log('Trying consolidated endpoint for test email...');
+        const response = await fetch('/api/consolidated/admin/test-email', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -214,39 +241,30 @@ const EmailTesting: React.FC = () => {
           body: JSON.stringify(requestBody)
         });
         
-        console.log('Consolidated API Response Status:', consolidatedResponse.status);
+        console.log('Consolidated endpoint response status:', response.status);
         
-        // Handle specific HTTP status codes
-        if (consolidatedResponse.status === 405) {
-          console.error('Method not allowed: Ensure the endpoint supports POST requests');
-          errorDetails = 'API endpoint does not support POST requests. This may indicate a server configuration issue.';
-        }
-        
-        if (consolidatedResponse.ok) {
-          result = await consolidatedResponse.json();
-          console.log('Consolidated API Success:', result);
+        if (response.ok) {
+          result = await response.json();
+          console.log('Test email success:', result);
           apiSuccess = true;
         } else {
-          const errorResponse = await consolidatedResponse.text();
-          console.error('Consolidated API Error Response:', errorResponse);
-          console.error('Status:', consolidatedResponse.status);
-          
-          // Don't set error yet, try the direct endpoint
-          if (!errorDetails) {
-            errorDetails = `Consolidated API failed (${consolidatedResponse.status}): ${errorResponse}`;
+          console.error('Test email error status:', response.status);
+          try {
+            const errorData = await response.json();
+            console.error('Error details:', errorData);
+          } catch (e) {
+            console.error('Could not parse error response');
           }
         }
-      } catch (error) {
-        const consolidatedError = error as Error;
-        console.error('Consolidated endpoint fetch error:', consolidatedError);
-        errorDetails = `Network error with consolidated endpoint: ${consolidatedError.message || 'Unknown error'}`;
+      } catch (consolidatedError) {
+        console.error('Consolidated endpoint error:', consolidatedError);
       }
       
-      // Try direct endpoint if consolidated failed
+      // Try direct endpoint as fallback
       if (!apiSuccess) {
-        console.log('Consolidated endpoint failed, trying direct endpoint...');
         try {
-          const directResponse = await fetch('/api/admin/test-email', {
+          console.log('Trying direct endpoint for test email...');
+          const response = await fetch('/api/admin/test-email', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -255,41 +273,35 @@ const EmailTesting: React.FC = () => {
             body: JSON.stringify(requestBody)
           });
           
-          console.log('Direct API Response Status:', directResponse.status);
+          console.log('Direct endpoint response status:', response.status);
           
-          if (directResponse.ok) {
-            result = await directResponse.json();
-            console.log('Direct API Success:', result);
+          if (response.ok) {
+            result = await response.json();
+            console.log('Test email success:', result);
             apiSuccess = true;
           } else {
-            const errorResponse = await directResponse.text();
-            console.error('Direct API Error Response:', errorResponse);
-            console.error('Status:', directResponse.status);
-            
-            if (!errorDetails) {
-              errorDetails = `Direct API failed (${directResponse.status}): ${errorResponse}`;
+            console.error('Test email error from direct endpoint');
+            try {
+              const errorData = await response.json();
+              console.error('Error details:', errorData);
+            } catch (e) {
+              console.error('Could not parse error response');
             }
           }
-        } catch (error) {
-          const directError = error as Error;
-          console.error('Direct endpoint fetch error:', directError);
-          if (!errorDetails) {
-            errorDetails = `Network error with direct endpoint: ${directError.message || 'Unknown error'}`;
-          }
+        } catch (directError) {
+          console.error('Direct endpoint error:', directError);
         }
       }
       
-      // If API calls failed, report the error
       if (!apiSuccess) {
-        console.error('Both API endpoints failed');
-        throw new Error(errorDetails || 'Failed to connect to email service. Please check network connection and server logs.');
+        throw new Error('Failed to send email through both API endpoints');
       }
       
-      // Update test results
+      // Update state with result
       setTestResult(result);
       setSuccessSnackbar(true);
       
-      // Refresh API status after successful send
+      // Refresh API status
       checkApiStatus();
     } catch (error) {
       console.error('Error sending test email:', error);
@@ -353,177 +365,177 @@ const EmailTesting: React.FC = () => {
   
   return (
     <Box mb={4}>
-        <Typography variant="h4" gutterBottom>Email Notification Testing</Typography>
-        <Typography variant="body1" color="text.secondary" paragraph>
-          Test the email notification system to ensure SendGrid is properly configured and working for general users.
-        </Typography>
+      <Typography variant="h4" gutterBottom>Email Notification Testing</Typography>
+      <Typography variant="body1" color="text.secondary" paragraph>
+        Test the email notification system to ensure SendGrid is properly configured and working for general users.
+      </Typography>
+      
+      {renderSendgridStatus()}
+      
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="h6" gutterBottom>Send Test Email</Typography>
+        <Divider sx={{ mb: 3 }} />
         
-        {renderSendgridStatus()}
-        
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>Send Test Email</Typography>
-          <Divider sx={{ mb: 3 }} />
-          
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <Grid container spacing={3}>
-              {/* Recipients */}
-              <Grid item xs={12}>
-                <Controller
-                  name="recipients"
-                  control={control}
-                  rules={{ 
-                    required: 'Email recipients are required',
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}(,\s*[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})*$/i,
-                      message: 'Enter valid email addresses separated by commas'
-                    }
-                  }}
-                  render={({ field, fieldState }) => (
-                    <TextField
-                      {...field}
-                      label="Recipients"
-                      fullWidth
-                      required
-                      error={!!fieldState.error}
-                      helperText={fieldState.error?.message || 'Enter email addresses separated by commas'}
-                    />
-                  )}
-                />
-              </Grid>
-              
-              {/* Subject */}
-              <Grid item xs={12}>
-                <Controller
-                  name="subject"
-                  control={control}
-                  rules={{ required: 'Subject is required' }}
-                  render={({ field, fieldState }) => (
-                    <TextField
-                      {...field}
-                      label="Subject"
-                      fullWidth
-                      required
-                      error={!!fieldState.error}
-                      helperText={fieldState.error?.message}
-                    />
-                  )}
-                />
-              </Grid>
-              
-              {/* Body */}
-              <Grid item xs={12}>
-                <Controller
-                  name="body"
-                  control={control}
-                  rules={{ required: 'Email body is required' }}
-                  render={({ field, fieldState }) => (
-                    <TextField
-                      {...field}
-                      label="Email Body"
-                      fullWidth
-                      required
-                      multiline
-                      rows={6}
-                      error={!!fieldState.error}
-                      helperText={fieldState.error?.message || 'Plain text or simple HTML supported'}
-                    />
-                  )}
-                />
-              </Grid>
-              
-              {/* Advanced Options */}
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" gutterBottom>Advanced Options (Optional)</Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
-                    <Controller
-                      name="fromEmail"
-                      control={control}
-                      rules={{ 
-                        pattern: {
-                          value: /^$|^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                          message: 'Enter a valid email address'
-                        }
-                      }}
-                      render={({ field, fieldState }) => (
-                        <TextField
-                          {...field}
-                          label="From Email"
-                          fullWidth
-                          error={!!fieldState.error}
-                          helperText={fieldState.error?.message || 'Leave blank to use default'}
-                        />
-                      )}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Controller
-                      name="fromName"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          label="From Name"
-                          fullWidth
-                          helperText="Leave blank to use default"
-                        />
-                      )}
-                    />
-                  </Grid>
-                </Grid>
-              </Grid>
-              
-              {/* Submit Button */}
-              <Grid item xs={12}>
-                <Box display="flex" justifyContent="flex-end">
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    color="primary"
-                    size="large"
-                    disabled={loading}
-                    startIcon={loading ? <CircularProgress size={20} /> : <SendIcon />}
-                  >
-                    {loading ? 'Sending...' : 'Send Test Email'}
-                  </Button>
-                </Box>
-              </Grid>
-              
-              {/* Error Message */}
-              {error && (
-                <Grid item xs={12}>
-                  <Alert severity="error">{error}</Alert>
-                </Grid>
-              )}
-            </Grid>
-          </form>
-        </Paper>
-        
-        {/* Test Results */}
-        {testResult && (
-          <Paper sx={{ p: 3, mt: 3 }}>
-            <Typography variant="h6" gutterBottom>Test Results</Typography>
-            <Divider sx={{ mb: 2 }} />
-            
-            <Alert severity={testResult.success ? "success" : "error"} sx={{ mb: 2 }}>
-              {testResult.message}
-            </Alert>
-            
-            {testResult.details && (
-              <Box mt={2}>
-                <Typography variant="subtitle2" gutterBottom>Details:</Typography>
-                <Typography variant="body2">
-                  Status Code: {testResult.details.statusCode || 'N/A'}
-                </Typography>
-                {testResult.details.messageId && (
-                  <Typography variant="body2">
-                    Message ID: {testResult.details.messageId}
-                  </Typography>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Grid container spacing={3}>
+            {/* Recipients */}
+            <Grid item xs={12}>
+              <Controller
+                name="recipients"
+                control={control}
+                rules={{ 
+                  required: 'Email recipients are required',
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}(,\s*[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})*$/i,
+                    message: 'Enter valid email addresses separated by commas'
+                  }
+                }}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    label="Recipients"
+                    fullWidth
+                    required
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message || 'Enter email addresses separated by commas'}
+                  />
                 )}
+              />
+            </Grid>
+            
+            {/* Subject */}
+            <Grid item xs={12}>
+              <Controller
+                name="subject"
+                control={control}
+                rules={{ required: 'Subject is required' }}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    label="Subject"
+                    fullWidth
+                    required
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                  />
+                )}
+              />
+            </Grid>
+            
+            {/* Body */}
+            <Grid item xs={12}>
+              <Controller
+                name="body"
+                control={control}
+                rules={{ required: 'Email body is required' }}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    label="Email Body"
+                    fullWidth
+                    required
+                    multiline
+                    rows={6}
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message || 'Plain text or simple HTML supported'}
+                  />
+                )}
+              />
+            </Grid>
+            
+            {/* Advanced Options */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" gutterBottom>Advanced Options (Optional)</Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  <Controller
+                    name="fromEmail"
+                    control={control}
+                    rules={{ 
+                      pattern: {
+                        value: /^$|^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: 'Enter a valid email address'
+                      }
+                    }}
+                    render={({ field, fieldState }) => (
+                      <TextField
+                        {...field}
+                        label="From Email"
+                        fullWidth
+                        error={!!fieldState.error}
+                        helperText={fieldState.error?.message || 'Leave blank to use default'}
+                      />
+                    )}
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Controller
+                    name="fromName"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="From Name"
+                        fullWidth
+                        helperText="Leave blank to use default"
+                      />
+                    )}
+                  />
+                  </Grid>
+              </Grid>
+            </Grid>
+            
+            {/* Submit Button */}
+            <Grid item xs={12}>
+              <Box display="flex" justifyContent="flex-end">
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                  disabled={loading || sendgridStatus.status !== 'ok'}
+                  startIcon={loading ? <CircularProgress size={20} /> : <SendIcon />}
+                >
+                  {loading ? 'Sending...' : 'Send Test Email'}
+                </Button>
               </Box>
+            </Grid>
+            
+            {/* Error Message */}
+            {error && (
+              <Grid item xs={12}>
+                <Alert severity="error">{error}</Alert>
+              </Grid>
             )}
-          </Paper>
-        )}
+          </Grid>
+        </form>
+      </Paper>
+      
+      {/* Test Results */}
+      {testResult && (
+        <Paper sx={{ p: 3, mt: 3 }}>
+          <Typography variant="h6" gutterBottom>Test Results</Typography>
+          <Divider sx={{ mb: 2 }} />
+          
+          <Alert severity={testResult.success ? "success" : "error"} sx={{ mb: 2 }}>
+            {testResult.message}
+          </Alert>
+          
+          {testResult.details && (
+            <Box mt={2}>
+              <Typography variant="subtitle2" gutterBottom>Details:</Typography>
+              <Typography variant="body2">
+                Status Code: {testResult.details.statusCode || 'N/A'}
+              </Typography>
+              {testResult.details.messageId && (
+                <Typography variant="body2">
+                  Message ID: {testResult.details.messageId}
+                </Typography>
+              )}
+            </Box>
+          )}
+        </Paper>
+      )}
       
       {/* Success Snackbar */}
       <Snackbar
