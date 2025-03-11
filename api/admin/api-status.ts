@@ -23,10 +23,16 @@ interface ApiStatusResponse {
   sendgrid: SendgridStatus;
 }
 
-// Initialize Firebase Admin directly in this file
-// Check if Firebase Admin is already initialized
-if (!admin.apps.length) {
-  try {
+// Safe Firebase Admin initialization
+let firebaseAdmin: typeof admin;
+let db: FirebaseFirestore.Firestore;
+let auth: admin.auth.Auth;
+
+try {
+  // Check if Firebase is already initialized using a safer approach
+  if (!admin.apps || admin.apps.length === 0) {
+    console.log('Initializing Firebase Admin in API status endpoint');
+    
     // Log environment variables for debugging (without exposing values)
     console.log('Firebase environment check:');
     console.log('FIREBASE_PROJECT_ID exists:', !!process.env.FIREBASE_PROJECT_ID);
@@ -40,19 +46,25 @@ if (!admin.apps.length) {
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
       }),
-      databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`,
-      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+      databaseURL: process.env.FIREBASE_PROJECT_ID 
+        ? `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com` 
+        : undefined,
     });
     
     console.log('Firebase Admin initialized successfully');
-  } catch (initError) {
-    console.error('Firebase Admin initialization error:', initError);
+  } else {
+    console.log('Firebase Admin already initialized');
   }
+  
+  // Get Firebase services
+  firebaseAdmin = admin;
+  db = admin.firestore();
+  auth = admin.auth();
+} catch (initError) {
+  console.error('Firebase Admin initialization error:', initError);
+  // Continue execution even if Firebase fails to initialize
+  // We'll handle this in the request handler
 }
-
-// Get Firebase services directly
-const db = admin.firestore();
-const auth = admin.auth();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('Direct API status endpoint called');
@@ -64,6 +76,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // Check if Firebase initialized successfully
+    if (!db || !auth) {
+      console.error('Firebase services not available');
+      return res.status(500).json({
+        error: 'Firebase services not initialized',
+        message: 'There was an error initializing Firebase. Check server logs for details.'
+      });
+    }
+    
     // Log SendGrid environment variables (without exposing values)
     console.log('SendGrid environment check:');
     console.log('SENDGRID_API_KEY exists:', !!process.env.SENDGRID_API_KEY);
