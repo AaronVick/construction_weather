@@ -176,8 +176,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           messageId: response[0]?.headers['x-message-id']
         }
       });
-    } catch (sendgridError) {
-      console.error('SendGrid error:', sendgridError);
+    } catch (error) {
+      console.error('SendGrid error:', error);
+      
+      // Type assertion for SendGrid error
+      const sendgridError = error as any;
       const sgErrorResponse = sendgridError.response?.body || {};
       
       return res.status(500).json({ 
