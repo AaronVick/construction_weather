@@ -1,0 +1,57 @@
+name: Send Test Email
+
+on:
+  workflow_dispatch:
+    inputs:
+      recipients:
+        description: 'Email recipients (comma separated)'
+        required: true
+      subject:
+        description: 'Email subject'
+        required: true
+        default: 'Test Email from Construction Weather'
+      body:
+        description: 'Email body'
+        required: true
+        default: 'This is a test email from Construction Weather.'
+      fromEmail:
+        description: 'From email (optional)'
+        required: false
+      fromName:
+        description: 'From name (optional)'
+        required: false
+
+jobs:
+  send-email:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+        
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+          
+      - name: Install Dependencies
+        run: npm install @sendgrid/mail
+          
+      - name: Send Test Email
+        id: send-email
+        env:
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          SENDGRID_FROM_EMAIL: ${{ secrets.SENDGRID_FROM_EMAIL }}
+          SENDGRID_FROM_NAME: ${{ secrets.SENDGRID_FROM_NAME }}
+          RECIPIENTS: ${{ github.event.inputs.recipients }}
+          SUBJECT: ${{ github.event.inputs.subject }}
+          BODY: ${{ github.event.inputs.body }}
+          CUSTOM_FROM_EMAIL: ${{ github.event.inputs.fromEmail }}
+          CUSTOM_FROM_NAME: ${{ github.event.inputs.fromName }}
+        run: node .github/scripts/send-test-email.js
+        
+      - name: Upload Email Result
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: email-result
+          path: email-result.json

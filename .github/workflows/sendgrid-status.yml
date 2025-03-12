@@ -1,0 +1,28 @@
+name: SendGrid API Status Check
+
+on:
+  workflow_dispatch:
+    inputs:
+      requester:
+        description: 'User requesting the check'
+        required: true
+
+jobs:
+  check-sendgrid-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+        
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+          
+      - name: Check SendGrid Configuration
+        id: check-config
+        env:
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          SENDGRID_FROM_EMAIL: ${{ secrets.SENDGRID_FROM_EMAIL }}
+          SENDGRID_FROM_NAME: ${{ secrets.SENDGRID_FROM_NAME }}
+        run: node .github/scripts/check-sendgrid-status.js
