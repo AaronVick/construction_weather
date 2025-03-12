@@ -187,8 +187,24 @@ async function fetchWeatherApiData(
   
   // Fallback to direct Weather API call
   try {
-    // Get API key from environment variable
-    const apiKey = import.meta.env.VITE_WEATHER_API || process.env.NEXT_PUBLIC_WEATHER_API_KEY;
+    // Get API key from environment variable using various approaches
+    let apiKey;
+    
+    // Check for various ways the API key might be defined
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      apiKey = import.meta.env.VITE_WEATHER_API;
+    } else if (typeof process !== 'undefined' && process.env) {
+      apiKey = process.env.NEXT_PUBLIC_WEATHER_API_KEY;
+    } else if (typeof window !== 'undefined' && (window as any).__ENV && (window as any).__ENV.VITE_WEATHER_API) {
+      // Some applications put environment variables in a global __ENV object
+      apiKey = (window as any).__ENV.VITE_WEATHER_API;
+    }
+    
+    // Fallback to mock data in development if no API key
+    if (!apiKey && process.env.NODE_ENV === 'development') {
+      console.warn('No API key found in environment variables, using fallback mock data');
+      return getMockWeatherData(location, days);
+    }
     
     if (!apiKey) {
       throw new Error('Weather API key is not available');
@@ -205,12 +221,23 @@ async function fetchWeatherApiData(
     const response = await fetch(apiUrl);
     
     if (!response.ok) {
-      throw new Error(`Weather API returned ${response.status}: ${await response.text()}`);
+      console.error(`Weather API returned ${response.status}: ${await response.text()}`);
+      // Fallback to mock data in development
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('API call failed, using fallback mock data');
+        return getMockWeatherData(location, days);
+      }
+      throw new Error(`Weather API returned ${response.status}`);
     }
     
     return await response.json();
   } catch (error) {
     console.error('Error calling Weather API directly:', error);
+    // Fallback to mock data in development
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('API call failed, using fallback mock data');
+      return getMockWeatherData(location, days);
+    }
     throw error; // Re-throw to let caller handle it
   }
 }
@@ -373,4 +400,155 @@ export function transformForWeatherWidget(data: any): {
   }
   
   return { current, forecast };
+}
+
+/**
+ * Generate mock weather data for development and testing
+ */
+function getMockWeatherData(location: string, days: number): any {
+  const mockLocation = {
+    name: location.includes(',') ? 'Custom Location' : location,
+    region: 'Demo Region',
+    country: 'Demo Country',
+    lat: 38.9072,
+    lon: -77.0369
+  };
+  
+  const mockCurrent = {
+    last_updated_epoch: Date.now() / 1000,
+    last_updated: new Date().toISOString(),
+    temp_c: 22,
+    temp_f: 72,
+    is_day: 1,
+    condition: {
+      text: 'Partly cloudy',
+      icon: '//cdn.weatherapi.com/weather/64x64/day/116.png',
+      code: 1003
+    },
+    wind_mph: 10,
+    wind_kph: 16.1,
+    wind_degree: 230,
+    wind_dir: 'SW',
+    pressure_mb: 1012,
+    pressure_in: 29.88,
+    precip_mm: 0,
+    precip_in: 0,
+    humidity: 65,
+    cloud: 25,
+    feelslike_c: 22,
+    feelslike_f: 71.6,
+    vis_km: 10,
+    vis_miles: 6.2,
+    uv: 5,
+    gust_mph: 12.5,
+    gust_kph: 20.2
+  };
+  
+  const mockForecastDays = Array.from({ length: days }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() + i);
+    const dateStr = date.toISOString().split('T')[0];
+    
+    const minTemp = 60 + Math.floor(Math.random() * 10);
+    const maxTemp = minTemp + 5 + Math.floor(Math.random() * 10);
+    const rainChance = Math.floor(Math.random() * 60);
+    
+    return {
+      date: dateStr,
+      date_epoch: date.getTime() / 1000,
+      day: {
+        maxtemp_c: (maxTemp - 32) * 5/9,
+        maxtemp_f: maxTemp,
+        mintemp_c: (minTemp - 32) * 5/9,
+        mintemp_f: minTemp,
+        avgtemp_c: ((minTemp + maxTemp) / 2 - 32) * 5/9,
+        avgtemp_f: (minTemp + maxTemp) / 2,
+        maxwind_mph: 10 + Math.floor(Math.random() * 10),
+        maxwind_kph: (10 + Math.floor(Math.random() * 10)) * 1.6,
+        totalprecip_mm: rainChance > 30 ? (Math.random() * 10) : 0,
+        totalprecip_in: rainChance > 30 ? (Math.random() * 0.4) : 0,
+        totalsnow_cm: 0,
+        avgvis_km: 10,
+        avgvis_miles: 6.2,
+        avghumidity: 60 + Math.floor(Math.random() * 20),
+        daily_will_it_rain: rainChance > 30 ? 1 : 0,
+        daily_chance_of_rain: rainChance,
+        daily_will_it_snow: 0,
+        daily_chance_of_snow: 0,
+        condition: {
+          text: rainChance > 50 ? 'Light rain' : (rainChance > 30 ? 'Partly cloudy' : 'Sunny'),
+          icon: rainChance > 50 ? '//cdn.weatherapi.com/weather/64x64/day/296.png' : 
+               (rainChance > 30 ? '//cdn.weatherapi.com/weather/64x64/day/116.png' : '//cdn.weatherapi.com/weather/64x64/day/113.png'),
+          code: rainChance > 50 ? 1183 : (rainChance > 30 ? 1003 : 1000)
+        },
+        uv: 5
+      },
+      astro: {
+        sunrise: '06:30 AM',
+        sunset: '07:30 PM',
+        moonrise: '08:00 PM',
+        moonset: '06:00 AM',
+        moon_phase: 'Full Moon',
+        moon_illumination: '100'
+      },
+      hour: Array.from({ length: 24 }, (_, j) => {
+        const hourTime = new Date(date);
+        hourTime.setHours(j);
+        const hourRainChance = Math.floor(Math.random() * 60);
+        const hourTemp = minTemp + Math.floor(Math.random() * (maxTemp - minTemp));
+        
+        return {
+          time_epoch: hourTime.getTime() / 1000,
+          time: hourTime.toISOString(),
+          temp_c: (hourTemp - 32) * 5/9,
+          temp_f: hourTemp,
+          is_day: j >= 6 && j <= 18 ? 1 : 0,
+          condition: {
+            text: hourRainChance > 50 ? 'Light rain' : (hourRainChance > 30 ? 'Partly cloudy' : 'Sunny'),
+            icon: hourRainChance > 50 ? '//cdn.weatherapi.com/weather/64x64/day/296.png' : 
+                 (hourRainChance > 30 ? '//cdn.weatherapi.com/weather/64x64/day/116.png' : '//cdn.weatherapi.com/weather/64x64/day/113.png'),
+            code: hourRainChance > 50 ? 1183 : (hourRainChance > 30 ? 1003 : 1000)
+          },
+          wind_mph: 5 + Math.floor(Math.random() * 15),
+          wind_kph: (5 + Math.floor(Math.random() * 15)) * 1.6,
+          wind_degree: 200 + Math.floor(Math.random() * 100),
+          wind_dir: 'SW',
+          pressure_mb: 1012,
+          pressure_in: 29.88,
+          precip_mm: hourRainChance > 30 ? (Math.random() * 2) : 0,
+          precip_in: hourRainChance > 30 ? (Math.random() * 0.08) : 0,
+          humidity: 60 + Math.floor(Math.random() * 20),
+          cloud: hourRainChance > 30 ? (30 + Math.floor(Math.random() * 50)) : Math.floor(Math.random() * 30),
+          feelslike_c: (hourTemp - 32) * 5/9,
+          feelslike_f: hourTemp,
+          windchill_c: (hourTemp - 32) * 5/9,
+          windchill_f: hourTemp,
+          heatindex_c: (hourTemp - 32) * 5/9,
+          heatindex_f: hourTemp,
+          dewpoint_c: ((60 + Math.floor(Math.random() * 10)) - 32) * 5/9,
+          dewpoint_f: 60 + Math.floor(Math.random() * 10),
+          will_it_rain: hourRainChance > 30 ? 1 : 0,
+          chance_of_rain: hourRainChance,
+          will_it_snow: 0,
+          chance_of_snow: 0,
+          vis_km: 10,
+          vis_miles: 6.2,
+          gust_mph: (5 + Math.floor(Math.random() * 15)) + 2,
+          gust_kph: ((5 + Math.floor(Math.random() * 15)) + 2) * 1.6,
+          uv: 5
+        };
+      })
+    };
+  });
+  
+  return {
+    location: mockLocation,
+    current: mockCurrent,
+    forecast: {
+      forecastday: mockForecastDays
+    },
+    alerts: {
+      alert: []
+    }
+  };
 }
