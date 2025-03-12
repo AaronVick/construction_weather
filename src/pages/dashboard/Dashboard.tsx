@@ -14,6 +14,8 @@ import { db, auth } from '@/lib/firebaseClient';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 import { fetchCompleteWeatherData, CurrentWeather } from '@/services/weatherService';
 import { ForecastDay, WeatherAlert } from '@/types/weather';
+import SimpleErrorBoundary from '../../components/ui/ErrorBoundary';
+
 
 const Dashboard: React.FC = () => {
   const { darkMode } = useTheme();
@@ -41,21 +43,34 @@ const Dashboard: React.FC = () => {
       
       console.log('Fetching weather data for zip code:', zipCode);
       
-      const weatherData = await fetchCompleteWeatherData(zipCode);
+      // Timeout for the weather API request to prevent infinite loading
+      const weatherPromise = fetchCompleteWeatherData(zipCode);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Weather data request timed out')), 10000)
+      );
       
-      setCurrentWeather(weatherData.current);
-      setForecastData(weatherData.forecast);
-      setWeatherAlerts(weatherData.alerts);
+      // Race between the actual request and the timeout
+      const weatherData = await Promise.race([weatherPromise, timeoutPromise]) as any;
       
-      // Update weather alerts count for dashboard metrics
-      setData(prevData => ({
-        ...prevData,
-        weatherAlerts: weatherData.alerts.length
-      }));
-      
+      // Only update states if we're still mounted and have valid data
+      if (weatherData) {
+        setCurrentWeather(weatherData.current);
+        setForecastData(weatherData.forecast || []);
+        setWeatherAlerts(weatherData.alerts || []);
+        
+        // Update weather alerts count for dashboard metrics
+        setData(prevData => ({
+          ...prevData,
+          weatherAlerts: (weatherData.alerts || []).length
+        }));
+      }
     } catch (err) {
       console.error('Error fetching weather data:', err);
       setWeatherError('Unable to load weather data');
+      
+      // Provide empty data to prevent UI errors
+      setForecastData([]);
+      setWeatherAlerts([]);
     } finally {
       setWeatherLoading(false);
     }
@@ -74,72 +89,109 @@ const Dashboard: React.FC = () => {
           return;
         }
   
-        // Get active clients count
-        const clientsQuery = query(
-          collection(db, 'clients'),
-          where('user_id', '==', user.uid),
-          where('is_active', '==', true)
-        );
-        const clientsSnapshot = await getCountFromServer(clientsQuery);
-        const activeClients = clientsSnapshot.data().count;
-  
-        // Get active workers count
-        const workersQuery = query(
-          collection(db, 'workers'),
-          where('user_id', '==', user.uid),
-          where('is_active', '==', true)
-        );
-        const workersSnapshot = await getCountFromServer(workersQuery);
-        const activeWorkers = workersSnapshot.data().count;
-  
-        // Get pending emails count
-        const emailsQuery = query(
-          collection(db, 'emails'),
-          where('user_id', '==', user.uid),
-          where('status', '==', 'pending')
-        );
-        const emailsSnapshot = await getCountFromServer(emailsQuery);
-        const pendingEmails = emailsSnapshot.data().count;
-  
-        // Get weather alerts count - will be updated when we fetch weather data
-        const alertsQuery = query(
-          collection(db, 'weather_alerts'),
-          where('user_id', '==', user.uid),
-          where('is_active', '==', true)
-        );
-        const alertsSnapshot = await getCountFromServer(alertsQuery);
-        const weatherAlertsCount = alertsSnapshot.data().count;
-  
-        // Get user profile for zip code
-        const profileQuery = query(
-          collection(db, 'user_profiles'),
-          where('user_id', '==', user.uid)
-        );
+        // Initialize with default values in case any of the Firestore operations fail
+        let activeClients = 0;
+        let activeWorkers = 0;
+        let pendingEmails = 0;
+        let weatherAlertsCount = 0;
         
-        const profileSnapshot = await getDocs(profileQuery);
-        
-        if (!profileSnapshot.empty) {
-          const userProfile = profileSnapshot.docs[0].data();
-          const zipCode = userProfile.zip_code;
-          
-          if (zipCode) {
-            setUserZipCode(zipCode);
-            // Fetch weather data after setting the zip code
-            fetchWeatherData(zipCode);
-          }
+        try {
+          // Get active clients count
+          const clientsQuery = query(
+            collection(db, 'clients'),
+            where('user_id', '==', user.uid),
+            where('is_active', '==', true)
+          );
+          const clientsSnapshot = await getCountFromServer(clientsQuery);
+          activeClients = clientsSnapshot.data().count;
+        } catch (err) {
+          console.error('Error fetching clients count:', err);
+          // Continue with other fetches
         }
-        
+  
+        try {
+          // Get active workers count
+          const workersQuery = query(
+            collection(db, 'workers'),
+            where('user_id', '==', user.uid),
+            where('is_active', '==', true)
+          );
+          const workersSnapshot = await getCountFromServer(workersQuery);
+          activeWorkers = workersSnapshot.data().count;
+        } catch (err) {
+          console.error('Error fetching workers count:', err);
+          // Continue with other fetches
+        }
+  
+        try {
+          // Get pending emails count
+          const emailsQuery = query(
+            collection(db, 'emails'),
+            where('user_id', '==', user.uid),
+            where('status', '==', 'pending')
+          );
+          const emailsSnapshot = await getCountFromServer(emailsQuery);
+          pendingEmails = emailsSnapshot.data().count;
+        } catch (err) {
+          console.error('Error fetching emails count:', err);
+          // Continue with other fetches
+        }
+  
+        try {
+          // Get weather alerts count - will be updated when we fetch weather data
+          const alertsQuery = query(
+            collection(db, 'weather_alerts'),
+            where('user_id', '==', user.uid),
+            where('is_active', '==', true)
+          );
+          const alertsSnapshot = await getCountFromServer(alertsQuery);
+          weatherAlertsCount = alertsSnapshot.data().count;
+        } catch (err) {
+          console.error('Error fetching weather alerts count:', err);
+          // Continue with other fetches
+        }
+  
+        // Set the data we've collected so far, so UI can show something
         setData({
           activeClients,
           activeWorkers,
           pendingEmails,
-          weatherAlerts: weatherAlertsCount // Will be updated when weather data is fetched
+          weatherAlerts: weatherAlertsCount
         });
+  
+        try {
+          // Get user profile for zip code
+          const profileQuery = query(
+            collection(db, 'user_profiles'),
+            where('user_id', '==', user.uid)
+          );
+          
+          const profileSnapshot = await getDocs(profileQuery);
+          
+          if (!profileSnapshot.empty) {
+            const userProfile = profileSnapshot.docs[0].data();
+            const zipCode = userProfile.zip_code;
+            
+            if (zipCode) {
+              setUserZipCode(zipCode);
+              // Fetch weather data in the background, don't await it
+              fetchWeatherData(zipCode).catch(err => {
+                console.error('Error fetching weather data in background:', err);
+                // This won't block the dashboard from loading
+              });
+            }
+          }
+        } catch (err) {
+          console.error('Error fetching user profile:', err);
+          // We'll continue even without weather data
+        }
+        
         setError(null);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
         setError('Failed to load dashboard data');
       } finally {
+        // Dashboard is considered loaded even if some parts failed
         setLoading(false);
       }
     };
@@ -459,112 +511,132 @@ const Dashboard: React.FC = () => {
             Chart placeholder
           </div>
         </div>
-
-        {/* Weather Forecast */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              5-Day Forecast {userZipCode && `(${userZipCode})`}
-            </h2>
-            {currentWeather && (
-              <div className="flex items-center bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg">
-                <div className="flex items-center mr-3">
-                  {getWeatherIcon(currentWeather.condition)}
-                  <span className="text-blue-700 dark:text-blue-300 font-medium">
-                    {currentWeather.temperature}°F
-                  </span>
-                </div>
-                <div className="flex items-center text-xs text-blue-600 dark:text-blue-400">
-                  <span className="mr-2">Now</span>
-                  <span>{currentWeather.condition}</span>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          {weatherLoading ? (
-            <div className="flex justify-center items-center h-48">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            </div>
-          ) : weatherError ? (
-            <div className="flex items-center justify-center h-48 text-red-500">
-              <AlertTriangle className="w-5 h-5 mr-2" />
-              <span>{weatherError}</span>
-            </div>
-          ) : !userZipCode ? (
-            <div className="flex items-center justify-center h-48 text-amber-500">
-              <AlertCircle className="w-5 h-5 mr-2" />
-              <span>No zip code available in profile</span>
-            </div>
-          ) : forecastData.length === 0 ? (
-            <div className="flex items-center justify-center h-48 text-gray-500">
-              <CloudOff className="w-5 h-5 mr-2" />
-              <span>No forecast data available</span>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {forecastData.map((day, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-750">
-                  <div className="flex items-center">
-                    {getWeatherIcon(day.condition)}
-                    <span className="text-gray-700 dark:text-gray-300">
-                      {formatDate(day.date)}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center text-xs">
-                      <Thermometer className="w-4 h-4 text-red-500 mr-1" />
-                      <span className="text-gray-600 dark:text-gray-400">
-                        {day.temperature.max}°
-                      </span>
-                      <span className="mx-1 text-gray-400">/</span>
-                      <span className="text-gray-500 dark:text-gray-500">
-                        {day.temperature.min}°
-                      </span>
-                    </div>
-                    
-                    {day.precipitation > 0 && (
-                      <div className="flex items-center text-xs">
-                        <CloudRain className="w-4 h-4 text-blue-500 mr-1" />
-                        <span className="text-gray-600 dark:text-gray-400">
-                          {Math.round(day.precipitation)}%
-                        </span>
-                      </div>
-                    )}
-                    
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {day.condition}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-
-      {/* Premium Features Banner */}
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-sm p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold mb-2">
-              Upgrade to Premium
-            </h2>
-            <p className="text-blue-100">
-              Get access to advanced features and analytics
-            </p>
-          </div>
-          <button 
-            onClick={() => console.log('Upgrade clicked')}
-            className="px-6 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors"
-          >
-            Upgrade Now
-          </button>
-        </div>
+{/* Weather Forecast */}
+<SimpleErrorBoundary
+  fallback={
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        Weather Forecast
+      </h2>
+      <div className="flex flex-col items-center justify-center h-48">
+        <CloudOff className="w-6 h-6 text-gray-500 mb-2" />
+        <p className="text-gray-600 dark:text-gray-400 text-center mb-2">
+          Weather information is temporarily unavailable
+        </p>
+        <button
+          onClick={handleRefreshWeather}
+          className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md text-sm"
+        >
+          Try Again
+        </button>
       </div>
     </div>
-  );
+  }
+>
+  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+    <div className="flex justify-between items-center mb-4">
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+        5-Day Forecast {userZipCode && `(${userZipCode})`}
+      </h2>
+      {currentWeather && (
+        <div className="flex items-center bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg">
+          <div className="flex items-center mr-3">
+            {getWeatherIcon(currentWeather.condition)}
+            <span className="text-blue-700 dark:text-blue-300 font-medium">
+              {currentWeather.temperature}°F
+            </span>
+          </div>
+          <div className="flex items-center text-xs text-blue-600 dark:text-blue-400">
+            <span className="mr-2">Now</span>
+            <span>{currentWeather.condition}</span>
+          </div>
+        </div>
+      )}
+    </div>
+    
+    {weatherLoading ? (
+      <div className="flex justify-center items-center h-48">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    ) : weatherError ? (
+      <div className="flex items-center justify-center h-48 text-red-500">
+        <AlertTriangle className="w-5 h-5 mr-2" />
+        <span>{weatherError}</span>
+      </div>
+    ) : !userZipCode ? (
+      <div className="flex items-center justify-center h-48 text-amber-500">
+        <AlertCircle className="w-5 h-5 mr-2" />
+        <span>No zip code available in profile</span>
+      </div>
+    ) : forecastData.length === 0 ? (
+      <div className="flex items-center justify-center h-48 text-gray-500">
+        <CloudOff className="w-5 h-5 mr-2" />
+        <span>No forecast data available</span>
+      </div>
+    ) : (
+      <div className="space-y-4">
+        {forecastData.map((day, index) => (
+          <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-750">
+            <div className="flex items-center">
+              {getWeatherIcon(day.condition)}
+              <span className="text-gray-700 dark:text-gray-300">
+                {formatDate(day.date)}
+              </span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center text-xs">
+                <Thermometer className="w-4 h-4 text-red-500 mr-1" />
+                <span className="text-gray-600 dark:text-gray-400">
+                  {day.temperature.max}°
+                </span>
+                <span className="mx-1 text-gray-400">/</span>
+                <span className="text-gray-500 dark:text-gray-500">
+                  {day.temperature.min}°
+                </span>
+              </div>
+              
+              {day.precipitation > 0 && (
+                <div className="flex items-center text-xs">
+                  <CloudRain className="w-4 h-4 text-blue-500 mr-1" />
+                  <span className="text-gray-600 dark:text-gray-400">
+                    {Math.round(day.precipitation)}%
+                  </span>
+                </div>
+              )}
+              
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {day.condition}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</SimpleErrorBoundary>
+</div> {/* Closing div for the Charts Section grid */}
+
+{/* Premium Features Banner */}
+<div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-sm p-6 text-white">
+  <div className="flex items-center justify-between">
+    <div>
+      <h2 className="text-lg font-semibold mb-2">
+        Upgrade to Premium
+      </h2>
+      <p className="text-blue-100">
+        Get access to advanced features and analytics
+      </p>
+    </div>
+    <button 
+      onClick={() => console.log('Upgrade clicked')}
+      className="px-6 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors"
+    >
+      Upgrade Now
+    </button>
+  </div>
+</div>
+</div> 
+);
 
 };
 
