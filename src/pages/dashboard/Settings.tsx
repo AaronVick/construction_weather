@@ -4,7 +4,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useFirebaseAuth } from '../../hooks/useFirebaseAuth';
 import { useToast } from '../../hooks/useToast';
 import { db, auth } from '../../lib/firebaseClient';
-import { collection, query, where, getDocs, doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { updateProfile, updatePassword, signOut } from 'firebase/auth';
 import { SettingsTab, SettingsFormData, UserProfile } from '../../components/settings/types';
 import { UserProfileFormData } from '../../types/user';
@@ -114,84 +114,79 @@ const Settings: React.FC = () => {
   };
 
   // Save user profile information
-  const handleSaveProfile = async () => {
-    try {
-      setLoading(true);
-  
-      if (!user) {
-        throw new Error('No authenticated user');
-      }
-  
-      // Update display name in Firebase Auth
-      await updateProfile(user, {
-        displayName: formData.full_name
-      });
-  
-      // Get or create user profile document
-      const profileQuery = query(
-        collection(db, 'user_profiles'),
-        where('user_id', '==', user.uid)
-      );
-  
-      const querySnapshot = await getDocs(profileQuery);
-      
-      // Prepare profile data, preserving existing fields if any
-      let existingData: Record<string, any> = {
-        notification_channels: {},
-        preferences: {}
-      };
-      
-      if (!querySnapshot.empty) {
-        existingData = querySnapshot.docs[0].data() as Record<string, any>;
-      }
-      
-      const profileData = {
-        ...existingData,  // Keep existing data
-        full_name: formData.full_name,
-        zip_code: formData.zip_code,
-        user_id: user.uid,
-        notification_channels: {
-          ...(existingData.notification_channels || {}),  // Preserve existing notification settings
-          email: formData.notification_email,
-          summary: formData.notification_summary,
-          marketing: formData.notification_marketing
-        },
-        preferences: {
-          ...(existingData.preferences || {}),  // Preserve existing preferences
-          time_format: formData.time_format,
-          temp_unit: formData.temp_unit,
-          language: formData.language
-        },
-        updated_at: serverTimestamp()
-      };
-  
-      if (querySnapshot.empty) {
-        // Create new profile
-        await setDoc(doc(collection(db, 'user_profiles')), {
-          ...profileData,
-          created_at: serverTimestamp()
-        });
-        console.log('New profile created successfully');
-      } else {
-        // Update existing profile
-        const profileDoc = querySnapshot.docs[0];
-        await updateDoc(doc(db, 'user_profiles', profileDoc.id), profileData);
-        console.log('Profile updated successfully');
-      }
-  
-      showToast('Profile updated successfully', 'success');
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      // More specific error message
-      if (error instanceof Error) {
-        showToast(`Failed to update profile: ${error.message}`, 'error');
-      } else {
-        showToast('Failed to update profile', 'error');
-      }
-    } finally {
-      setLoading(false);
+const handleSaveProfile = async () => {
+  try {
+    setLoading(true);
+
+    if (!user) {
+      throw new Error('No authenticated user');
     }
-  };
+
+    // Update display name in Firebase Auth
+    await updateProfile(user, {
+      displayName: formData.full_name
+    });
+
+    // Get or create user profile document directly by ID
+    const profileRef = doc(db, 'user_profiles', user.uid);
+    const profileSnap = await getDoc(profileRef);
+
+    // Prepare profile data, preserving existing fields if any
+    let existingData: Record<string, any> = {
+      notification_channels: {},
+      preferences: {}
+    };
+    
+    if (profileSnap.exists()) {
+      existingData = profileSnap.data() as Record<string, any>;
+    }
+    
+    const profileData = {
+      ...existingData,  // Keep existing data
+      full_name: formData.full_name,
+      zip_code: formData.zip_code,
+      user_id: user.uid,
+      notification_channels: {
+        ...(existingData.notification_channels || {}),  // Preserve existing notification settings
+        email: formData.notification_email,
+        summary: formData.notification_summary,
+        marketing: formData.notification_marketing
+      },
+      preferences: {
+        ...(existingData.preferences || {}),  // Preserve existing preferences
+        time_format: formData.time_format,
+        temp_unit: formData.temp_unit,
+        language: formData.language
+      },
+      updated_at: serverTimestamp()
+    };
+
+    if (!profileSnap.exists()) {
+      // Create new profile with user's UID as the document ID
+      await setDoc(profileRef, {
+        ...profileData,
+        created_at: serverTimestamp()
+      });
+      console.log('New profile created successfully');
+    } else {
+      // Update existing profile
+      await updateDoc(profileRef, profileData);
+      console.log('Profile updated successfully');
+    }
+
+    showToast('Profile updated successfully', 'success');
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    // More specific error message
+    if (error instanceof Error) {
+      showToast(`Failed to update profile: ${error.message}`, 'error');
+    } else {
+      showToast('Failed to update profile', 'error');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Update user password
   const handleUpdatePassword = async () => {
@@ -224,7 +219,8 @@ const Settings: React.FC = () => {
     }
   };
 
- // Save user notification preferences
+
+// Save user notification preferences
 const handleSaveNotifications = async () => {
   try {
     setLoading(true);
@@ -233,20 +229,17 @@ const handleSaveNotifications = async () => {
       throw new Error('No authenticated user');
     }
 
-    const profileQuery = query(
-      collection(db, 'user_profiles'),
-      where('user_id', '==', user.uid)
-    );
+    // Get or create user profile document directly by ID
+    const profileRef = doc(db, 'user_profiles', user.uid);
+    const profileSnap = await getDoc(profileRef);
 
-    const querySnapshot = await getDocs(profileQuery);
-    
     // Prepare notification data, preserving existing fields
     let existingData: Record<string, any> = {
       notification_channels: {}
     };
     
-    if (!querySnapshot.empty) {
-      existingData = querySnapshot.docs[0].data() as Record<string, any>;
+    if (profileSnap.exists()) {
+      existingData = profileSnap.data() as Record<string, any>;
     }
     
     const profileData = {
@@ -261,17 +254,16 @@ const handleSaveNotifications = async () => {
       updated_at: serverTimestamp()
     };
 
-    if (querySnapshot.empty) {
-      // Create new profile with notification settings
-      await setDoc(doc(collection(db, 'user_profiles')), {
+    if (!profileSnap.exists()) {
+      // Create new profile with user's UID as the document ID
+      await setDoc(profileRef, {
         ...profileData,
         created_at: serverTimestamp()
       });
       console.log('New profile with notification settings created successfully');
     } else {
       // Update existing profile
-      const profileDoc = querySnapshot.docs[0];
-      await updateDoc(doc(db, 'user_profiles', profileDoc.id), profileData);
+      await updateDoc(profileRef, profileData);
       console.log('Notification settings updated successfully');
     }
 
@@ -289,6 +281,7 @@ const handleSaveNotifications = async () => {
   }
 };
 
+
 // Save user appearance settings
 const handleSaveAppearance = async () => {
   try {
@@ -298,20 +291,17 @@ const handleSaveAppearance = async () => {
       throw new Error('No authenticated user');
     }
 
-    const profileQuery = query(
-      collection(db, 'user_profiles'),
-      where('user_id', '==', user.uid)
-    );
+    // Get or create user profile document directly by ID
+    const profileRef = doc(db, 'user_profiles', user.uid);
+    const profileSnap = await getDoc(profileRef);
 
-    const querySnapshot = await getDocs(profileQuery);
-    
     // Prepare appearance data, preserving existing fields
     let existingData: Record<string, any> = {
       preferences: {}
     };
     
-    if (!querySnapshot.empty) {
-      existingData = querySnapshot.docs[0].data() as Record<string, any>;
+    if (profileSnap.exists()) {
+      existingData = profileSnap.data() as Record<string, any>;
     }
     
     const profileData = {
@@ -326,17 +316,16 @@ const handleSaveAppearance = async () => {
       updated_at: serverTimestamp()
     };
 
-    if (querySnapshot.empty) {
-      // Create new profile with appearance settings
-      await setDoc(doc(collection(db, 'user_profiles')), {
+    if (!profileSnap.exists()) {
+      // Create new profile with user's UID as the document ID
+      await setDoc(profileRef, {
         ...profileData,
         created_at: serverTimestamp()
       });
       console.log('New profile with appearance settings created successfully');
     } else {
       // Update existing profile
-      const profileDoc = querySnapshot.docs[0];
-      await updateDoc(doc(db, 'user_profiles', profileDoc.id), profileData);
+      await updateDoc(profileRef, profileData);
       console.log('Appearance settings updated successfully');
     }
 
