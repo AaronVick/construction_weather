@@ -1,8 +1,7 @@
-import { WeatherWidgetForecast } from '../types/weather';
-import { ForecastDay as ServiceForecastDay } from '../services/weatherService';
+import { WeatherWidgetForecast, ForecastDay } from '../types/weather';
 
-// Accept either type of ForecastDay (from types/weather.ts or services/weatherService.ts)
-export function transformForecastForWidget(forecast: ServiceForecastDay[] | any[]): WeatherWidgetForecast[] {
+// Transform ForecastDay to WeatherWidgetForecast format
+export function transformForecastForWidget(forecast: ForecastDay[] | any[]): WeatherWidgetForecast[] {
   return forecast.map(day => ({
     date: day.date,
     temperature: {

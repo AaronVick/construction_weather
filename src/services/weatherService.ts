@@ -6,6 +6,9 @@ import {
   CurrentWeather as WeatherCurrentWeather 
 } from '../types/weather';
 
+// Re-export types that are used by other components
+export type { ForecastDay, WeatherAlert } from '../types/weather';
+
 // Types
 export interface CurrentWeather {
   temperature: number;

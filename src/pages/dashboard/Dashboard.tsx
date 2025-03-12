@@ -13,12 +13,8 @@ import LoadingScreen from '@/components/ui/LoadingScreen';
 import { collection, query, where, getDocs, getCountFromServer } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebaseClient';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
-import { 
-  fetchCompleteWeatherData, 
-  CurrentWeather, 
-  ForecastDay, 
-  WeatherAlert 
-} from '@/services/weatherService';
+import { fetchCompleteWeatherData, CurrentWeather } from '@/services/weatherService';
+import { ForecastDay, WeatherAlert } from '@/types/weather';
 
 const Dashboard: React.FC = () => {
   const { darkMode } = useTheme();

@@ -15,10 +15,13 @@ import {
   RefreshCw,
   AlertTriangle
 } from 'lucide-react';
-import { CurrentWeather, ForecastDay, fetchCompleteWeatherData } from '../../services/weatherService';
+import { CurrentWeather, fetchCompleteWeatherData } from '../../services/weatherService';
+import { ForecastDay, WeatherWidgetForecast } from '../../types/weather';
 
 interface WeatherWidgetProps {
   zipCode: string;
+  current?: CurrentWeather | null;
+  forecast?: ForecastDay[] | WeatherWidgetForecast[];
   className?: string;
   showRefresh?: boolean;
 }
@@ -45,15 +48,17 @@ const WeatherIcon: React.FC<{ condition: string; className?: string }> = ({ cond
 
 const WeatherWidget: React.FC<WeatherWidgetProps> = ({ 
   zipCode, 
+  current: propsCurrent = null,
+  forecast: propsForecast = [],
   className = '', 
   showRefresh = true 
 }) => {
   const theme = useTheme();
   const darkMode = theme ? theme.darkMode : false;
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!propsCurrent);
   const [error, setError] = useState<string | null>(null);
-  const [current, setCurrent] = useState<CurrentWeather | null>(null);
-  const [forecast, setForecast] = useState<ForecastDay[]>([]);
+  const [current, setCurrent] = useState<CurrentWeather | null>(propsCurrent);
+  const [forecast, setForecast] = useState<any[]>(propsForecast);
   const [refreshing, setRefreshing] = useState(false);
   
   const fetchWeatherData = async () => {
@@ -80,10 +85,12 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
     }
   };
   
-  // Fetch weather data on component mount
+  // Fetch weather data on component mount if not provided via props
   useEffect(() => {
-    fetchWeatherData();
-  }, [zipCode]);
+    if (!propsCurrent || propsForecast.length === 0) {
+      fetchWeatherData();
+    }
+  }, [zipCode, propsCurrent, propsForecast]);
   
   // Handle refresh button click
   const handleRefresh = () => {

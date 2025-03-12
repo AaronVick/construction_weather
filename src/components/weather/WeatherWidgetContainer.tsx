@@ -120,9 +120,10 @@ const WeatherWidgetContainer: React.FC<WeatherWidgetContainerProps> = ({
   return (
     <div className={className}>
       <WeatherWidget 
+        zipCode={location}
         current={current}
         forecast={forecast}
-        zipCode={location} // For backward compatibility
+        showRefresh={false}
       />
     </div>
   );

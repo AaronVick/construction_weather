@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import { Jobsite } from '../../types/jobsite';
-import { CurrentWeather, ForecastDay, WeatherAlert } from '../../services/weatherService';
 import { fetchWeatherForecast, getCurrentWeather } from '../../services/weatherService';
+import { CurrentWeather } from '../../services/weatherService';
+import { ForecastDay, WeatherAlert } from '../../types/weather';
 import Card from '../ui/Card';
 import { 
   MapPin, 
