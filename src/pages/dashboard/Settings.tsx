@@ -48,44 +48,41 @@ const Settings: React.FC = () => {
   });
 
   // Fetch user profile data
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!user) return;
+useEffect(() => {
+  const fetchUserProfile = async () => {
+    if (!user) return;
 
-      try {
-        const profileQuery = query(
-          collection(db, 'user_profiles'),
-          where('user_id', '==', user.uid)
-        );
-
-        const querySnapshot = await getDocs(profileQuery);
+    try {
+      // Get profile directly using user.uid as document ID
+      const profileRef = doc(db, 'user_profiles', user.uid);
+      const profileSnap = await getDoc(profileRef);
+      
+      if (profileSnap.exists()) {
+        const profileData = profileSnap.data() as UserProfile;
+        profileData.id = profileSnap.id;
+        setUserProfile(profileData);
         
-        if (!querySnapshot.empty) {
-          const profileData = querySnapshot.docs[0].data() as UserProfile;
-          profileData.id = querySnapshot.docs[0].id;
-          setUserProfile(profileData);
-          
-          // Update form data with profile information
-          setFormData(prev => ({
-            ...prev,
-            full_name: user.displayName || '',
-            email: user.email || '',
-            zip_code: profileData.zip_code || '',
-            notification_email: profileData.notification_channels?.email || true,
-            notification_summary: profileData.notification_channels?.summary || false,
-            notification_marketing: profileData.notification_channels?.marketing || false,
-            time_format: profileData.preferences?.time_format || '12h',
-            temp_unit: profileData.preferences?.temp_unit || 'F',
-            language: profileData.preferences?.language || 'en'
-          }));
-        }
-      } catch (err) {
-        console.error('Error fetching user profile:', err);
+        // Update form data with profile information
+        setFormData(prev => ({
+          ...prev,
+          full_name: user.displayName || '',
+          email: user.email || '',
+          zip_code: profileData.zip_code || '',
+          notification_email: profileData.notification_channels?.email ?? true,
+          notification_summary: profileData.notification_channels?.summary ?? false,
+          notification_marketing: profileData.notification_channels?.marketing ?? false,
+          time_format: profileData.preferences?.time_format || '12h',
+          temp_unit: profileData.preferences?.temp_unit || 'F',
+          language: profileData.preferences?.language || 'en'
+        }));
       }
-    };
+    } catch (err) {
+      console.error('Error fetching user profile:', err);
+    }
+  };
 
-    fetchUserProfile();
-  }, [user]);
+  fetchUserProfile();
+}, [user]);
 
   // Handle input changes for form fields
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
