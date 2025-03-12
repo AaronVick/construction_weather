@@ -1,592 +1,329 @@
 // src/services/weatherService.ts
-import axios, { AxiosError } from 'axios';
-import { 
-  collection, 
-  addDoc, 
-  query, 
-  where, 
-  getDocs, 
-  doc, 
-  getDoc, 
-  serverTimestamp,
-  Timestamp,
-  limit,
-  orderBy
-} from 'firebase/firestore';
-import { db, auth } from '../lib/firebaseClient';
-import { getIdToken } from 'firebase/auth';
+import { WeatherWidgetForecast } from '../types/weather';
 
 // Types
-export interface WeatherCondition {
-  text: string;
-  code: number;
-  icon: string;
-}
-
-export interface WeatherLocation {
-  name: string;
-  region: string;
-  country: string;
-  lat: number;
-  lon: number;
-  localtime: string;
-}
-
 export interface CurrentWeather {
   temperature: number;
   feelsLike: number;
   condition: string;
-  conditionCode?: number;
   humidity: number;
   windSpeed: number;
-  windDirection?: string;
   precipitation: number;
-  precipMm?: number;
   isRainy: boolean;
   isSnowy: boolean;
-  isExtreme?: boolean;
   icon: string;
-  location?: WeatherLocation;
-}
-
-export interface HourlyForecast {
-  time: string;
-  temp: number;
-  condition: string;
-  conditionCode: number;
-  windSpeed: number;
-  precipMm: number;
-  chanceOfRain: number;
-  chanceOfSnow: number;
-  willRain: boolean;
-  willSnow: boolean;
-  humidity: number;
-  feelsLike: number;
-  icon: string;
-}
-
-export interface WorkingHoursForecast {
-  avgTemp: number;
-  maxTemp: number;
-  minTemp: number;
-  maxWindSpeed: number;
-  maxPrecipMm: number;
-  precipProbability: number;
-  willRain: boolean;
-  willSnow: boolean;
-  conditions: string[];
-  conditionCodes: number[];
-  hasSevereConditions: boolean;
 }
 
 export interface ForecastDay {
   date: string;
-  dateEpoch?: number;
   temperature: {
     min: number;
     max: number;
-    avg: number;
   };
   condition: string;
-  conditionCode?: number;
-  precipitation: number;
-  precipitationProbability?: number;
-  totalPrecipIn?: number;
-  totalPrecipMm?: number;
+  precipitation: number; // percentage chance of rain
   humidity: number;
   windSpeed: number;
-  windDirection?: string;
-  snowfall: number;
+  snowfall?: number;
   icon: string;
-  sunrise?: string;
-  sunset?: string;
-  moonPhase?: string;
-  workingHours?: WorkingHoursForecast;
-  hourly?: HourlyForecast[];
+  hourly?: any[]; // For hourly forecast data when available
 }
 
 export interface WeatherAlert {
   headline: string;
   severity: string;
-  urgency: string;
-  areas: string;
-  category: string;
   event: string;
   effective: string;
   expires: string;
-  desc: string;
+  description: string;
 }
 
-export interface WeatherForecastResponse {
+export interface WeatherData {
+  current: CurrentWeather | null;
   forecast: ForecastDay[];
-  location?: WeatherLocation;
-  alerts?: WeatherAlert[];
-}
-
-// Cache for recent weather checks to reduce redundant API calls
-const weatherCheckCache = new Map<string, {
-  timestamp: number;
-  data: {
-    current: CurrentWeather;
-    forecast: ForecastDay[];
-    alerts?: WeatherAlert[];
-    location?: WeatherLocation;
-  }
-}>();
-
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes in milliseconds
-const CACHE_TTL_PRO = 15 * 60 * 1000; // 15 minutes for pro users (more frequent updates)
-const API_TIMEOUT = 10000; // 10 seconds
-
-/**
- * Gets the appropriate cache TTL based on user type
- * @param isPro Whether the user has pro features
- */
-function getCacheTTL(isPro: boolean): number {
-  return isPro ? CACHE_TTL_PRO : CACHE_TTL;
+  alerts: WeatherAlert[];
+  location: {
+    name: string;
+    region: string;
+    country: string;
+  };
 }
 
 /**
- * Fetches current weather for a specific location
- * @param location Zip code, coordinates, or address
- * @param isPro Whether the user has pro features enabled
- * @param latitude Optional latitude for precise location
- * @param longitude Optional longitude for precise location
+ * Fetches current weather data for a location
+ * @param location Zipcode, city name, or coordinates
+ * @param includeAlerts Whether to include weather alerts
+ * @param latitude Optional latitude if using coordinates
+ * @param longitude Optional longitude if using coordinates
  */
 export async function getCurrentWeather(
-  location: string, 
-  isPro: boolean = false,
+  location: string,
+  includeAlerts: boolean = false,
   latitude?: number,
   longitude?: number
-): Promise<CurrentWeather> {
+): Promise<CurrentWeather | null> {
   try {
-    // Check cache first
-    const cacheKey = `current_${location}_${latitude || ''}_${longitude || ''}`;
-    const cachedData = weatherCheckCache.get(cacheKey);
+    const weatherData = await fetchWeatherApiData(location, 1, includeAlerts, latitude, longitude);
+    if (!weatherData || !weatherData.current) return null;
     
-    if (cachedData && (Date.now() - cachedData.timestamp) < getCacheTTL(isPro)) {
-      return cachedData.data.current;
-    }
-    
-    const params: Record<string, string> = {
-      location,
-      type: 'current',
-      isPro: isPro ? 'true' : 'false'
-    };
-    
-    // Add coordinates for premium users if available
-    if (isPro && latitude !== undefined && longitude !== undefined) {
-      params.latitude = latitude.toString();
-      params.longitude = longitude.toString();
-    }
-    
-    const response = await axios.get('/api/consolidated/weather', {
-      params,
-      timeout: API_TIMEOUT
-    });
-    
-    // Cache the result
-    if (!weatherCheckCache.has(cacheKey)) {
-      weatherCheckCache.set(cacheKey, {
-        timestamp: Date.now(),
-        data: {
-          current: response.data,
-          forecast: [], // Empty forecast for current-only cache
-          location: response.data.location
-        }
-      });
-    }
-    
-    return response.data;
+    return transformCurrentWeather(weatherData);
   } catch (error) {
     console.error('Error fetching current weather:', error);
-    
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError;
-      
-      if (axiosError.code === 'ECONNABORTED') {
-        throw new Error('Weather API request timed out. Please try again later.');
-      }
-      
-      if (axiosError.response) {
-        const statusCode = axiosError.response.status;
-        const errorData = axiosError.response.data as any;
-        
-        throw new Error(errorData?.message || `Weather API error (${statusCode})`);
-      }
-    }
-    
-    throw new Error('Failed to fetch current weather data');
+    return null;
   }
 }
 
 /**
- * Fetches weather forecast for a specific location and number of days
- * @param location Zip code, coordinates, or address
- * @param days Number of days to forecast
- * @param isPro Whether the user has pro features enabled
- * @param options Additional options for the request
+ * Fetches weather forecast data for a location
+ * @param location Zipcode, city name, or coordinates
+ * @param days Number of days to forecast (1-10)
+ * @param includeAlerts Whether to include weather alerts
+ * @param options Additional options like coordinates
  */
 export async function fetchWeatherForecast(
-  location: string, 
-  days: number = 3, // Default to 3 days for free tier
-  isPro: boolean = false,
-  options: { 
-    latitude?: number,
-    longitude?: number,
-    aqi?: boolean,
-    alerts?: boolean,
-    cacheMinutes?: number // Allow custom cache duration
+  location: string,
+  days: number = 3,
+  includeAlerts: boolean = false,
+  options: {
+    latitude?: number;
+    longitude?: number;
   } = {}
-): Promise<WeatherForecastResponse> {
+): Promise<{ forecast: ForecastDay[]; alerts: WeatherAlert[] }> {
   try {
-    // Ensure days is within free tier limits (max 3 days)
-    const validDays = Math.min(days, 3);
+    const weatherData = await fetchWeatherApiData(
+      location,
+      days,
+      includeAlerts,
+      options.latitude,
+      options.longitude
+    );
     
-    // Generate a more specific cache key based on options
-    const cacheKey = `forecast_${location}_${validDays}_${options.latitude || ''}_${options.longitude || ''}_${options.aqi ? 'aqi' : 'no-aqi'}_${options.alerts ? 'alerts' : 'no-alerts'}`;
-    const cachedData = weatherCheckCache.get(cacheKey);
+    if (!weatherData || !weatherData.forecast) {
+      return { forecast: [], alerts: [] };
+    }
     
-    // Use custom cache duration or default
-    const cacheDuration = options.cacheMinutes 
-      ? options.cacheMinutes * 60 * 1000 // Convert minutes to milliseconds
-      : getCacheTTL(isPro);
+    const forecast = transformForecastDays(weatherData);
+    const alerts = transformWeatherAlerts(weatherData);
     
-    if (cachedData && (Date.now() - cachedData.timestamp) < cacheDuration) {
+    return { forecast, alerts };
+  } catch (error) {
+    console.error('Error fetching weather forecast:', error);
+    return { forecast: [], alerts: [] };
+  }
+}
+
+/**
+ * Fetches complete weather data including current conditions, forecast, and alerts
+ * @param location Zipcode, city name, or coordinates
+ * @param days Number of days to forecast (1-10)
+ * @param options Additional options like coordinates
+ */
+export async function fetchCompleteWeatherData(
+  location: string,
+  days: number = 5,
+  options: {
+    latitude?: number;
+    longitude?: number;
+  } = {}
+): Promise<WeatherData> {
+  try {
+    const weatherData = await fetchWeatherApiData(
+      location,
+      days,
+      true, // Always include alerts for complete data
+      options.latitude,
+      options.longitude
+    );
+    
+    if (!weatherData) {
       return {
-        forecast: cachedData.data.forecast,
-        location: cachedData.data.location,
-        alerts: cachedData.data.alerts
+        current: null,
+        forecast: [],
+        alerts: [],
+        location: { name: '', region: '', country: '' }
       };
     }
     
-    const params: Record<string, string> = {
-      location,
-      days: validDays.toString(),
-      isPro: isPro ? 'true' : 'false'
-    };
-    
-    // Add optional parameters
-    if (options.latitude !== undefined) params.latitude = options.latitude.toString();
-    if (options.longitude !== undefined) params.longitude = options.longitude.toString();
-    if (options.aqi) params.aqi = 'yes';
-    if (options.alerts) params.alerts = 'yes';
-    
-    // Implement retry logic with exponential backoff
-    let retries = 0;
-    const maxRetries = 3;
-    
-    while (retries <= maxRetries) {
-      try {
-        const response = await axios.get('/api/consolidated/weather', {
-          params,
-          timeout: API_TIMEOUT + (retries * 1000) // Increase timeout with each retry
-        });
-        
-        // Cache the result
-        weatherCheckCache.set(cacheKey, {
-          timestamp: Date.now(),
-          data: {
-            current: {} as CurrentWeather, // Empty current for forecast-only cache
-            forecast: response.data.forecast,
-            location: response.data.location,
-            alerts: response.data.alerts
-          }
-        });
-        
-        return response.data;
-      } catch (error) {
-        if (axios.isAxiosError(error)) {
-          const axiosError = error as AxiosError;
-          
-          // Don't retry for certain error types
-          if (axiosError.response && axiosError.response.status >= 400 && axiosError.response.status < 500) {
-            throw error; // Don't retry client errors (4xx)
-          }
-        }
-        
-        retries++;
-        if (retries > maxRetries) throw error;
-        
-        // Wait before retrying (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retries)));
-      }
-    }
-    
-    throw new Error('Maximum retries exceeded');
-  } catch (error) {
-    console.error('Error fetching weather forecast:', error);
-    
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError;
-      
-      if (axiosError.code === 'ECONNABORTED') {
-        throw new Error('Weather API request timed out. Please try again later.');
-      }
-      
-      if (axiosError.response) {
-        const statusCode = axiosError.response.status;
-        const errorData = axiosError.response.data as any;
-        
-        throw new Error(errorData?.message || `Weather API error (${statusCode})`);
-      }
-    }
-    
-    throw new Error('Failed to fetch weather forecast data');
-  }
-}
-
-/**
- * Checks if a recent weather check exists for a location
- * @param location Location to check
- * @param maxAgeMinutes Maximum age in minutes to consider recent
- */
-export async function hasRecentWeatherCheck(location: string, maxAgeMinutes: number = 60): Promise<boolean> {
-  try {
-    const recentChecksQuery = query(
-      collection(db, 'weather_checks'),
-      where('location', '==', location),
-      orderBy('created_at', 'desc'),
-      limit(1)
-    );
-    
-    const querySnapshot = await getDocs(recentChecksQuery);
-    
-    if (querySnapshot.empty) {
-      return false;
-    }
-    
-    const lastCheck = querySnapshot.docs[0].data();
-    const lastCheckTime = (lastCheck.created_at as Timestamp).toDate();
-    const ageInMinutes = (Date.now() - lastCheckTime.getTime()) / (1000 * 60);
-    
-    return ageInMinutes <= maxAgeMinutes;
-  } catch (error) {
-    console.error('Error checking recent weather checks:', error);
-    return false; // Assume no recent check on error
-  }
-}
-
-/**
- * Checks if weather conditions trigger an email notification
- */
-export async function checkWeatherForNotifications(jobsiteId: string): Promise<{
-  shouldSendNotification: boolean;
-  conditions: string[];
-  weatherDescription: string;
-  weatherData?: {
-    current: CurrentWeather;
-    forecast: ForecastDay;
-  };
-}> {
-  try {
-    // Get jobsite data
-    const jobsiteRef = doc(db, 'jobsites', jobsiteId);
-    const jobsiteDoc = await getDoc(jobsiteRef);
-    
-    if (!jobsiteDoc.exists()) {
-      throw new Error('Jobsite not found');
-    }
-    
-    const jobsite = jobsiteDoc.data();
-    const isPro = jobsite.subscription_tier === 'pro';
-    const location = jobsite.zip_code || jobsite.address;
-    
-    if (!location) {
-      throw new Error('Jobsite has no location information');
-    }
-
-    // Check if we have a recent check for this location
-    const hasRecent = await hasRecentWeatherCheck(location);
-    
-    // If we have a recent check and it's not a pro user, use cached data if available
-    let forecastResponse: WeatherForecastResponse;
-    let currentWeather: CurrentWeather;
-    
-    if (hasRecent && !isPro) {
-      // Try to get from cache first
-      const forecastCacheKey = `forecast_${location}_1`;
-      const currentCacheKey = `current_${location}`;
-      
-      const forecastCache = weatherCheckCache.get(forecastCacheKey);
-      const currentCache = weatherCheckCache.get(currentCacheKey);
-      
-      if (forecastCache && currentCache && 
-          (Date.now() - forecastCache.timestamp) < getCacheTTL(isPro) &&
-          (Date.now() - currentCache.timestamp) < getCacheTTL(isPro)) {
-        forecastResponse = { 
-          forecast: forecastCache.data.forecast,
-          location: forecastCache.data.location,
-          alerts: forecastCache.data.alerts
-        };
-        currentWeather = currentCache.data.current;
-      } else {
-        // Fetch new data
-        [forecastResponse, currentWeather] = await Promise.all([
-          fetchWeatherForecast(location, 1, isPro, { alerts: true }),
-          getCurrentWeather(location, isPro)
-        ]);
-      }
-    } else {
-      // Always fetch fresh data for pro users or if no recent check
-      // Use coordinates for premium users if available
-      const jobsiteHasCoordinates = jobsite.latitude !== undefined && 
-                                   jobsite.latitude !== null && 
-                                   jobsite.longitude !== undefined && 
-                                   jobsite.longitude !== null;
-      
-      [forecastResponse, currentWeather] = await Promise.all([
-        fetchWeatherForecast(
-          location, 
-          1, 
-          isPro, 
-          {
-            latitude: jobsiteHasCoordinates ? jobsite.latitude : undefined,
-            longitude: jobsiteHasCoordinates ? jobsite.longitude : undefined,
-            alerts: true
-          }
-        ),
-        getCurrentWeather(
-          location, 
-          isPro,
-          jobsiteHasCoordinates ? jobsite.latitude : undefined,
-          jobsiteHasCoordinates ? jobsite.longitude : undefined
-        )
-      ]);
-    }
-    
-    const todayForecast = forecastResponse.forecast[0];
-    const alerts = forecastResponse.alerts || [];
-    
-    // Get alert thresholds from jobsite settings
-    const thresholds = jobsite.weather_monitoring.alertThresholds;
-    
-    // Check conditions
-    const triggeredConditions = [];
-    
-    // Check for weather alerts first (pro feature)
-    if (isPro && alerts.length > 0) {
-      triggeredConditions.push('weather_alert');
-    }
-    
-    // Check rain conditions
-    if (thresholds.rain.enabled) {
-      // For pro users, check hourly data for more precise rain prediction
-      if (isPro && todayForecast.workingHours) {
-        if (todayForecast.workingHours.willRain || 
-            todayForecast.workingHours.precipProbability >= thresholds.rain.thresholdPercentage) {
-          triggeredConditions.push('rain');
-        }
-      } else if (todayForecast.precipitation >= thresholds.rain.thresholdPercentage) {
-        triggeredConditions.push('rain');
-      }
-    }
-    
-    // Check for any rain (even small amounts)
-    if (thresholds.anyRain && thresholds.anyRain.enabled) {
-      const totalPrecipMm = todayForecast.totalPrecipMm || 0;
-      const thresholdInches = thresholds.anyRain.thresholdInches || 0.01;
-      const thresholdMm = thresholdInches * 25.4; // Convert inches to mm
-      
-      if (totalPrecipMm >= thresholdMm) {
-        triggeredConditions.push('any_rain');
-      }
-    }
-    
-    // Check snow conditions
-    if (thresholds.snow.enabled && todayForecast.snowfall >= thresholds.snow.thresholdInches) {
-      triggeredConditions.push('snow');
-    }
-    
-    // Check wind conditions
-    if (thresholds.wind.enabled) {
-      // For pro users, check hourly data for more precise wind prediction
-      if (isPro && todayForecast.workingHours) {
-        if (todayForecast.workingHours.maxWindSpeed >= thresholds.wind.thresholdMph) {
-          triggeredConditions.push('wind');
-        }
-      } else if (todayForecast.windSpeed >= thresholds.wind.thresholdMph) {
-        triggeredConditions.push('wind');
-      }
-    }
-    
-    // Check temperature conditions
-    if (thresholds.temperature.enabled && todayForecast.temperature.min <= thresholds.temperature.thresholdFahrenheit) {
-      triggeredConditions.push('temperature');
-    }
-    
-    // Check for extreme conditions (pro feature)
-    if (isPro && todayForecast.workingHours && todayForecast.workingHours.hasSevereConditions) {
-      triggeredConditions.push('extreme_conditions');
-    }
-    
-    // Generate weather description using OpenAI
-    let weatherDescription = '';
-    if (triggeredConditions.length > 0) {
-      try {
-        // Get auth token for API call
-        const idToken = auth.currentUser ? await getIdToken(auth.currentUser) : null;
-        
-        if (!idToken) {
-          throw new Error('User not authenticated');
-        }
-        
-        const response = await axios.post('/api/consolidated/weather/gpt', 
-          {
-            currentWeather,
-            forecast: todayForecast,
-            triggeredConditions,
-          },
-          {
-            headers: {
-              'Authorization': `Bearer ${idToken}`
-            },
-            timeout: 20000 // Longer timeout for GPT
-          }
-        );
-        
-        weatherDescription = response.data.weatherDescription;
-      } catch (error) {
-        console.error('Error generating weather description:', error);
-        
-        // Fallback description
-        const conditions = triggeredConditions.join(' and ');
-        weatherDescription = `Due to ${conditions} conditions, outdoor work may be challenging today. Please use caution and follow safety protocols.`;
-      }
-    }
-    
-    // Log this check
-    await addDoc(collection(db, 'weather_checks'), {
-      jobsite_id: jobsiteId,
-      location: location,
-      conditions_checked: Object.keys(thresholds).filter(k => thresholds[k as keyof typeof thresholds].enabled),
-      conditions_triggered: triggeredConditions,
-      weather_data: {
-        current: currentWeather,
-        forecast: todayForecast,
-        alerts: alerts.length > 0 ? alerts : null
-      },
-      notification_sent: triggeredConditions.length > 0,
-      created_at: serverTimestamp(),
-      user_id: auth.currentUser?.uid
-    });
+    const current = transformCurrentWeather(weatherData);
+    const forecast = transformForecastDays(weatherData);
+    const alerts = transformWeatherAlerts(weatherData);
     
     return {
-      shouldSendNotification: triggeredConditions.length > 0,
-      conditions: triggeredConditions,
-      weatherDescription,
-      weatherData: {
-        current: currentWeather,
-        forecast: todayForecast
+      current,
+      forecast,
+      alerts,
+      location: {
+        name: weatherData.location?.name || '',
+        region: weatherData.location?.region || '',
+        country: weatherData.location?.country || ''
       }
     };
   } catch (error) {
-    console.error('Error checking weather for notifications:', error);
+    console.error('Error fetching complete weather data:', error);
+    return {
+      current: null,
+      forecast: [],
+      alerts: [],
+      location: { name: '', region: '', country: '' }
+    };
+  }
+}
+
+/**
+ * Core function to fetch data from Weather API with fallbacks
+ */
+async function fetchWeatherApiData(
+  location: string,
+  days: number = 1,
+  includeAlerts: boolean = false,
+  latitude?: number,
+  longitude?: number
+): Promise<any> {
+  // First try the application API endpoint if it exists
+  try {
+    let apiUrl = `/api/weather?location=${encodeURIComponent(location)}&days=${days}`;
     
-    if (error instanceof Error) {
-      throw new Error(`Failed to check weather conditions: ${error.message}`);
+    if (includeAlerts) {
+      apiUrl += '&alerts=yes';
     }
     
-    throw new Error('Failed to check weather conditions');
+    if (latitude !== undefined && longitude !== undefined) {
+      apiUrl += `&lat=${latitude}&lon=${longitude}`;
+    }
+    
+    const response = await fetch(apiUrl);
+    
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (error) {
+    console.error('Error calling application weather API endpoint:', error);
+    // Continue to direct API fallback
   }
+  
+  // Fallback to direct Weather API call
+  try {
+    // Get API key from environment variable
+    const apiKey = import.meta.env.VITE_WEATHER_API || process.env.NEXT_PUBLIC_WEATHER_API_KEY;
+    
+    if (!apiKey) {
+      throw new Error('Weather API key is not available');
+    }
+    
+    // Determine query parameter
+    let query = location;
+    if (latitude !== undefined && longitude !== undefined) {
+      query = `${latitude},${longitude}`;
+    }
+    
+    const apiUrl = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${encodeURIComponent(query)}&days=${days}&aqi=no&alerts=${includeAlerts ? 'yes' : 'no'}`;
+    
+    const response = await fetch(apiUrl);
+    
+    if (!response.ok) {
+      throw new Error(`Weather API returned ${response.status}: ${await response.text()}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error calling Weather API directly:', error);
+    throw error; // Re-throw to let caller handle it
+  }
+}
+
+/**
+ * Transform API response to CurrentWeather format
+ */
+function transformCurrentWeather(data: any): CurrentWeather {
+  if (!data.current) {
+    throw new Error('Invalid weather data format: missing current data');
+  }
+  
+  return {
+    temperature: Math.round(data.current.temp_f),
+    feelsLike: Math.round(data.current.feelslike_f),
+    condition: data.current.condition.text,
+    humidity: data.current.humidity,
+    windSpeed: data.current.wind_mph,
+    precipitation: data.current.precip_in > 0 ? data.current.precip_in : 
+                  data.forecast?.forecastday?.[0]?.day?.daily_chance_of_rain || 0,
+    isRainy: data.current.precip_in > 0 || 
+            (data.current.condition.text.toLowerCase().includes('rain') && 
+             data.forecast?.forecastday?.[0]?.day?.daily_chance_of_rain > 20),
+    isSnowy: data.current.condition.text.toLowerCase().includes('snow') || 
+            (data.forecast?.forecastday?.[0]?.day?.totalsnow_cm > 0),
+    icon: data.current.condition.icon
+  };
+}
+
+/**
+ * Transform API response to ForecastDay array
+ */
+function transformForecastDays(data: any): ForecastDay[] {
+  if (!data.forecast || !data.forecast.forecastday || !Array.isArray(data.forecast.forecastday)) {
+    return [];
+  }
+  
+  return data.forecast.forecastday.map((day: any): ForecastDay => ({
+    date: day.date,
+    temperature: {
+      min: Math.round(day.day.mintemp_f),
+      max: Math.round(day.day.maxtemp_f)
+    },
+    condition: day.day.condition.text,
+    precipitation: day.day.daily_chance_of_rain,
+    humidity: day.day.avghumidity,
+    windSpeed: day.day.maxwind_mph,
+    snowfall: day.day.totalsnow_cm > 0 ? day.day.totalsnow_cm / 2.54 : 0, // Convert cm to inches
+    icon: day.day.condition.icon,
+    hourly: day.hour // Include hourly data if needed by components
+  }));
+}
+
+/**
+ * Transform API response to WeatherAlert array
+ */
+function transformWeatherAlerts(data: any): WeatherAlert[] {
+  if (!data.alerts || !data.alerts.alert || !Array.isArray(data.alerts.alert)) {
+    return [];
+  }
+  
+  return data.alerts.alert.map((alert: any): WeatherAlert => ({
+    headline: alert.headline || alert.event || 'Weather Alert',
+    severity: alert.severity || 'Unknown',
+    event: alert.event || 'Weather Alert',
+    effective: alert.effective || new Date().toISOString(),
+    expires: alert.expires || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    description: alert.desc || alert.description || 'No details available'
+  }));
+}
+
+/**
+ * Transform weather data for the WeatherWidget component
+ */
+export function transformForWeatherWidget(data: any): {
+  current: CurrentWeather | null;
+  forecast: WeatherWidgetForecast[];
+} {
+  let current: CurrentWeather | null = null;
+  let forecast: WeatherWidgetForecast[] = [];
+  
+  if (data.current) {
+    current = transformCurrentWeather(data);
+  }
+  
+  if (data.forecast && data.forecast.forecastday) {
+    forecast = data.forecast.forecastday.map((day: any): WeatherWidgetForecast => ({
+      date: day.date,
+      temperature: {
+        min: Math.round(day.day.mintemp_f),
+        max: Math.round(day.day.maxtemp_f)
+      },
+      condition: day.day.condition.text,
+      precipitation: day.day.daily_chance_of_rain / 100, // Convert percentage to decimal
+      icon: day.day.condition.icon
+    }));
+  }
+  
+  return { current, forecast };
 }

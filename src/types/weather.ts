@@ -1,8 +1,9 @@
 // src/types/weather.ts
 
+// Weather data types
 export interface WeatherCondition {
   text: string;
-  code: number;
+  code?: number;
   icon: string;
 }
 
@@ -12,9 +13,10 @@ export interface CurrentWeather {
   condition: string;
   humidity: number;
   windSpeed: number;
-  precipitation: number;
+  precipitation: number; // Can be in inches or percentage depending on context
   isRainy: boolean;
   isSnowy: boolean;
+  isExtreme?: boolean;
   icon: string;
 }
 
@@ -23,15 +25,34 @@ export interface ForecastDay {
   temperature: {
     min: number;
     max: number;
-    avg: number;
+    avg?: number;
   };
   condition: string;
-  precipitation: number;
-  precipitationProbability: number;
+  precipitation: number; // percentage chance of rain
+  precipitationProbability?: number; // For backward compatibility
   humidity: number;
   windSpeed: number;
-  snowfall: number;
+  snowfall?: number;
   icon: string;
+  hourly?: HourlyForecast[];
+}
+
+export interface HourlyForecast {
+  time: string;
+  temperature: number;
+  condition: string;
+  precipitation: number;
+  windSpeed: number;
+  icon: string;
+}
+
+export interface WeatherAlert {
+  headline: string;
+  severity: string;
+  event: string;
+  effective: string;
+  expires: string;
+  description: string;
 }
 
 export interface WeatherWidgetForecast {
@@ -41,10 +62,51 @@ export interface WeatherWidgetForecast {
     max: number;
   };
   condition: string;
-  precipitation: number;
+  precipitation: number; // Can be decimal (0-1) or percentage (0-100) depending on component
   icon: string;
 }
 
+export interface WeatherLocation {
+  name: string;
+  region: string;
+  country: string;
+  lat?: number;
+  lon?: number;
+}
+
+export interface WeatherData {
+  location: WeatherLocation;
+  current: CurrentWeather;
+  forecast: ForecastDay[];
+  alerts: WeatherAlert[];
+  lastUpdated?: Date;
+}
+
+export interface WeatherThresholds {
+  temperature?: {
+    min: number;
+    max: number;
+    enabled?: boolean;
+    thresholdFahrenheit?: number;
+  };
+  wind?: {
+    max: number;
+    enabled?: boolean;
+    thresholdMph?: number;
+  };
+  precipitation?: {
+    max: number;
+    enabled?: boolean;
+    thresholdPercentage?: number;
+  };
+  snow?: {
+    max: number;
+    enabled?: boolean;
+    thresholdInches?: number;
+  };
+}
+
+// Weather notification settings types
 export interface PrecipitationThresholds {
   enabled: boolean;
   thresholdPercentage: number; // Probability threshold

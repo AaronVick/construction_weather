@@ -1,8 +1,7 @@
 // src/components/weather/WeatherWidget.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import { formatDate } from '../../utils/dateUtils';
-import { WeatherWidgetForecast } from '../../utils/weatherTransforms';
 import { 
   Cloud, 
   CloudRain, 
@@ -12,23 +11,16 @@ import {
   CloudFog,
   Wind,
   Droplets,
-  MapPin
+  MapPin,
+  RefreshCw,
+  AlertTriangle
 } from 'lucide-react';
+import { CurrentWeather, ForecastDay, fetchCompleteWeatherData } from '../../services/weatherService';
 
 interface WeatherWidgetProps {
-  current: {
-    temperature: number;
-    feelsLike: number;
-    condition: string;
-    humidity: number;
-    windSpeed: number;
-    precipitation: number;
-    isRainy: boolean;
-    isSnowy: boolean;
-    icon: string;
-  } | null;
-  forecast: WeatherWidgetForecast[];
   zipCode: string;
+  className?: string;
+  showRefresh?: boolean;
 }
 
 const WeatherIcon: React.FC<{ condition: string; className?: string }> = ({ condition, className = "w-8 h-8" }) => {
@@ -51,28 +43,121 @@ const WeatherIcon: React.FC<{ condition: string; className?: string }> = ({ cond
   }
 };
 
-const WeatherWidget: React.FC<WeatherWidgetProps> = ({ current, forecast, zipCode }) => {
+const WeatherWidget: React.FC<WeatherWidgetProps> = ({ 
+  zipCode, 
+  className = '', 
+  showRefresh = true 
+}) => {
   const theme = useTheme();
   const darkMode = theme ? theme.darkMode : false;
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [current, setCurrent] = useState<CurrentWeather | null>(null);
+  const [forecast, setForecast] = useState<ForecastDay[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  
+  const fetchWeatherData = async () => {
+    if (!zipCode) {
+      setError('No ZIP code provided');
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const weatherData = await fetchCompleteWeatherData(zipCode, 3);
+      
+      setCurrent(weatherData.current);
+      setForecast(weatherData.forecast);
+    } catch (err) {
+      console.error('Error fetching weather data:', err);
+      setError('Unable to load weather data');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+  
+  // Fetch weather data on component mount
+  useEffect(() => {
+    fetchWeatherData();
+  }, [zipCode]);
+  
+  // Handle refresh button click
+  const handleRefresh = () => {
+    if (refreshing) return;
+    
+    setRefreshing(true);
+    fetchWeatherData();
+  };
+  
+  if (loading && !refreshing) {
+    return (
+      <div className={`flex flex-col h-full items-center justify-center ${className}`}>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
+        <p className="text-gray-500 dark:text-gray-400">
+          Loading weather data...
+        </p>
+      </div>
+    );
+  }
+  
+  if (error && !current) {
+    return (
+      <div className={`flex flex-col h-full items-center justify-center ${className}`}>
+        <AlertTriangle className="w-8 h-8 text-red-500 mb-4" />
+        <p className="text-red-500 dark:text-red-400 mb-2">
+          {error}
+        </p>
+        {showRefresh && (
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md hover:bg-red-200 dark:hover:bg-red-800/30 transition-colors"
+          >
+            {refreshing ? 'Refreshing...' : 'Try Again'}
+          </button>
+        )}
+      </div>
+    );
+  }
   
   if (!current) {
     return (
-      <div className="flex flex-col h-full items-center justify-center">
+      <div className={`flex flex-col h-full items-center justify-center ${className}`}>
         <Cloud className="w-12 h-12 text-gray-400 mb-2" />
         <p className="text-gray-500 dark:text-gray-400">
-          Weather data unavailable
+          No weather data available
         </p>
       </div>
     );
   }
   
   return (
-    <div className="flex flex-col h-full">
+    <div className={`flex flex-col h-full ${className}`}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-medium">Weather Forecast</h3>
-        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-          <MapPin size={14} className="mr-1" />
-          <span>{zipCode}</span>
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+            <MapPin size={14} className="mr-1" />
+            <span>{zipCode}</span>
+          </div>
+          
+          {showRefresh && (
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Refresh weather data"
+            >
+              <RefreshCw 
+                size={16} 
+                className={`text-gray-500 dark:text-gray-400 ${refreshing ? 'animate-spin' : ''}`} 
+              />
+            </button>
+          )}
         </div>
       </div>
       
@@ -138,7 +223,7 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ current, forecast, zipCod
                 </span>
                 <div className={`ml-2 w-8 h-1 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700`}>
                   <div
-                    style={{ width: `${day.precipitation}%` }}
+                    style={{ width: `${Math.min(100, day.precipitation)}%` }}
                     className={`h-full bg-blue-500 dark:bg-blue-400`}
                   ></div>
                 </div>
