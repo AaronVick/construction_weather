@@ -1,5 +1,10 @@
-const fs = require('fs');
-const path = require('path');
+// .github/scripts/check-sendgrid-status.js
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function checkSendGridStatus() {
   console.log('Checking SendGrid configuration...');
@@ -25,13 +30,8 @@ function checkSendGridStatus() {
     }
   };
   
-  // Output to GitHub Actions
-  console.log(`::set-output name=status::${status.sendgrid.status}`);
-  console.log(`::set-output name=message::${status.sendgrid.message}`);
-  console.log(`::set-output name=timestamp::${status.timestamp}`);
-  
   // Write to file for more detailed output
-  fs.writeFileSync('sendgrid-status.json', JSON.stringify(status, null, 2));
+  fs.writeFileSync(path.join(process.cwd(), 'sendgrid-status.json'), JSON.stringify(status, null, 2));
   console.log('Status check completed and saved to sendgrid-status.json');
   
   // Output full status to console

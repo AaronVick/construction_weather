@@ -1,5 +1,11 @@
-const fs = require('fs');
-const sgMail = require('@sendgrid/mail');
+// .github/scripts/send-test-email.js
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import sgMail from '@sendgrid/mail';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function sendTestEmail() {
   console.log('Starting email send process...');
@@ -69,11 +75,7 @@ async function sendTestEmail() {
     };
     
     // Save result to file
-    fs.writeFileSync('email-result.json', JSON.stringify(result, null, 2));
-    
-    // Output to GitHub Actions
-    console.log(`::set-output name=status::success`);
-    console.log(`::set-output name=message::Email sent successfully to ${recipients.join(', ')}`);
+    fs.writeFileSync(path.join(process.cwd(), 'email-result.json'), JSON.stringify(result, null, 2));
     
     console.log('Email sent successfully!');
     return true;
@@ -90,11 +92,7 @@ async function sendTestEmail() {
     };
     
     // Save error result to file
-    fs.writeFileSync('email-result.json', JSON.stringify(errorResult, null, 2));
-    
-    // Output to GitHub Actions
-    console.log(`::set-output name=status::error`);
-    console.log(`::set-output name=message::${error.message}`);
+    fs.writeFileSync(path.join(process.cwd(), 'email-result.json'), JSON.stringify(errorResult, null, 2));
     
     return false;
   }
