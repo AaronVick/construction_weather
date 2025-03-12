@@ -71,60 +71,93 @@ interface EmailTestResult {
 // Function to trigger a GitHub workflow via our API
 const triggerGitHubWorkflow = async (
   workflowFileName: string, 
-  inputs: Record<string, string>,
-  token: string
+  inputs: Record<string, string>
 ): Promise<{ runId: number, repository: string }> => {
-  const response = await fetch('/api/github/trigger-workflow', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({
-      workflow: workflowFileName,
-      inputs,
-      ref: 'main'
-    })
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(`Failed to trigger workflow: ${errorData.error || response.statusText}`);
-  }
-
-  const data = await response.json();
-  if (!data.runId) {
-    throw new Error('Workflow was triggered but no run ID was returned');
-  }
+  console.log(`Triggering GitHub workflow ${workflowFileName}...`);
   
-  return { 
-    runId: data.runId,
-    repository: data.repoPath || 'AaronVick/construction_weather'
-  };
+  try {
+    const response = await fetch('/api/github/trigger-workflow', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        workflow: workflowFileName,
+        inputs,
+        ref: 'main'
+      })
+    });
+
+    console.log(`API response status: ${response.status}`);
+    
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('Non-JSON response:', text);
+      throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}...`);
+    }
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('Error response from API:', data);
+      throw new Error(data.error || data.message || 'Failed to trigger workflow');
+    }
+
+    console.log('Workflow trigger response:', data);
+    
+    if (!data.runId) {
+      throw new Error('Workflow was triggered but no run ID was returned');
+    }
+    
+    return { 
+      runId: data.runId,
+      repository: data.repoPath || 'AaronVick/construction_weather'
+    };
+  } catch (error) {
+    console.error('Error in triggerGitHubWorkflow:', error);
+    throw error;
+  }
 };
 
 // Function to check the status of a GitHub workflow run
-const checkWorkflowRunStatus = async (runId: number, token: string): Promise<WorkflowRunStatus> => {
-  const response = await fetch(`/api/github/workflow-status?runId=${runId}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`
+const checkWorkflowRunStatus = async (runId: number): Promise<WorkflowRunStatus> => {
+  console.log(`Checking status of workflow run ${runId}...`);
+  
+  try {
+    const response = await fetch(`/api/github/workflow-status?runId=${runId}`);
+
+    console.log(`Status API response status: ${response.status}`);
+    
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('Non-JSON response:', text);
+      throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}...`);
     }
-  });
 
-  if (!response.ok) {
-    throw new Error(`Failed to check workflow status: ${response.statusText}`);
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('Error response from status API:', data);
+      throw new Error(data.error || data.message || 'Failed to check workflow status');
+    }
+
+    console.log('Workflow status response:', data);
+    
+    return {
+      id: data.id,
+      name: data.name,
+      status: data.status || 'unknown',
+      conclusion: data.conclusion,
+      html_url: data.html_url,
+      created_at: data.created_at,
+      repository: data.repository
+    };
+  } catch (error) {
+    console.error('Error in checkWorkflowRunStatus:', error);
+    throw error;
   }
-
-  const data = await response.json();
-  return {
-    id: data.id,
-    name: data.name,
-    status: data.status || 'unknown',
-    conclusion: data.conclusion,
-    html_url: data.html_url,
-    created_at: data.created_at,
-    repository: data.repository
-  };
 };
 
 const EmailTesting: React.FC = () => {
@@ -169,39 +202,27 @@ const EmailTesting: React.FC = () => {
     };
   }, [pollingInterval]);
   
-  // Function to get ID token
-  const getIdToken = async () => {
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-    return await user.getIdToken();
-  };
-  
   // Function to check SendGrid status using GitHub workflow
   const checkSendGridStatus = async () => {
     setStatusLoading(true);
     setError(null);
     
     try {
-      // Get Firebase ID token for authentication
-      const token = await getIdToken();
-      
       // Trigger the GitHub workflow to check SendGrid status
       console.log('Triggering SendGrid status check workflow...');
       const { runId, repository } = await triggerGitHubWorkflow(
         STATUS_WORKFLOW,
-        { requester: user?.email || 'unknown' },
-        token
+        { requester: user?.email || 'unknown' }
       );
       
-      console.log(`Workflow run started with ID: ${runId}`);
+      console.log(`Workflow run started with ID: ${runId}, repo: ${repository}`);
       setActiveWorkflowRunId(runId);
       setRepoPath(repository);
       
       // Poll for workflow completion
       const checkInterval = setInterval(async () => {
         try {
-          const status = await checkWorkflowRunStatus(runId, token);
+          const status = await checkWorkflowRunStatus(runId);
           console.log('Workflow status:', status);
           
           if (status.status === 'completed') {
@@ -262,9 +283,6 @@ const EmailTesting: React.FC = () => {
     console.log('Submitting email test form...');
     
     try {
-      // Get Firebase ID token for authentication
-      const token = await getIdToken();
-      
       // Parse recipients
       const recipients = data.recipients
         .split(',')
@@ -289,18 +307,17 @@ const EmailTesting: React.FC = () => {
       // Trigger the GitHub workflow to send test email
       const { runId, repository } = await triggerGitHubWorkflow(
         EMAIL_WORKFLOW,
-        workflowInputs,
-        token
+        workflowInputs
       );
       
-      console.log(`Email workflow run started with ID: ${runId}`);
+      console.log(`Email workflow run started with ID: ${runId}, repo: ${repository}`);
       setActiveWorkflowRunId(runId);
       setRepoPath(repository);
       
       // Poll for workflow completion
       const checkInterval = setInterval(async () => {
         try {
-          const status = await checkWorkflowRunStatus(runId, token);
+          const status = await checkWorkflowRunStatus(runId);
           console.log('Email workflow status:', status);
           
           if (status.status === 'completed') {
@@ -583,36 +600,36 @@ const EmailTesting: React.FC = () => {
               </Typography>
               <Typography variant="body2">
                 Conclusion: {testResult.workflowRun.conclusion || 'N/A'}
-                </Typography>
-                <Typography variant="body2">
-                  Created: {format(new Date(testResult.workflowRun.created_at), 'MMM d, yyyy h:mm a')}
-                </Typography>
-                <Box mt={1}>
-                  <Link 
-                    href={testResult.workflowRun.html_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    display="flex"
-                    alignItems="center"
-                  >
-                    <GitHubIcon fontSize="small" sx={{ mr: 0.5 }} />
-                    <Typography variant="body2">View workflow details on GitHub</Typography>
-                  </Link>
-                </Box>
+              </Typography>
+              <Typography variant="body2">
+                Created: {format(new Date(testResult.workflowRun.created_at), 'MMM d, yyyy h:mm a')}
+              </Typography>
+              <Box mt={1}>
+                <Link 
+                  href={testResult.workflowRun.html_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  display="flex"
+                  alignItems="center"
+                >
+                  <GitHubIcon fontSize="small" sx={{ mr: 0.5 }} />
+                  <Typography variant="body2">View workflow details on GitHub</Typography>
+                </Link>
               </Box>
-            )}
-          </Paper>
-        )}
-        
-        {/* Success Snackbar */}
-        <Snackbar
-          open={successSnackbar}
-          autoHideDuration={6000}
-          onClose={() => setSuccessSnackbar(false)}
-          message="Test email sent successfully"
-        />
-      </Box>
-    );
-  };
-  
-  export default EmailTesting;
+            </Box>
+          )}
+        </Paper>
+      )}
+      
+      {/* Success Snackbar */}
+      <Snackbar
+        open={successSnackbar}
+        autoHideDuration={6000}
+        onClose={() => setSuccessSnackbar(false)}
+        message="Test email sent successfully"
+      />
+    </Box>
+  );
+};
+
+export default EmailTesting;
