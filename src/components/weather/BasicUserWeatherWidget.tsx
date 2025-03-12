@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import { formatDate } from '../../utils/dateUtils';
-import { CurrentWeather, ForecastDay, WeatherAlert } from '../../services/weatherService';
+import { CurrentWeather, HourlyForecast } from '../../services/weatherService';
+import { ForecastDay, WeatherAlert } from '../../types/weather';
 import { 
   Cloud, 
   CloudRain, 
@@ -194,7 +195,7 @@ const BasicUserWeatherWidget: React.FC<BasicUserWeatherWidgetProps> = ({
         {showHourlyForecast && forecast.length > 0 && forecast[0].hourly && (
           <div className="mt-4">
             <HourlyForecastDisplay 
-              hourlyData={forecast[0].hourly.slice(0, 24)} 
+              hourlyData={convertToHourlyForecast(forecast[0].hourly.slice(0, 24))} 
               thresholds={{
                 rain: { enabled: true, thresholdPercentage: 50 },
                 snow: { enabled: true, thresholdInches: 1 },
@@ -224,7 +225,7 @@ const BasicUserWeatherWidget: React.FC<BasicUserWeatherWidgetProps> = ({
                       condition={day.condition} 
                       className={`w-8 h-8 ${
                         day.precipitation > 50 ? 'text-blue-500' : 
-                        day.snowfall > 0 ? 'text-indigo-400' : 
+                        (day.snowfall ?? 0) > 0 ? 'text-indigo-400' : 
                         'text-gray-500 dark:text-gray-400'
                       }`} 
                     />
@@ -262,7 +263,7 @@ const BasicUserWeatherWidget: React.FC<BasicUserWeatherWidgetProps> = ({
                     <AlertTriangle size={12} className="mr-1" />
                     <span>
                       {day.precipitation > 50 && 'High chance of rain. '}
-                      {day.snowfall > 0 && `Snow expected (${day.snowfall}"). `}
+                      {(day.snowfall ?? 0) > 0 && `Snow expected (${day.snowfall ?? 0}"). `}
                       {day.windSpeed > 20 && `High winds (${day.windSpeed} mph). `}
                       {day.temperature.min < 32 && 'Freezing temperatures. '}
                     </span>
@@ -275,6 +276,24 @@ const BasicUserWeatherWidget: React.FC<BasicUserWeatherWidgetProps> = ({
       </Card>
     </div>
   );
+};
+
+// Helper function to convert API hourly data to HourlyForecast format
+const convertToHourlyForecast = (hourlyData: any[]): HourlyForecast[] => {
+  if (!hourlyData || !Array.isArray(hourlyData)) return [];
+  
+  return hourlyData.map(hour => ({
+    time: hour.time || new Date().toISOString(),
+    temp: hour.temp_f || hour.temp || 0,
+    feelsLike: hour.feelslike_f || hour.feels_like || 0,
+    condition: hour.condition?.text || '',
+    chanceOfRain: hour.chance_of_rain || 0,
+    chanceOfSnow: hour.chance_of_snow || 0,
+    windSpeed: hour.wind_mph || 0,
+    willRain: hour.will_it_rain === 1 || false,
+    willSnow: hour.will_it_snow === 1 || false,
+    icon: hour.condition?.icon || ''
+  }));
 };
 
 export default BasicUserWeatherWidget;

@@ -1,5 +1,10 @@
 // src/services/weatherService.ts
-import { WeatherWidgetForecast } from '../types/weather';
+import { 
+  WeatherWidgetForecast, 
+  ForecastDay, 
+  WeatherAlert, 
+  CurrentWeather as WeatherCurrentWeather 
+} from '../types/weather';
 
 // Types
 export interface CurrentWeather {
@@ -12,30 +17,6 @@ export interface CurrentWeather {
   isRainy: boolean;
   isSnowy: boolean;
   icon: string;
-}
-
-export interface ForecastDay {
-  date: string;
-  temperature: {
-    min: number;
-    max: number;
-  };
-  condition: string;
-  precipitation: number; // percentage chance of rain
-  humidity: number;
-  windSpeed: number;
-  snowfall?: number;
-  icon: string;
-  hourly?: any[]; // For hourly forecast data when available
-}
-
-export interface WeatherAlert {
-  headline: string;
-  severity: string;
-  event: string;
-  effective: string;
-  expires: string;
-  description: string;
 }
 
 export interface WeatherData {
@@ -301,6 +282,69 @@ function transformWeatherAlerts(data: any): WeatherAlert[] {
 /**
  * Transform weather data for the WeatherWidget component
  */
+export interface WeatherForecastResponse {
+  forecast: ForecastDay[];
+  alerts: WeatherAlert[];
+}
+
+export interface HourlyForecast {
+  time: string;
+  temp: number;
+  feelsLike: number;
+  condition: string;
+  chanceOfRain: number;
+  chanceOfSnow: number;
+  windSpeed: number;
+  willRain: boolean;
+  willSnow: boolean;
+  icon: string;
+}
+
+export interface WeatherNotificationCheckResult {
+  shouldSendNotification: boolean;
+  conditions: string[];
+  weatherDescription: string;
+  weatherData?: {
+    current?: CurrentWeather | null;
+    forecast?: ForecastDay | null;
+    precipitationProbability?: number;
+    windSpeed?: number;
+  };
+}
+
+/**
+ * Checks weather conditions for a jobsite and determines if notifications should be sent
+ * @param jobsiteId The ID of the jobsite to check
+ * @returns Result object with notification status and weather data
+ */
+export async function checkWeatherForNotifications(jobsiteId: string): Promise<WeatherNotificationCheckResult> {
+  try {
+    // In a real implementation, we would:
+    // 1. Get the jobsite data from Firestore
+    // 2. Get the jobsite's location (zip code, coordinates)
+    // 3. Get the jobsite's weather settings and thresholds
+    // 4. Fetch weather data for the location
+    // 5. Check if any thresholds are exceeded
+    // 6. Return the result
+
+    // For now, we'll return a placeholder implementation
+    return {
+      shouldSendNotification: false,
+      conditions: [],
+      weatherDescription: "Weather conditions normal",
+      weatherData: {
+        current: null,
+        forecast: null,
+        precipitationProbability: 0,
+        windSpeed: 0
+      }
+    };
+  } catch (error) {
+    console.error(`Error checking weather for notifications (jobsite ${jobsiteId}):`, error);
+    throw error;
+  }
+}
+
 export function transformForWeatherWidget(data: any): {
   current: CurrentWeather | null;
   forecast: WeatherWidgetForecast[];

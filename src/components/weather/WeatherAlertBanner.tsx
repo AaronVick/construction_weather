@@ -1,7 +1,7 @@
 // src/components/weather/WeatherAlertBanner.tsx
 import React, { useState } from 'react';
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
-import { WeatherAlert } from '../../services/weatherService';
+import { WeatherAlert } from '../../types/weather';
 
 interface WeatherAlertBannerProps {
   alerts: WeatherAlert[];
@@ -110,7 +110,7 @@ const WeatherAlertBanner: React.FC<WeatherAlertBannerProps> = ({
                     {alert.event}
                   </h4>
                   <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                    {alert.desc}
+                    {alert.description}
                   </p>
                   <div className="flex flex-wrap gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
                     <span>
