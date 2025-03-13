@@ -1,0 +1,131 @@
+name: Admin Weather API Test
+
+on:
+  # Allow manual trigger only
+  workflow_dispatch:
+    inputs:
+      location:
+        description: 'Location to test (zipcode, city name, or coordinates)'
+        required: true
+        default: '90210'
+      debug:
+        description: 'Enable debug mode with verbose logging'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  test-weather-api:
+    name: Test WeatherAPI Connection
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Test Weather API
+        id: api-test
+        env:
+          WEATHER_API: ${{ secrets.WEATHER_API }}
+          DEBUG_MODE: ${{ inputs.debug }}
+          TEST_LOCATION: ${{ inputs.location }}
+        run: |
+          echo "::group::API Test Configuration"
+          echo "Testing WeatherAPI connection..."
+          echo "Test location: $TEST_LOCATION"
+          
+          # Print partial API key for debugging (safely)
+          if [ -n "$WEATHER_API" ]; then
+            API_KEY_LENGTH=${#WEATHER_API}
+            API_KEY_START=${WEATHER_API:0:4}
+            API_KEY_END=${WEATHER_API: -4}
+            echo "API key length: $API_KEY_LENGTH"
+            echo "API key format: ${API_KEY_START}...${API_KEY_END}"
+          else
+            echo "ERROR: WEATHER_API environment variable is not set"
+            exit 1
+          fi
+          echo "::endgroup::"
+          
+          echo "::group::API Request"
+          # Make the API request
+          echo "Sending request to WeatherAPI.com..."
+          RESPONSE=$(curl -s "https://api.weatherapi.com/v1/forecast.json?key=${WEATHER_API}&q=${TEST_LOCATION}&days=1&aqi=no&alerts=yes")
+          echo "::endgroup::"
+          
+          echo "::group::API Response"
+          # Check if the response contains an error
+          if echo "$RESPONSE" | grep -q "error"; then
+            echo "❌ API Error Response:"
+            echo "$RESPONSE" | jq '.'
+            echo "api_success=false" >> $GITHUB_OUTPUT
+            echo "api_error=$(echo $RESPONSE | jq -r '.error.message')" >> $GITHUB_OUTPUT
+            exit 1
+          else
+            echo "✅ API test successful! Response:"
+            echo "$RESPONSE" | jq -c '{
+              location: .location.name,
+              region: .location.region, 
+              country: .location.country,
+              current_temp_f: .current.temp_f,
+              condition: .current.condition.text
+            }'
+            
+            # Extract key information for output
+            LOCATION=$(echo $RESPONSE | jq -r '.location.name')
+            REGION=$(echo $RESPONSE | jq -r '.location.region')
+            COUNTRY=$(echo $RESPONSE | jq -r '.location.country')
+            TEMP=$(echo $RESPONSE | jq -r '.current.temp_f')
+            CONDITION=$(echo $RESPONSE | jq -r '.current.condition.text')
+            
+            # Save to outputs
+            echo "api_success=true" >> $GITHUB_OUTPUT
+            echo "location=$LOCATION" >> $GITHUB_OUTPUT
+            echo "region=$REGION" >> $GITHUB_OUTPUT
+            echo "country=$COUNTRY" >> $GITHUB_OUTPUT
+            echo "temperature=$TEMP" >> $GITHUB_OUTPUT
+            echo "condition=$CONDITION" >> $GITHUB_OUTPUT
+          fi
+          echo "::endgroup::"
+      
+      - name: Create Summary
+        if: always()
+        env:
+          API_SUCCESS: ${{ steps.api-test.outputs.api_success }}
+          API_ERROR: ${{ steps.api-test.outputs.api_error }}
+          LOCATION: ${{ steps.api-test.outputs.location }}
+          REGION: ${{ steps.api-test.outputs.region }}
+          COUNTRY: ${{ steps.api-test.outputs.country }}
+          TEMPERATURE: ${{ steps.api-test.outputs.temperature }}
+          CONDITION: ${{ steps.api-test.outputs.condition }}
+        run: |
+          echo "## Weather API Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Test completed at: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "Test location: ${{ inputs.location }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$API_SUCCESS" == "true" ]; then
+            echo "### ✅ Weather API Connection Successful" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Location:** $LOCATION, $REGION, $COUNTRY" >> $GITHUB_STEP_SUMMARY
+            echo "**Current Temperature:** ${TEMPERATURE}°F" >> $GITHUB_STEP_SUMMARY
+            echo "**Conditions:** $CONDITION" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Weather API Connection Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Error:** $API_ERROR" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*This test checks if your WeatherAPI.com integration is working correctly.*" >> $GITHUB_STEP_SUMMARY
