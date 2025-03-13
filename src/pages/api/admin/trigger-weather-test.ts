@@ -37,7 +37,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       conditionOverrides,
       sendTestEmail,
       testEmailRecipients,
-      dryRun
+      dryRun,
+      debug
     } = req.body;
 
     // Validate required fields
@@ -55,7 +56,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       send_test_email: sendTestEmail,
       test_email_recipients: testEmailRecipients,
       dry_run: dryRun,
-      debug: true // Enable debug mode for testing
+      debug: debug
     };
 
     console.log('Triggering workflow with inputs:', workflowInputs);
@@ -71,8 +72,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('Workflow dispatch response:', data);
 
-    // The response from createWorkflowDispatch doesn't include the run ID
-    // We need to get the latest workflow run
+    // Get the latest workflow run
     const { data: runs } = await octokit.rest.actions.listWorkflowRuns({
       owner: GITHUB_ORG,
       repo: GITHUB_REPO,
@@ -85,7 +85,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json({
       message: 'Weather test workflow triggered successfully',
-      workflowRunId: latestRun.id
+      workflowRunId: latestRun.id,
+      htmlUrl: latestRun.html_url,
+      status: latestRun.status
     });
   } catch (error) {
     console.error('Error triggering weather test workflow:', error);

@@ -50,8 +50,11 @@ const WeatherTesting: React.FC = () => {
     try {
       const token = await getIdToken();
       
+      // Use Vite's import.meta.env for environment variables
+      const baseUrl = import.meta.env.VITE_API_URL || '';
+      
       // Trigger the GitHub workflow
-      const response = await fetch('/api/admin/trigger-weather-test', {
+      const response = await fetch(`${baseUrl}/api/admin/trigger-weather-test`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
