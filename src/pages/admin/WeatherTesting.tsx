@@ -12,27 +12,33 @@ import {
   TextField,
   Link
 } from '@mui/material';
-import { useFirebaseAuth } from '../../hooks/useFirebaseAuth';
 
 interface WeatherTestFormData {
   zipcode: string;
 }
 
+interface WeatherTestResult {
+  success: boolean;
+  message: string;
+  location?: string;
+  region?: string;
+  country?: string;
+  temperature?: number;
+  condition?: string;
+  workflowTriggered?: boolean;
+  workflow?: {
+    workflowRunId: string;
+    workflowRunUrl: string;
+    status: string;
+  };
+  error?: string;
+  details?: any;
+}
+
 const WeatherTesting: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<any>(null);
-  
-  // Get auth context
-  const { user } = useFirebaseAuth();
-  
-  // Function to get ID token
-  const getIdToken = async () => {
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-    return await user.getIdToken();
-  };
+  const [result, setResult] = useState<WeatherTestResult | null>(null);
   
   // Initialize form
   const { register, handleSubmit, formState: { errors } } = useForm<WeatherTestFormData>({
@@ -49,9 +55,6 @@ const WeatherTesting: React.FC = () => {
     setResult(null);
     
     try {
-      const token = await getIdToken();
-      console.log('Authentication token obtained');
-      
       // Use Vite's import.meta.env for environment variables
       const baseUrl = import.meta.env.VITE_API_URL || '';
       const apiUrl = `${baseUrl}/api/simple-weather-test?zip=${data.zipcode}`;
@@ -60,18 +63,17 @@ const WeatherTesting: React.FC = () => {
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         }
       });
       
       console.log('Response status:', response.status);
       
-      const responseData = await response.json();
+      const responseData: WeatherTestResult = await response.json();
       console.log('Response data:', responseData);
       
       if (!response.ok || !responseData.success) {
-        throw new Error(responseData.error || responseData.message || 'Failed to trigger weather test');
+        throw new Error(responseData.error || responseData.message || 'Failed to test weather API');
       }
       
       setResult(responseData);
@@ -88,7 +90,7 @@ const WeatherTesting: React.FC = () => {
     <Box mb={4}>
       <Typography variant="h4" gutterBottom>Weather API Testing</Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
-        Test the weather API connection by triggering a GitHub workflow test.
+        Test if the WeatherAPI.com integration is working correctly.
       </Typography>
       
       <Paper sx={{ p: 3 }}>
@@ -122,7 +124,7 @@ const WeatherTesting: React.FC = () => {
                   disabled={loading}
                   startIcon={loading ? <CircularProgress size={20} /> : null}
                 >
-                  {loading ? 'Triggering Test...' : 'Test Weather API'}
+                  {loading ? 'Testing API...' : 'Test Weather API'}
                 </Button>
               </Box>
             </Grid>
@@ -135,38 +137,56 @@ const WeatherTesting: React.FC = () => {
             )}
             
             {/* Success Message */}
-            {result && (
+            {result && result.success && (
               <Grid item xs={12}>
                 <Alert severity="success">
                   {result.message}
                 </Alert>
+                
                 <Paper sx={{ p: 2, mt: 2 }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    GitHub Workflow Details:
+                  <Typography variant="h6" gutterBottom>
+                    Current Weather Data
                   </Typography>
+                  
                   <Typography variant="body1">
-                    Status: {result.status || 'Pending'}
+                    <strong>Location:</strong> {result.location}, {result.region}, {result.country}
                   </Typography>
+                  
                   <Typography variant="body1">
-                    Location Tested: {result.location || result.locationTested || "Pending..."}
+                    <strong>Temperature:</strong> {result.temperature}°F
                   </Typography>
-                  {result.workflowRunUrl && (
-                    <Box mt={1}>
-                      <Button
-                        variant="outlined"
-                        color="primary"
-                        component="a"
-                        href={result.workflowRunUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        View Test Results on GitHub
-                      </Button>
-                    </Box>
+                  
+                  <Typography variant="body1">
+                    <strong>Conditions:</strong> {result.condition}
+                  </Typography>
+                  
+                  {result.workflowTriggered && result.workflow && (
+                    <>
+                      <Box mt={3} mb={1}>
+                        <Typography variant="h6">
+                          GitHub Workflow
+                        </Typography>
+                        
+                        <Typography variant="body1">
+                          <strong>Status:</strong> {result.workflow.status}
+                        </Typography>
+                        
+                        <Box mt={1}>
+                          <Button
+                            variant="outlined"
+                            color="primary"
+                            component="a"
+                            href={result.workflow.workflowRunUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            size="small"
+                          >
+                            View on GitHub
+                          </Button>
+                        </Box>
+                      </Box>
+                    </>
                   )}
-                  <Typography variant="body2" color="text.secondary" mt={2}>
-                    Note: It may take a few moments for the workflow to start and complete. Check GitHub Actions for detailed results.
-                  </Typography>
                 </Paper>
               </Grid>
             )}
