@@ -2,12 +2,11 @@
 
 // Form data types
 export interface WeatherTestFormData {
-  locationType: 'zipcode' | 'address' | 'coordinates' | 'jobsite';
+  locationType: 'zipcode' | 'address' | 'coordinates';
   zipcode?: string;
   address?: string;
   latitude?: number;
   longitude?: number;
-  jobsiteId?: string;
   testDate: Date;
   overrideConditions: boolean;
   conditions: {
