@@ -17,10 +17,16 @@ interface WeatherTestFormData {
   zipcode: string;
 }
 
+interface WeatherResponse {
+  success: boolean;
+  message: string;
+  data: any;
+}
+
 const WeatherTesting: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [workflowStatus, setWorkflowStatus] = useState<any>(null);
+  const [weatherData, setWeatherData] = useState<any>(null);
   
   // Get auth context
   const { user } = useFirebaseAuth();
@@ -34,7 +40,7 @@ const WeatherTesting: React.FC = () => {
   };
   
   // Initialize form
-  const { control, handleSubmit, formState: { errors } } = useForm<WeatherTestFormData>({
+  const { register, handleSubmit, formState: { errors } } = useForm<WeatherTestFormData>({
     defaultValues: {
       zipcode: ''
     }
@@ -45,7 +51,7 @@ const WeatherTesting: React.FC = () => {
     console.log('Testing weather API for zipcode:', data.zipcode);
     setLoading(true);
     setError(null);
-    setWorkflowStatus(null);
+    setWeatherData(null);
     
     try {
       const token = await getIdToken();
@@ -53,35 +59,28 @@ const WeatherTesting: React.FC = () => {
       // Use Vite's import.meta.env for environment variables
       const baseUrl = import.meta.env.VITE_API_URL || '';
       
-      // Trigger the GitHub workflow
-      const response = await fetch(`${baseUrl}/api/admin/trigger-weather-test`, {
+      // Make a direct request to our simple weather test API
+      const response = await fetch(`${baseUrl}/api/weather-test`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          location: {
-            type: 'zipcode',
-            zipcode: data.zipcode
-          },
-          testDate: new Date().toISOString(),
-          overrideConditions: false,
-          dryRun: true,
-          debug: true
+          zipcode: data.zipcode
         })
       });
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to trigger weather test');
+        throw new Error(errorData.error || 'Failed to test weather API');
       }
       
-      const result = await response.json();
-      setWorkflowStatus(result);
+      const result: WeatherResponse = await response.json();
+      setWeatherData(result.data);
       
     } catch (error) {
-      console.error('Error triggering weather test:', error);
+      console.error('Error testing weather API:', error);
       setError(error instanceof Error ? error.message : 'An unknown error occurred');
     } finally {
       setLoading(false);
@@ -92,7 +91,7 @@ const WeatherTesting: React.FC = () => {
     <Box mb={4}>
       <Typography variant="h4" gutterBottom>Weather API Testing</Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
-        Test if the weather API is working by triggering a GitHub workflow test.
+        Test if the weather API is working by checking current conditions for a location.
       </Typography>
       
       <Paper sx={{ p: 3 }}>
@@ -103,7 +102,7 @@ const WeatherTesting: React.FC = () => {
               <TextField
                 fullWidth
                 label="Zip Code"
-                {...control.register('zipcode', {
+                {...register('zipcode', {
                   required: 'Zip code is required',
                   pattern: {
                     value: /^\d{5}(-\d{4})?$/,
@@ -126,7 +125,7 @@ const WeatherTesting: React.FC = () => {
                   disabled={loading}
                   startIcon={loading ? <CircularProgress size={20} /> : null}
                 >
-                  {loading ? 'Triggering Test...' : 'Trigger Weather API Test'}
+                  {loading ? 'Testing API...' : 'Test Weather API'}
                 </Button>
               </Box>
             </Grid>
@@ -138,20 +137,86 @@ const WeatherTesting: React.FC = () => {
               </Grid>
             )}
             
-            {/* Workflow Status */}
-            {workflowStatus && (
+            {/* Weather Data */}
+            {weatherData && (
               <Grid item xs={12}>
                 <Alert severity="success">
-                  Weather test workflow triggered successfully!
+                  Weather API test successful!
                 </Alert>
+                
                 <Paper sx={{ p: 2, mt: 2 }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    Workflow Details:
-                  </Typography>
-                  <pre style={{ overflow: 'auto' }}>
-                    {JSON.stringify(workflowStatus, null, 2)}
-                  </pre>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="h6" gutterBottom>
+                        Location: {weatherData.location.name}, {weatherData.location.region}
+                      </Typography>
+                      
+                      <Typography variant="subtitle1" gutterBottom>
+                        Current Conditions:
+                      </Typography>
+                      
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        {weatherData.current.condition.icon && (
+                          <img 
+                            src={`https:${weatherData.current.condition.icon}`} 
+                            alt={weatherData.current.condition.text}
+                            width={64}
+                            height={64}
+                          />
+                        )}
+                        <Box sx={{ ml: 2 }}>
+                          <Typography variant="body1">
+                            {weatherData.current.condition.text}
+                          </Typography>
+                          <Typography variant="h5">
+                            {weatherData.current.temp_f}°F / {weatherData.current.temp_c}°C
+                          </Typography>
+                        </Box>
+                      </Box>
+                      
+                      <Typography variant="body2">
+                        Humidity: {weatherData.current.humidity}%
+                      </Typography>
+                      <Typography variant="body2">
+                        Wind: {weatherData.current.wind_mph} mph ({weatherData.current.wind_dir})
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="subtitle1" gutterBottom>
+                        Forecast for Today:
+                      </Typography>
+                      
+                      <Typography variant="body2">
+                        High: {weatherData.forecast.forecastday[0].day.maxtemp_f}°F
+                      </Typography>
+                      <Typography variant="body2">
+                        Low: {weatherData.forecast.forecastday[0].day.mintemp_f}°F
+                      </Typography>
+                      <Typography variant="body2">
+                        Chance of Rain: {weatherData.forecast.forecastday[0].day.daily_chance_of_rain}%
+                      </Typography>
+                      
+                      {weatherData.alerts && weatherData.alerts.alert && weatherData.alerts.alert.length > 0 && (
+                        <Alert severity="warning" sx={{ mt: 2 }}>
+                          {weatherData.alerts.alert.length} weather alert(s) active
+                        </Alert>
+                      )}
+                    </Grid>
+                  </Grid>
                 </Paper>
+                
+                {/* API Response Details (collapsed by default) */}
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Full API Response:
+                  </Typography>
+                  <Paper sx={{ p: 2, maxHeight: '300px', overflow: 'auto' }}>
+                    <pre style={{ margin: 0 }}>
+                      {JSON.stringify(weatherData, null, 2)}
+                    </pre>
+                  </Paper>
+                </Box>
               </Grid>
             )}
           </Grid>
@@ -162,3 +227,169 @@ const WeatherTesting: React.FC = () => {
 };
 
 export default WeatherTesting;
+
+
+// // src/pages/admin/WeatherTesting.tsx
+// import React, { useState } from 'react';
+// import { useForm } from 'react-hook-form';
+// import { 
+//   Box, 
+//   Button, 
+//   CircularProgress, 
+//   Grid, 
+//   Paper, 
+//   Typography,
+//   Alert,
+//   TextField
+// } from '@mui/material';
+// import { useFirebaseAuth } from '../../hooks/useFirebaseAuth';
+
+// interface WeatherTestFormData {
+//   zipcode: string;
+// }
+
+// const WeatherTesting: React.FC = () => {
+//   const [loading, setLoading] = useState<boolean>(false);
+//   const [error, setError] = useState<string | null>(null);
+//   const [workflowStatus, setWorkflowStatus] = useState<any>(null);
+  
+//   // Get auth context
+//   const { user } = useFirebaseAuth();
+  
+//   // Function to get ID token
+//   const getIdToken = async () => {
+//     if (!user) {
+//       throw new Error('User not authenticated');
+//     }
+//     return await user.getIdToken();
+//   };
+  
+//   // Initialize form
+//   const { control, handleSubmit, formState: { errors } } = useForm<WeatherTestFormData>({
+//     defaultValues: {
+//       zipcode: ''
+//     }
+//   });
+
+//   // Handle form submission
+//   const onSubmit = async (data: WeatherTestFormData) => {
+//     console.log('Testing weather API for zipcode:', data.zipcode);
+//     setLoading(true);
+//     setError(null);
+//     setWorkflowStatus(null);
+    
+//     try {
+//       const token = await getIdToken();
+      
+//       // Use Vite's import.meta.env for environment variables
+//       const baseUrl = import.meta.env.VITE_API_URL || '';
+      
+//       // Trigger the GitHub workflow
+//       const response = await fetch(`${baseUrl}/api/admin/trigger-weather-test`, {
+//         method: 'POST',
+//         headers: {
+//           'Content-Type': 'application/json',
+//           'Authorization': `Bearer ${token}`
+//         },
+//         body: JSON.stringify({
+//           location: {
+//             type: 'zipcode',
+//             zipcode: data.zipcode
+//           },
+//           testDate: new Date().toISOString(),
+//           overrideConditions: false,
+//           dryRun: true,
+//           debug: true
+//         })
+//       });
+      
+//       if (!response.ok) {
+//         const errorData = await response.json();
+//         throw new Error(errorData.error || 'Failed to trigger weather test');
+//       }
+      
+//       const result = await response.json();
+//       setWorkflowStatus(result);
+      
+//     } catch (error) {
+//       console.error('Error triggering weather test:', error);
+//       setError(error instanceof Error ? error.message : 'An unknown error occurred');
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+  
+//   return (
+//     <Box mb={4}>
+//       <Typography variant="h4" gutterBottom>Weather API Testing</Typography>
+//       <Typography variant="body1" color="text.secondary" paragraph>
+//         Test if the weather API is working by triggering a GitHub workflow test.
+//       </Typography>
+      
+//       <Paper sx={{ p: 3 }}>
+//         <form onSubmit={handleSubmit(onSubmit)}>
+//           <Grid container spacing={3}>
+//             {/* Zip Code Input */}
+//             <Grid item xs={12} md={6}>
+//               <TextField
+//                 fullWidth
+//                 label="Zip Code"
+//                 {...control.register('zipcode', {
+//                   required: 'Zip code is required',
+//                   pattern: {
+//                     value: /^\d{5}(-\d{4})?$/,
+//                     message: 'Please enter a valid zip code'
+//                   }
+//                 })}
+//                 error={!!errors.zipcode}
+//                 helperText={errors.zipcode?.message}
+//               />
+//             </Grid>
+            
+//             {/* Submit Button */}
+//             <Grid item xs={12}>
+//               <Box display="flex" justifyContent="flex-start">
+//                 <Button
+//                   type="submit"
+//                   variant="contained"
+//                   color="primary"
+//                   size="large"
+//                   disabled={loading}
+//                   startIcon={loading ? <CircularProgress size={20} /> : null}
+//                 >
+//                   {loading ? 'Triggering Test...' : 'Trigger Weather API Test'}
+//                 </Button>
+//               </Box>
+//             </Grid>
+            
+//             {/* Error Message */}
+//             {error && (
+//               <Grid item xs={12}>
+//                 <Alert severity="error">{error}</Alert>
+//               </Grid>
+//             )}
+            
+//             {/* Workflow Status */}
+//             {workflowStatus && (
+//               <Grid item xs={12}>
+//                 <Alert severity="success">
+//                   Weather test workflow triggered successfully!
+//                 </Alert>
+//                 <Paper sx={{ p: 2, mt: 2 }}>
+//                   <Typography variant="subtitle1" gutterBottom>
+//                     Workflow Details:
+//                   </Typography>
+//                   <pre style={{ overflow: 'auto' }}>
+//                     {JSON.stringify(workflowStatus, null, 2)}
+//                   </pre>
+//                 </Paper>
+//               </Grid>
+//             )}
+//           </Grid>
+//         </form>
+//       </Paper>
+//     </Box>
+//   );
+// };
+
+// export default WeatherTesting;

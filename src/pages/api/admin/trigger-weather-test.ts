@@ -1,3 +1,4 @@
+// src/pages/api/admin/trigger-weather-test.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import { Octokit } from '@octokit/rest';
 
