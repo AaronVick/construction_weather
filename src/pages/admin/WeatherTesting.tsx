@@ -144,12 +144,14 @@ const WeatherTesting: React.FC = () => {
 
   // Handle form submission
   const onSubmit = async (data: WeatherTestFormData) => {
+    console.log('Form submitted with data:', data);
     setLoading(true);
     setError(null);
     setWorkflowStatus(null);
     
     try {
       const token = await getIdToken();
+      console.log('Got auth token');
       
       // Prepare request body
       const requestBody: any = {
@@ -197,6 +199,8 @@ const WeatherTesting: React.FC = () => {
           .filter((email: string) => email);
       }
       
+      console.log('Sending request to API with body:', requestBody);
+      
       // Trigger the workflow
       const response = await fetch('/api/admin/trigger-weather-test', {
         method: 'POST',
@@ -207,11 +211,17 @@ const WeatherTesting: React.FC = () => {
         body: JSON.stringify(requestBody)
       });
       
+      console.log('API response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to trigger weather test workflow');
+        const errorData = await response.json();
+        console.error('API error response:', errorData);
+        throw new Error(errorData.error || 'Failed to trigger weather test workflow');
       }
       
       const result = await response.json();
+      console.log('API success response:', result);
+      
       setWorkflowRunId(result.workflowRunId);
       
       // Start checking workflow status
