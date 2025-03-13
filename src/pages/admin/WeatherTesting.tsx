@@ -11,33 +11,15 @@ import {
   Alert,
   TextField
 } from '@mui/material';
-import { useFirebaseAuth } from '../../hooks/useFirebaseAuth';
 
 interface WeatherTestFormData {
   zipcode: string;
 }
 
-interface WeatherResponse {
-  success: boolean;
-  message: string;
-  data: any;
-}
-
 const WeatherTesting: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [weatherData, setWeatherData] = useState<any>(null);
-  
-  // Get auth context
-  const { user } = useFirebaseAuth();
-  
-  // Function to get ID token
-  const getIdToken = async () => {
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-    return await user.getIdToken();
-  };
+  const [result, setResult] = useState<any>(null);
   
   // Initialize form
   const { register, handleSubmit, formState: { errors } } = useForm<WeatherTestFormData>({
@@ -51,51 +33,29 @@ const WeatherTesting: React.FC = () => {
     console.log('Testing weather API for zipcode:', data.zipcode);
     setLoading(true);
     setError(null);
-    setWeatherData(null);
+    setResult(null);
     
     try {
-      const token = await getIdToken();
-      console.log('Authentication token obtained');
-      
       // Use Vite's import.meta.env for environment variables
       const baseUrl = import.meta.env.VITE_API_URL || '';
-      const apiUrl = `${baseUrl}/api/weather-test`;
-      console.log('API URL:', apiUrl);
       
-      // Make a direct request to our simple weather test API
-      console.log('Sending request to weather test API...');
-      const response = await fetch(apiUrl, {
+      const response = await fetch(`${baseUrl}/api/simple-weather-test`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           zipcode: data.zipcode
         })
       });
       
-      console.log('Response status:', response.status);
+      const responseData = await response.json();
       
-      if (!response.ok) {
-        const responseText = await response.text();
-        console.error('Error response:', responseText);
-        
-        let errorData;
-        try {
-          errorData = JSON.parse(responseText);
-          console.error('Parsed error data:', errorData);
-        } catch (e) {
-          console.error('Could not parse error response as JSON');
-          errorData = { error: 'Invalid server response', details: responseText };
-        }
-        
-        throw new Error(errorData.error || 'Failed to test weather API');
+      if (!response.ok || !responseData.success) {
+        throw new Error(responseData.error || 'Failed to test weather API');
       }
       
-      const result: WeatherResponse = await response.json();
-      console.log('API test successful:', result);
-      setWeatherData(result.data);
+      setResult(responseData);
       
     } catch (error) {
       console.error('Error testing weather API:', error);
@@ -109,7 +69,7 @@ const WeatherTesting: React.FC = () => {
     <Box mb={4}>
       <Typography variant="h4" gutterBottom>Weather API Testing</Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
-        Test if the weather API is working by checking current conditions for a location.
+        Test if the weather API is working correctly.
       </Typography>
       
       <Paper sx={{ p: 3 }}>
@@ -155,86 +115,26 @@ const WeatherTesting: React.FC = () => {
               </Grid>
             )}
             
-            {/* Weather Data */}
-            {weatherData && (
+            {/* Success Message */}
+            {result && (
               <Grid item xs={12}>
                 <Alert severity="success">
-                  Weather API test successful!
+                  {result.message}
                 </Alert>
-                
                 <Paper sx={{ p: 2, mt: 2 }}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} md={6}>
-                      <Typography variant="h6" gutterBottom>
-                        Location: {weatherData.location.name}, {weatherData.location.region}
-                      </Typography>
-                      
-                      <Typography variant="subtitle1" gutterBottom>
-                        Current Conditions:
-                      </Typography>
-                      
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        {weatherData.current.condition.icon && (
-                          <img 
-                            src={`https:${weatherData.current.condition.icon}`} 
-                            alt={weatherData.current.condition.text}
-                            width={64}
-                            height={64}
-                          />
-                        )}
-                        <Box sx={{ ml: 2 }}>
-                          <Typography variant="body1">
-                            {weatherData.current.condition.text}
-                          </Typography>
-                          <Typography variant="h5">
-                            {weatherData.current.temp_f}°F / {weatherData.current.temp_c}°C
-                          </Typography>
-                        </Box>
-                      </Box>
-                      
-                      <Typography variant="body2">
-                        Humidity: {weatherData.current.humidity}%
-                      </Typography>
-                      <Typography variant="body2">
-                        Wind: {weatherData.current.wind_mph} mph ({weatherData.current.wind_dir})
-                      </Typography>
-                    </Grid>
-                    
-                    <Grid item xs={12} md={6}>
-                      <Typography variant="subtitle1" gutterBottom>
-                        Forecast for Today:
-                      </Typography>
-                      
-                      <Typography variant="body2">
-                        High: {weatherData.forecast.forecastday[0].day.maxtemp_f}°F
-                      </Typography>
-                      <Typography variant="body2">
-                        Low: {weatherData.forecast.forecastday[0].day.mintemp_f}°F
-                      </Typography>
-                      <Typography variant="body2">
-                        Chance of Rain: {weatherData.forecast.forecastday[0].day.daily_chance_of_rain}%
-                      </Typography>
-                      
-                      {weatherData.alerts && weatherData.alerts.alert && weatherData.alerts.alert.length > 0 && (
-                        <Alert severity="warning" sx={{ mt: 2 }}>
-                          {weatherData.alerts.alert.length} weather alert(s) active
-                        </Alert>
-                      )}
-                    </Grid>
-                  </Grid>
-                </Paper>
-                
-                {/* API Response Details (collapsed by default) */}
-                <Box sx={{ mt: 3 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Full API Response:
+                  <Typography variant="subtitle1" gutterBottom>
+                    Test Results:
                   </Typography>
-                  <Paper sx={{ p: 2, maxHeight: '300px', overflow: 'auto' }}>
-                    <pre style={{ margin: 0 }}>
-                      {JSON.stringify(weatherData, null, 2)}
-                    </pre>
-                  </Paper>
-                </Box>
+                  <Typography variant="body1">
+                    Location: {result.location}
+                  </Typography>
+                  <Typography variant="body1">
+                    Current Temperature: {result.temperature}°F
+                  </Typography>
+                  <Typography variant="body1">
+                    Conditions: {result.condition}
+                  </Typography>
+                </Paper>
               </Grid>
             )}
           </Grid>
