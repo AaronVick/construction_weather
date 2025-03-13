@@ -19,6 +19,7 @@
         "@mui/icons-material": "^6.4.6",
         "@mui/material": "^6.4.6",
         "@mui/x-date-pickers": "^7.27.1",
+        "@octokit/rest": "^21.1.1",
         "@sendgrid/mail": "^8.1.4",
         "@stripe/react-stripe-js": "^2.9.0",
         "@stripe/stripe-js": "^2.4.0",

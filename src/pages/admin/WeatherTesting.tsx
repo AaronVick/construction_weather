@@ -10,7 +10,14 @@ import {
   Tab, 
   Tabs, 
   Typography,
-  Alert
+  Alert,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Link
 } from '@mui/material';
 import { 
   PlayArrow as PlayArrowIcon,
@@ -26,6 +33,23 @@ import {
   JobsiteOption, 
   WeatherTestResult 
 } from '../../components/admin/weather-testing/types';
+
+// Add new types for workflow status
+interface WorkflowJob {
+  name: string;
+  status: string;
+  conclusion: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+interface WorkflowStatus {
+  status: string;
+  conclusion: string | null;
+  jobs: WorkflowJob[];
+  logsUrl: string;
+  htmlUrl: string;
+}
 
 // Import components
 import ApiStatusPanel from '../../components/admin/weather-testing/ApiStatusPanel';
@@ -49,6 +73,9 @@ const WeatherTesting: React.FC = () => {
   const [jobsites, setJobsites] = useState<JobsiteOption[]>([]);
   const [activeTab, setActiveTab] = useState<number>(0);
   const [testHistory, setTestHistory] = useState<WeatherTestResult[]>([]);
+  const [workflowRunId, setWorkflowRunId] = useState<string | null>(null);
+  const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus | null>(null);
+  const [workflowCheckInterval, setWorkflowCheckInterval] = useState<NodeJS.Timeout | null>(null);
   
   // Get auth context
   const { user, isAuthenticated } = useFirebaseAuth();
@@ -345,10 +372,47 @@ const WeatherTesting: React.FC = () => {
     fetchTestHistory();
   }, [getIdToken]);
   
+  // Function to check workflow status
+  const checkWorkflowStatus = async (runId: string) => {
+    try {
+      const token = await getIdToken();
+      const response = await fetch(`/api/admin/workflow-status?runId=${runId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const status = await response.json();
+        setWorkflowStatus(status);
+
+        // If workflow is completed or failed, clear the interval
+        if (status.status === 'completed') {
+          if (workflowCheckInterval) {
+            clearInterval(workflowCheckInterval);
+            setWorkflowCheckInterval(null);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking workflow status:', error);
+    }
+  };
+
+  // Clean up interval on component unmount
+  useEffect(() => {
+    return () => {
+      if (workflowCheckInterval) {
+        clearInterval(workflowCheckInterval);
+      }
+    };
+  }, [workflowCheckInterval]);
+
   // Handle form submission
   const onSubmit = async (data: WeatherTestFormData) => {
     setLoading(true);
     setError(null);
+    setWorkflowStatus(null);
     
     try {
       const token = await getIdToken();
@@ -404,193 +468,30 @@ const WeatherTesting: React.FC = () => {
           .filter((email: string) => email);
       }
       
-      // Try to send request to API
-      let apiSuccess = false;
-      let result: WeatherTestResult = {
-        timestamp: new Date().toISOString(),
-        weatherData: {},
-        thresholds: {},
-        triggeredConditions: [],
-        notificationPreview: {
-          subject: '',
-          recipients: [],
-          templateId: '',
-          templateData: {}
+      // Trigger the workflow
+      const response = await fetch('/api/admin/trigger-weather-test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        emailSent: false,
-        logs: []
-      };
+        body: JSON.stringify(requestBody)
+      });
       
-      try {
-        const response = await fetch('/api/admin/test-weather-notification', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(requestBody)
-        });
-        
-        if (response.ok) {
-          result = await response.json();
-          apiSuccess = true;
-        }
-      } catch (fetchError) {
-        console.error('Error sending test weather notification:', fetchError);
+      if (!response.ok) {
+        throw new Error('Failed to trigger weather test workflow');
       }
       
-      // If API call failed, use mock response
-      if (!apiSuccess) {
-        console.log('Using mock weather test response');
-        
-        // Create location info based on input
-        let locationName = 'Test Location';
-        if (data.locationType === 'zipcode') {
-          locationName = `Zipcode ${data.zipcode}`;
-        } else if (data.locationType === 'address') {
-          locationName = data.address || 'Unknown Address';
-        } else if (data.locationType === 'coordinates') {
-          locationName = `Lat: ${data.latitude}, Lon: ${data.longitude}`;
-        } else if (data.locationType === 'jobsite') {
-          const selectedJobsite = jobsites.find(j => j.id === data.jobsiteId);
-          locationName = selectedJobsite?.name || 'Selected Jobsite';
-        }
-        
-        // Create mock weather data
-        const weatherData = {
-          location: {
-            name: locationName,
-            region: 'Test Region',
-            country: 'USA',
-            lat: data.latitude || 38.9072,
-            lon: data.longitude || -77.0369
-          },
-          current: {
-            temp_f: data.conditions.temperature ? data.conditions.temperatureValue : 45,
-            temp_c: data.conditions.temperature ? (data.conditions.temperatureValue - 32) * 5/9 : 7.2,
-            condition: {
-              text: 'Partly cloudy',
-              icon: '//cdn.weatherapi.com/weather/64x64/day/116.png'
-            },
-            wind_mph: data.conditions.wind ? data.conditions.windSpeed : 8,
-            wind_kph: data.conditions.wind ? data.conditions.windSpeed * 1.6 : 12.9,
-            precip_mm: 0,
-            precip_in: 0,
-            humidity: 65,
-            feelslike_f: data.conditions.temperature ? data.conditions.temperatureValue - 2 : 43,
-            feelslike_c: data.conditions.temperature ? ((data.conditions.temperatureValue - 2) - 32) * 5/9 : 6.1
-          },
-          forecast: {
-            forecastday: [
-              {
-                date: new Date().toISOString().split('T')[0],
-                day: {
-                  maxtemp_f: data.conditions.temperature ? data.conditions.temperatureValue + 5 : 50,
-                  maxtemp_c: data.conditions.temperature ? ((data.conditions.temperatureValue + 5) - 32) * 5/9 : 10,
-                  mintemp_f: data.conditions.temperature ? data.conditions.temperatureValue - 5 : 40,
-                  mintemp_c: data.conditions.temperature ? ((data.conditions.temperatureValue - 5) - 32) * 5/9 : 4.4,
-                  daily_chance_of_rain: data.conditions.rain ? data.conditions.rainProbability : 20,
-                  daily_chance_of_snow: data.conditions.snow ? 100 : 0,
-                  totalsnow_cm: data.conditions.snow ? data.conditions.snowAmount * 2.54 : 0,
-                  maxwind_mph: data.conditions.wind ? data.conditions.windSpeed : 12,
-                  maxwind_kph: data.conditions.wind ? data.conditions.windSpeed * 1.6 : 19.3
-                }
-              }
-            ]
-          }
-        };
-        
-        // Create triggered conditions based on overrides
-        const triggeredConditions = [];
-        if (data.conditions.temperature && (data.conditions.temperatureValue < 32 || data.conditions.temperatureValue > 100)) {
-          triggeredConditions.push('temperature');
-        }
-        if (data.conditions.rain && data.conditions.rainProbability > 50) {
-          triggeredConditions.push('rain');
-        }
-        if (data.conditions.snow && data.conditions.snowAmount > 1) {
-          triggeredConditions.push('snow');
-        }
-        if (data.conditions.wind && data.conditions.windSpeed > 20) {
-          triggeredConditions.push('wind');
-        }
-        if (data.conditions.alert) {
-          triggeredConditions.push('weather_alert');
-        }
-        
-        // Create mock result
-        result = {
-          timestamp: new Date().toISOString(),
-          weatherData,
-          thresholds: {
-            temperature: { min: 32, max: 100 },
-            wind: { max: 20 },
-            precipitation: { max: 0.5 },
-            snow: { max: 1 }
-          },
-          triggeredConditions,
-          notificationPreview: {
-            subject: triggeredConditions.length > 0 ? 'Weather Alert for Your Jobsite' : 'Weather Update for Your Jobsite',
-            recipients: data.sendTestEmail ? data.testEmailRecipients.split(',').map(email => ({
-              email: email.trim(),
-              name: email.trim(),
-              type: 'test'
-            })) : [],
-            templateId: 'default',
-            templateData: {
-              jobsite_name: locationName,
-              jobsite_address: data.locationType === 'address' ? data.address || '' : 'Test Address',
-              jobsite_city: 'Test City',
-              jobsite_state: 'Test State',
-              jobsite_zip: data.locationType === 'zipcode' ? data.zipcode || '' : '12345',
-              weather_conditions: triggeredConditions.join(', '),
-              weather_description: `Current conditions: Partly cloudy, ${data.conditions.temperature ? data.conditions.temperatureValue : 45}°F`,
-              current_temperature: data.conditions.temperature ? data.conditions.temperatureValue : 45,
-              forecast_high: data.conditions.temperature ? data.conditions.temperatureValue + 5 : 50,
-              forecast_low: data.conditions.temperature ? data.conditions.temperatureValue - 5 : 40,
-              precipitation_chance: data.conditions.rain ? data.conditions.rainProbability : 20,
-              wind_speed: data.conditions.wind ? data.conditions.windSpeed : 8
-            }
-          },
-          emailSent: data.sendTestEmail && !data.dryRun,
-          logs: [
-            {
-              level: 'info',
-              message: 'Mock weather test started',
-              timestamp: new Date(Date.now() - 2000).toISOString()
-            },
-            {
-              level: 'info',
-              message: `Location: ${locationName}`,
-              timestamp: new Date(Date.now() - 1500).toISOString()
-            },
-            {
-              level: 'info',
-              message: `Conditions triggered: ${triggeredConditions.length > 0 ? triggeredConditions.join(', ') : 'None'}`,
-              timestamp: new Date(Date.now() - 1000).toISOString()
-            },
-            {
-              level: 'info',
-              message: data.dryRun ? 'Dry run - no email sent' : (data.sendTestEmail ? 'Test email sent' : 'No email requested'),
-              timestamp: new Date(Date.now() - 500).toISOString()
-            },
-            {
-              level: 'info',
-              message: 'Mock weather test completed',
-              timestamp: new Date().toISOString()
-            }
-          ]
-        };
-      }
+      const result = await response.json();
+      setWorkflowRunId(result.workflowRunId);
       
-      // Update test results
-      setTestResults(result);
+      // Start checking workflow status
+      const interval = setInterval(() => checkWorkflowStatus(result.workflowRunId), 5000);
+      setWorkflowCheckInterval(interval);
       
       // Switch to results tab
       setActiveTab(1);
       
-      // Add to test history
-      setTestHistory(prevHistory => [result, ...prevHistory].slice(0, 10));
     } catch (error) {
       console.error('Error running weather notification test:', error);
       setError(error instanceof Error ? error.message : 'An unknown error occurred');
@@ -753,9 +654,55 @@ const WeatherTesting: React.FC = () => {
           </Paper>
         )}
         
-        {activeTab === 1 && testResults && (
+        {activeTab === 1 && (
           <Paper sx={{ p: 3 }}>
-            <TestResultsView testResults={testResults} />
+            {workflowStatus ? (
+              <Box>
+                <Typography variant="h6" gutterBottom>Workflow Status</Typography>
+                <Box mb={2}>
+                  <Typography variant="body1">
+                    Status: {workflowStatus.status}
+                    {workflowStatus.conclusion && ` (${workflowStatus.conclusion})`}
+                  </Typography>
+                  {workflowStatus.htmlUrl && (
+                    <Link href={workflowStatus.htmlUrl} target="_blank" rel="noopener noreferrer">
+                      View on GitHub
+                    </Link>
+                  )}
+                </Box>
+                
+                <Typography variant="subtitle1" gutterBottom>Jobs</Typography>
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Job Name</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Started</TableCell>
+                        <TableCell>Completed</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {workflowStatus.jobs.map((job) => (
+                        <TableRow key={job.name}>
+                          <TableCell>{job.name}</TableCell>
+                          <TableCell>
+                            {job.status}
+                            {job.conclusion && ` (${job.conclusion})`}
+                          </TableCell>
+                          <TableCell>{job.startedAt ? new Date(job.startedAt).toLocaleString() : '-'}</TableCell>
+                          <TableCell>{job.completedAt ? new Date(job.completedAt).toLocaleString() : '-'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            ) : (
+              <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
+                <CircularProgress />
+              </Box>
+            )}
           </Paper>
         )}
         
