@@ -2,6 +2,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { auth, db } from '../../src/lib/firebaseAdmin';
 
+
 /**
  * API endpoint to fetch weather test history
  * 

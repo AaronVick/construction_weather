@@ -1,10 +1,9 @@
-# .github/workflows/weather-check.yml
 name: Weather Check Automation
 
 on:
   schedule:
-    # Run every hour from 4am to 8am Eastern Time (adjust as needed)
-    - cron: '0 9-13 * * *'  # UTC time (corresponds to 4am-8am EST)
+    # Run every hour from 4am to 10am Eastern Time (adjust as needed)
+    - cron: '0 9-14 * * *'  # UTC time (corresponds to 4am-9am EST)
   
   # Allow manual trigger from GitHub
   workflow_dispatch:
@@ -13,11 +12,20 @@ on:
         description: 'Run in debug mode'
         required: false
         default: 'false'
+      skip_collection:
+        description: 'Skip weather data collection'
+        required: false
+        default: 'false'
+      skip_notification:
+        description: 'Skip weather notifications'
+        required: false
+        default: 'false'
 
 jobs:
-  check-weather:
-    name: Check Weather Conditions
+  collect-data:
+    name: Collect Weather Data
     runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.skip_collection != 'true' }}
     
     steps:
       - name: Checkout code
@@ -32,17 +40,94 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Run weather check
+      - name: Run weather data collection
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          WEATHER_API_KEY: ${{ secrets.WEATHER_API }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          WEATHER_API: ${{ secrets.WEATHER_API }}
           DEBUG_MODE: ${{ github.event.inputs.debug == 'true' }}
-        run: node scripts/check-weather.js
+        run: node scripts/weather-collector.js
       
-      - name: Report results
+      - name: Report collection results
         if: always()
         run: |
-          echo "Weather check completed at $(date)"
+          echo "Weather data collection completed at $(date)"
           echo "See logs for details"
+
+  send-notifications:
+    name: Send Weather Notifications
+    runs-on: ubuntu-latest
+    needs: collect-data
+    if: ${{ always() && (needs.collect-data.result == 'success' || github.event.inputs.skip_collection == 'true') && github.event.inputs.skip_notification != 'true' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run weather notification process
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DEBUG_MODE: ${{ github.event.inputs.debug == 'true' }}
+        run: node scripts/weather-notifier.js
+      
+      - name: Report notification results
+        if: always()
+        run: |
+          echo "Weather notification process completed at $(date)"
+          echo "See logs for details"
+  
+  summary:
+    name: Generate Summary Report
+    runs-on: ubuntu-latest
+    needs: [collect-data, send-notifications]
+    if: always()
+    
+    steps:
+      - name: Generate workflow summary
+        run: |
+          echo "## Weather Check Workflow Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Workflow completed at: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | ------ |" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ github.event.inputs.skip_collection }}" == "true" ]]; then
+            echo "| Weather Data Collection | Skipped ⏭️ |" >> $GITHUB_STEP_SUMMARY
+          else
+            if [[ "${{ needs.collect-data.result }}" == "success" ]]; then
+              echo "| Weather Data Collection | Successful ✅ |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| Weather Data Collection | Failed ❌ |" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+          
+          if [[ "${{ github.event.inputs.skip_notification }}" == "true" ]]; then
+            echo "| Weather Notifications | Skipped ⏭️ |" >> $GITHUB_STEP_SUMMARY
+          else
+            if [[ "${{ needs.send-notifications.result }}" == "success" ]]; then
+              echo "| Weather Notifications | Successful ✅ |" >> $GITHUB_STEP_SUMMARY
+            elif [[ "${{ needs.send-notifications.result }}" == "skipped" ]]; then
+              echo "| Weather Notifications | Skipped ⏭️ |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| Weather Notifications | Failed ❌ |" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Debug mode: ${{ github.event.inputs.debug == 'true' && 'Enabled' || 'Disabled' }}" >> $GITHUB_STEP_SUMMARY

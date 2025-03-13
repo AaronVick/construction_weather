@@ -1,0 +1,521 @@
+{
+    "firestore_schema": {},
+    "typescript_schemas": {
+        "ClientFiltersType": {
+            "status": "unknown",
+            "dateAdded": "unknown",
+            "sortBy": "unknown"
+        },
+        "WorkerFiltersType": {
+            "status": "unknown",
+            "jobsite": "string",
+            "dateAdded": "unknown",
+            "sortBy": "unknown"
+        },
+        "JobsiteFiltersType": {
+            "clientId": "string",
+            "status": "unknown",
+            "weatherMonitoring": "unknown",
+            "sortBy": "unknown"
+        },
+        "EmailFiltersType": {
+            "status": "unknown",
+            "recipient": "unknown",
+            "timePeriod": "unknown",
+            "sortBy": "unknown"
+        },
+        "EmailTemplate": {
+            "id": "string",
+            "name": "string",
+            "subject": "string",
+            "body": "string",
+            "variables": "string",
+            "createdAt": "string",
+            "updatedAt": "string",
+            "user_id": "string"
+        },
+        "EmailLog": {
+            "id": "string",
+            "clientId": "string",
+            "clientName": "string",
+            "workerId": "string",
+            "workerName": "string",
+            "subject": "string",
+            "body": "string",
+            "sentAt": "string",
+            "status": "unknown",
+            "trigger": "unknown",
+            "weatherCondition": "string",
+            "errorMessage": "string",
+            "user_id": "string"
+        },
+        "EmailConfig": {
+            "senderName": "string",
+            "senderEmail": "string",
+            "tone": "unknown",
+            "includeWeatherDetails": "boolean",
+            "subjectTemplate": "string",
+            "bodyTemplate": "string",
+            "temperature": "number",
+            "maxTokens": "number",
+            "additionalInstructions": "string",
+            "user_id": "string"
+        },
+        "EmailFormData": {
+            "recipients": "map",
+            "type": "unknown",
+            "ids": "string",
+            "templateId": "string",
+            "subject": "string",
+            "body": "string",
+            "includeWeatherDetails": "boolean",
+            "scheduledFor": "string",
+            "saveAsTemplate": "boolean",
+            "templateName": "string",
+            "user_id": "string"
+        },
+        "AdminUser": {
+            "id": "string",
+            "email": "string",
+            "firstName": "string",
+            "lastName": "string",
+            "role": "unknown",
+            "permissions": "array",
+            "lastLogin": "string",
+            "created_at": "string",
+            "updated_at": "string"
+        },
+        "SubscriptionAnalytics": {
+            "totalSubscriptions": "number",
+            "activeSubscriptions": "number",
+            "canceledSubscriptions": "number",
+            "trialSubscriptions": "number",
+            "mrr": "number",
+            "arr": "number",
+            "churnRate": "number",
+            "planDistribution": "map",
+            "key": "string",
+            "growthRate": "number",
+            "averageSubscriptionValue": "number"
+        },
+        "SubscriptionMetricsTimeSeries": {
+            "date": "string",
+            "totalSubscriptions": "number",
+            "activeSubscriptions": "number",
+            "canceledSubscriptions": "number",
+            "mrr": "number",
+            "newSubscriptions": "number",
+            "churnedSubscriptions": "number"
+        },
+        "BillingSummary": {
+            "totalRevenue": "number",
+            "pendingInvoices": "number",
+            "failedInvoices": "number",
+            "paidInvoices": "number",
+            "refundedAmount": "number",
+            "currentMonthRevenue": "number",
+            "previousMonthRevenue": "number",
+            "revenueGrowth": "number"
+        },
+        "UserGrowthMetrics": {
+            "totalUsers": "number",
+            "activeUsers": "number",
+            "newUsersThisMonth": "number",
+            "newUsersPreviousMonth": "number",
+            "userGrowthRate": "number",
+            "conversionRate": "number"
+        },
+        "WeatherCondition": {
+            "text": "string",
+            "code": "number",
+            "icon": "string"
+        },
+        "CurrentWeather": {
+            "temperature": "number",
+            "feelsLike": "number",
+            "condition": "string",
+            "humidity": "number",
+            "windSpeed": "number",
+            "precipitation": "number",
+            "isRainy": "boolean",
+            "isSnowy": "boolean",
+            "isExtreme": "boolean",
+            "icon": "string"
+        },
+        "ForecastDay": {
+            "date": "string",
+            "temperature": "map",
+            "min": "number",
+            "max": "number",
+            "avg": "number",
+            "condition": "string",
+            "precipitation": "number",
+            "precipitationProbability": "number",
+            "humidity": "number",
+            "windSpeed": "number",
+            "snowfall": "number",
+            "icon": "string",
+            "hourly": "array"
+        },
+        "HourlyForecast": {
+            "time": "string",
+            "temperature": "number",
+            "condition": "string",
+            "precipitation": "number",
+            "windSpeed": "number",
+            "icon": "string"
+        },
+        "WeatherAlert": {
+            "headline": "string",
+            "severity": "string",
+            "event": "string",
+            "effective": "string",
+            "expires": "string",
+            "description": "string"
+        },
+        "WeatherWidgetForecast": {
+            "date": "string",
+            "temperature": "map",
+            "min": "number",
+            "max": "number",
+            "condition": "string",
+            "precipitation": "number",
+            "icon": "string"
+        },
+        "WeatherLocation": {
+            "name": "string",
+            "region": "string",
+            "country": "string",
+            "lat": "number",
+            "lon": "number"
+        },
+        "WeatherData": {
+            "location": "unknown",
+            "current": "unknown",
+            "forecast": "array",
+            "alerts": "array",
+            "lastUpdated": "timestamp"
+        },
+        "WeatherThresholds": {
+            "temperature": "map",
+            "min": "number",
+            "max": "number",
+            "enabled": "boolean",
+            "thresholdFahrenheit": "number",
+            "wind": "map",
+            "thresholdMph": "number",
+            "precipitation": "map",
+            "thresholdPercentage": "number",
+            "snow": "map",
+            "thresholdInches": "number"
+        },
+        "PrecipitationThresholds": {
+            "enabled": "boolean",
+            "thresholdPercentage": "number",
+            "amountThreshold": "number"
+        },
+        "TemperatureThresholds": {
+            "enabled": "boolean",
+            "minThresholdFahrenheit": "number",
+            "maxThresholdFahrenheit": "number"
+        },
+        "WindThresholds": {
+            "enabled": "boolean",
+            "thresholdMph": "number"
+        },
+        "SpecialAlertThresholds": {
+            "enabled": "boolean",
+            "includeStorms": "boolean",
+            "includeLightning": "boolean",
+            "includeFlooding": "boolean",
+            "includeExtreme": "boolean"
+        },
+        "AirQualityThresholds": {
+            "enabled": "boolean",
+            "thresholdIndex": "number"
+        },
+        "NotificationRecipient": {
+            "id": "string",
+            "name": "string",
+            "email": "boolean",
+            "phone": "string",
+            "role": "unknown",
+            "notificationMethods": "map",
+            "sms": "boolean",
+            "push": "boolean"
+        },
+        "ForecastTimeframe": {
+            "hoursAhead": "unknown",
+            "workingHoursOnly": "boolean",
+            "workingHoursStart": "string",
+            "Format": "timestamp",
+            "workingHoursEnd": "string",
+            "includeDayBefore": "boolean",
+            "checkDays": "array"
+        },
+        "WeatherSettings": {
+            "isEnabled": "boolean",
+            "checkTime": "string",
+            "Format": "timestamp",
+            "checkTimeDaily": "string",
+            "timezone": "string",
+            "forecastTimeframe": "unknown",
+            "alertThresholds": "unknown",
+            "rain": "unknown",
+            "snow": "unknown",
+            "sleet": "unknown",
+            "hail": "unknown",
+            "wind": "unknown",
+            "temperature": "unknown",
+            "specialAlerts": "unknown",
+            "airQuality": "unknown",
+            "notificationSettings": "map",
+            "notifyClient": "boolean",
+            "notifyWorkers": "boolean",
+            "notificationLeadHours": "number",
+            "dailySummary": "boolean",
+            "recipients": "array",
+            "jobTypeSettings": "map",
+            "jobType": "string",
+            "name": "string",
+            "description": "string"
+        },
+        "Client": {
+            "id": "string",
+            "name": "string",
+            "email": "string",
+            "phone": "string",
+            "company": "string",
+            "address": "string",
+            "city": "string",
+            "state": "string",
+            "zip_code": "string",
+            "is_active": "boolean",
+            "notes": "string",
+            "created_at": "string",
+            "updated_at": "string",
+            "user_id": "string"
+        },
+        "ClientFormData": {
+            "name": "string",
+            "email": "string",
+            "phone": "string",
+            "company": "string",
+            "address": "string",
+            "city": "string",
+            "state": "string",
+            "zip_code": "string",
+            "is_active": "boolean",
+            "notes": "string",
+            "user_id": "string"
+        },
+        "ClientFilters": {
+            "status": "unknown",
+            "dateAdded": "unknown",
+            "sortBy": "unknown"
+        },
+        "ClientStats": {
+            "total": "number",
+            "active": "number",
+            "inactive": "number",
+            "recentlyAdded": "number"
+        },
+        "Notification": {
+            "id": "string",
+            "type": "unknown",
+            "title": "string",
+            "message": "string",
+            "read": "boolean",
+            "timestamp": "string",
+            "metadata": "string"
+        },
+        "NotificationStats": {
+            "totalSent": "number",
+            "weatherNotifications": "number",
+            "last30Days": "number"
+        },
+        "NotificationPreferences": {
+            "email": "boolean",
+            "sms": "boolean",
+            "push": "boolean",
+            "digest": "unknown",
+            "types": "map",
+            "weather": "boolean",
+            "system": "boolean",
+            "marketing": "boolean"
+        },
+        "PaymentMethodData": {
+            "brand": "string",
+            "last4": "string",
+            "expMonth": "number",
+            "expYear": "number"
+        },
+        "SubscriptionFeatures": {
+            "maxJobsites": "number",
+            "maxEmailTemplates": "number",
+            "advancedAnalytics": "boolean",
+            "customEmails": "boolean",
+            "prioritySupport": "boolean",
+            "smsNotifications": "boolean",
+            "customReports": "boolean",
+            "apiAccess": "boolean",
+            "whiteLabeling": "boolean",
+            "singleSignOn": "boolean"
+        },
+        "Subscription": {
+            "id": "string",
+            "user_id": "string",
+            "plan": "unknown",
+            "status": "unknown",
+            "billing_cycle": "unknown",
+            "price_id": "string",
+            "customer_id": "string",
+            "start_date": "string",
+            "end_date": "string",
+            "trial_end": "string",
+            "next_billing_date": "string",
+            "cancellation_date": "string",
+            "payment_method": "unknown",
+            "features": "unknown",
+            "created_at": "string",
+            "updated_at": "string",
+            "currentPeriodEnd": "string"
+        },
+        "BillingHistoryItem": {
+            "id": "string",
+            "date": "string",
+            "description": "string",
+            "amount": "number",
+            "status": "unknown",
+            "invoice": "string",
+            "invoiceUrl": "string"
+        },
+        "PlanOption": {
+            "id": "unknown",
+            "name": "string",
+            "description": "string",
+            "price": "map",
+            "monthly": "number",
+            "annually": "number",
+            "features": "string",
+            "limitations": "string",
+            "icon": "unknown",
+            "recommendedFor": "string"
+        },
+        "Theme": {
+            "darkMode": "boolean"
+        },
+        "TimelineItem": {
+            "id": "string",
+            "title": "string",
+            "description": "string",
+            "icon": "unknown",
+            "timestamp": "string",
+            "status": "unknown"
+        },
+        "UserProfile": {
+            "id": "string",
+            "user_id": "string",
+            "email": "string",
+            "full_name": "string",
+            "zip_code": "string",
+            "created_at": "string",
+            "updated_at": "string"
+        },
+        "UserProfileFormData": {
+            "full_name": "string",
+            "email": "string",
+            "zip_code": "string"
+        },
+        "UserSettingsFormState": {
+            "full_name": "string",
+            "email": "string",
+            "zip_code": "string",
+            "isLoading": "boolean",
+            "error": "string",
+            "success": "string"
+        },
+        "Worker": {
+            "id": "string",
+            "name": "string",
+            "email": "string",
+            "phone": "string",
+            "position": "string",
+            "is_active": "boolean",
+            "emergency_contact": "unknown",
+            "notes": "string",
+            "created_at": "string",
+            "updated_at": "string",
+            "user_id": "string"
+        },
+        "WorkerStats": {
+            "total": "number",
+            "active": "number",
+            "assigned": "number"
+        },
+        "Jobsite": {
+            "id": "string",
+            "name": "string",
+            "client_id": "string",
+            "address": "string",
+            "city": "string",
+            "state": "string",
+            "zip_code": "string",
+            "is_active": "boolean",
+            "weather_monitoring": "unknown",
+            "location": "string",
+            "latitude": "number",
+            "longitude": "number",
+            "notes": "string",
+            "created_at": "string",
+            "updated_at": "string",
+            "user_id": "string"
+        },
+        "WeatherMonitoringSettings": {
+            "isEnabled": "boolean",
+            "checkTime": "string",
+            "Format": "timestamp",
+            "alertThresholds": "map",
+            "rain": "map",
+            "enabled": "boolean",
+            "thresholdPercentage": "number",
+            "snow": "map",
+            "thresholdInches": "number",
+            "wind": "map",
+            "thresholdMph": "number",
+            "temperature": "map",
+            "thresholdFahrenheit": "number",
+            "notificationSettings": "map",
+            "notifyClient": "boolean",
+            "notifyWorkers": "boolean",
+            "notificationLeadHours": "number"
+        },
+        "JobsiteFormData": {
+            "name": "string",
+            "clientId": "string",
+            "address": "string",
+            "city": "string",
+            "state": "string",
+            "zipCode": "string",
+            "latitude": "number",
+            "longitude": "number",
+            "isActive": "boolean",
+            "notes": "string",
+            "weatherMonitoring": "unknown",
+            "assignedWorkers": "string"
+        },
+        "JobsiteFilters": {
+            "clientId": "string",
+            "status": "unknown",
+            "weatherMonitoring": "unknown",
+            "sortBy": "unknown"
+        },
+        "JobsiteStats": {
+            "total": "number",
+            "withWeatherMonitoring": "number",
+            "withRecentAlerts": "number"
+        }
+    },
+    "generated_at": "2025-03-13 08:06:29",
+    "offline_mode": true
+}

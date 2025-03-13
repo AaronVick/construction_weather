@@ -1,0 +1,55 @@
+name: Weather Notifications
+
+on:
+  schedule:
+    # Run at specific times daily when weather notifications are most relevant
+    # 6 AM EST (11 UTC) - Morning check before work
+    # 4 PM EST (21 UTC) - Afternoon check for next day preparation
+    - cron: '0 11,21 * * *'
+  
+  # Run after the weather data collection workflow completes
+  workflow_run:
+    workflows: ["Weather Data Collection"]
+    types:
+      - completed
+  
+  # Allow manual trigger from GitHub
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Run in debug mode'
+        required: false
+        default: 'false'
+
+jobs:
+  send-weather-notifications:
+    name: Send Weather Notifications
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run weather notification process
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DEBUG_MODE: ${{ github.event.inputs.debug == 'true' }}
+        run: node scripts/weather-notifier.js
+      
+      - name: Report results
+        if: always()
+        run: |
+          echo "Weather notification process completed at $(date)"
+          echo "See logs for details"

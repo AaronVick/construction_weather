@@ -1,0 +1,47 @@
+name: Weather Data Collection
+
+on:
+  schedule:
+    # Run every 3 hours
+    - cron: '0 */3 * * *'
+  
+  # Allow manual trigger from GitHub
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Run in debug mode'
+        required: false
+        default: 'false'
+
+jobs:
+  collect-weather-data:
+    name: Collect Weather Data
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run weather data collection
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          WEATHER_API: ${{ secrets.WEATHER_API }}
+          DEBUG_MODE: ${{ github.event.inputs.debug == 'true' }}
+        run: node scripts/weather-collector.js
+      
+      - name: Report results
+        if: always()
+        run: |
+          echo "Weather data collection completed at $(date)"
+          echo "See logs for details"
