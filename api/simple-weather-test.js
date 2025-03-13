@@ -1,76 +1,65 @@
-// api/simple-weather-test.js (notice the js extension, not ts)
-// This is a simple serverless function that tests if the WeatherAPI is working
 
 export default async function handler(req, res) {
-    // Set CORS headers to allow requests from any origin
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
-    // Handle OPTIONS requests (for CORS preflight)
-    if (req.method === 'OPTIONS') {
-      return res.status(200).end();
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  try {
+    // Get the API key exactly as it is in the environment
+    const apiKey = process.env.WEATHER_API;
+    
+    // Log key details for debugging (safely)
+    console.log('API key exists:', !!apiKey);
+    console.log('API key length:', apiKey ? apiKey.length : 0);
+    console.log('API key start/end:', apiKey ? `${apiKey.substring(0, 3)}...${apiKey.substring(apiKey.length - 3)}` : 'N/A');
+    
+    // Build the most minimal request possible
+    const zipcode = req.query.zip || '90210';  // Default to 90210 if no zip provided
+    const url = `https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${zipcode}`;
+    
+    console.log('Making request to:', url.replace(apiKey, 'API_KEY_HIDDEN'));
+    
+    // Make the API call with explicit options
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+    
+    console.log('Response status:', response.status);
+    
+    // Get the response text first to safely debug
+    const responseText = await response.text();
+    console.log('Response body first 100 chars:', responseText.substring(0, 100));
+    
+    // Parse the JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error('Failed to parse JSON response:', e);
+      data = { error: 'Invalid JSON response', text: responseText };
     }
     
-    // Only allow POST requests
-    if (req.method !== 'POST') {
-      return res.status(405).json({ error: 'Method not allowed' });
-    }
-  
-    try {
-      const { zipcode } = req.body;
-      
-      if (!zipcode) {
-        return res.status(400).json({ error: 'Zipcode is required' });
-      }
-  
-      // Get the Weather API key from environment variables
-      const WEATHER_API_KEY = process.env.WEATHER_API;
-      
-      if (!WEATHER_API_KEY) {
-        return res.status(500).json({ error: 'Weather API key not configured on server' });
-      }
-  
-      console.log(`Testing weather API for zip code: ${zipcode}`);
-  
-      // Simple test - just try to get current conditions
-      const apiUrl = `https://api.weatherapi.com/v1/current.json?key=${WEATHER_API_KEY}&q=${zipcode}`;
-      
-      const response = await fetch(apiUrl);
-      
-      // If we got a response, the API is working
-      if (response.ok) {
-        const data = await response.json();
-        return res.status(200).json({
-          success: true,
-          message: 'Weather API is working correctly',
-          location: data.location.name,
-          temperature: data.current.temp_f,
-          condition: data.current.condition.text
-        });
-      } else {
-        // If we get an error from the WeatherAPI, pass it along
-        const errorText = await response.text();
-        let errorData;
-        
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { message: errorText };
-        }
-        
-        return res.status(response.status).json({ 
-          success: false,
-          error: 'Weather API error',
-          details: errorData
-        });
-      }
-    } catch (error) {
-      console.error('Error testing weather API:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to test weather API',
-        message: error.message || 'Unknown error'
-      });
-    }
+    // Return the raw data from the API
+    return res.status(response.status).json({
+      success: response.ok,
+      statusCode: response.status,
+      responseData: data
+    });
+  } catch (error) {
+    console.error('Error in weather test:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Exception caught',
+      message: error.message,
+      stack: error.stack
+    });
   }
+}
