@@ -12,9 +12,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // IMPORTANT: Replace 'YOUR_ACTUAL_API_KEY_HERE' with your real API key
-    // REMOVE THIS AFTER TESTING! Never leave API keys in code!
-    const apiKey = 'c79650ec0dca4b67bbe154510251303'; // ⚠️ REPLACE THIS WITH YOUR ACTUAL KEY
+    const apiKey = `${process.env.WEATHER_API}`.trim();
     
     // Build the request
     const zipcode = req.query.zip || '90210';
