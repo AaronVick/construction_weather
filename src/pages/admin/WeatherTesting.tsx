@@ -55,12 +55,16 @@ const WeatherTesting: React.FC = () => {
     
     try {
       const token = await getIdToken();
+      console.log('Authentication token obtained');
       
       // Use Vite's import.meta.env for environment variables
       const baseUrl = import.meta.env.VITE_API_URL || '';
+      const apiUrl = `${baseUrl}/api/weather-test`;
+      console.log('API URL:', apiUrl);
       
       // Make a direct request to our simple weather test API
-      const response = await fetch(`${baseUrl}/api/weather-test`, {
+      console.log('Sending request to weather test API...');
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -71,12 +75,26 @@ const WeatherTesting: React.FC = () => {
         })
       });
       
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
-        const errorData = await response.json();
+        const responseText = await response.text();
+        console.error('Error response:', responseText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(responseText);
+          console.error('Parsed error data:', errorData);
+        } catch (e) {
+          console.error('Could not parse error response as JSON');
+          errorData = { error: 'Invalid server response', details: responseText };
+        }
+        
         throw new Error(errorData.error || 'Failed to test weather API');
       }
       
       const result: WeatherResponse = await response.json();
+      console.log('API test successful:', result);
       setWeatherData(result.data);
       
     } catch (error) {
