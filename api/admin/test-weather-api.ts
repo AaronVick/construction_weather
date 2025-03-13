@@ -3,17 +3,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { auth, db } from '../../src/lib/firebaseAdmin';
 import fetch from 'node-fetch';
 
-// Define types for error handling
-interface ApiError extends Error {
-  code?: string;
-  status?: number;
-  response?: {
-    data?: {
-      message?: string;
-    };
-  };
-}
-
 // Define types for API responses
 interface WeatherApiResponse {
   success: boolean;
@@ -32,6 +21,17 @@ interface WeatherApiResponse {
     message: string;
     timestamp: string;
   }>;
+}
+
+// Define types for jobsite data
+interface JobsiteData {
+  name?: string;
+  latitude?: number;
+  longitude?: number;
+  zip_code?: string;
+  address?: string;
+  city?: string;
+  state?: string;
 }
 
 // Weather API configuration
@@ -107,8 +107,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       
       // Determine query parameters based on location type
-      let queryParams;
-      let locationDescription;
+      let queryParams: string;
+      let locationDescription: string;
       
       if (locationType === 'zipcode') {
         if (!zipcode) {
@@ -144,7 +144,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return res.status(404).json({ error: `Jobsite with ID ${jobsiteId} not found` });
         }
         
-        const jobsiteData = jobsiteDoc.data() || {};
+        const jobsiteData = jobsiteDoc.data() as JobsiteData || {};
         locationDescription = `Jobsite: ${jobsiteData.name || 'Unknown'}`;
         
         // Determine best location query for this jobsite
@@ -287,11 +287,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             logs
           });
         }
-      } catch (error) {
-        const apiError = error as ApiError;
+      } catch (error: any) {
         logs.push({
           level: 'error',
-          message: `Error connecting to Weather API: ${apiError.message || 'Unknown error'}`,
+          message: `Error connecting to Weather API: ${error.message || 'Unknown error'}`,
           timestamp: new Date().toISOString()
         });
         
@@ -303,7 +302,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           query_params: queryParams,
           success: false,
           error: {
-            message: apiError.message
+            message: error.message
           },
           timestamp: new Date().toISOString(),
           logs
@@ -311,26 +310,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         
         return res.status(200).json({
           success: false,
-          error: `Error connecting to Weather API: ${apiError.message || 'Unknown error'}`,
+          error: `Error connecting to Weather API: ${error.message || 'Unknown error'}`,
           apiStatus: {
             status: 'error',
-            message: apiError.message || 'Unknown error',
+            message: error.message || 'Unknown error',
             lastChecked: new Date().toISOString()
           },
           logs
         });
       }
-    } catch (authError) {
-      const error = authError as ApiError;
-      console.error('Error authenticating user:', error);
+    } catch (authError: any) {
+      console.error('Error authenticating user:', authError);
       return res.status(401).json({ 
         success: false,
         error: 'Authentication failed',
-        message: error.message
+        message: authError.message
       });
     }
-  } catch (err) {
-    const error = err as ApiError;
+  } catch (error: any) {
     console.error('Error in test-weather-api handler:', error);
     return res.status(500).json({
       success: false,

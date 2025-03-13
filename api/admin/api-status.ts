@@ -3,17 +3,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { auth, db } from '../../src/lib/firebaseAdmin';
 import fetch from 'node-fetch';
 
-// Define types for error handling
-interface ApiError extends Error {
-  code?: string;
-  status?: number;
-  response?: {
-    data?: {
-      message?: string;
-    };
-  };
-}
-
 // Define types for API responses
 interface ApiStatusResponse {
   weatherApi: WeatherApiStatus;
@@ -125,20 +114,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         weatherApi: weatherApiStatus,
         sendgrid: sendgridStatus
       });
-    } catch (err) {
-      const authError = err as ApiError;
-      console.error('Error authenticating user:', authError);
+    } catch (err: any) {
+      console.error('Error authenticating user:', err);
       return res.status(401).json({ 
         error: 'Authentication failed',
-        message: authError.message
+        message: err.message
       });
     }
-  } catch (err) {
-    const error = err as ApiError;
-    console.error('Error in api-status handler:', error);
+  } catch (err: any) {
+    console.error('Error in api-status handler:', err);
     return res.status(500).json({
       error: 'Internal server error',
-      message: error.message
+      message: err.message
     });
   }
 }
@@ -190,11 +177,10 @@ async function checkWeatherApiStatus(): Promise<WeatherApiStatus> {
         lastChecked: new Date().toISOString()
       };
     }
-  } catch (err) {
-    const error = err as ApiError;
+  } catch (err: any) {
     return {
       status: 'error',
-      message: `Error connecting to Weather API: ${error.message}`,
+      message: `Error connecting to Weather API: ${err.message}`,
       lastChecked: new Date().toISOString()
     };
   }
@@ -247,11 +233,10 @@ async function checkSendgridStatus(): Promise<SendgridStatus> {
         lastChecked: new Date().toISOString()
       };
     }
-  } catch (err) {
-    const error = err as ApiError;
+  } catch (err: any) {
     return {
       status: 'error',
-      message: `Error connecting to SendGrid API: ${error.message}`,
+      message: `Error connecting to SendGrid API: ${err.message}`,
       lastChecked: new Date().toISOString()
     };
   }
