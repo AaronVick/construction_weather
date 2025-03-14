@@ -133,6 +133,11 @@ const WeatherTesting: React.FC = () => {
       const apiUrl = `${baseUrl}/api/admin/debug-test-history?page=${page}&limit=10`;
       
       console.log('Fetching debug history from:', apiUrl);
+      
+      // For debugging, log the full URL
+      console.log('Full URL:', apiUrl);
+      console.log('Auth token available:', !!token);
+      
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
@@ -140,6 +145,23 @@ const WeatherTesting: React.FC = () => {
           'Authorization': token ? `Bearer ${token}` : ''
         }
       });
+      
+      // For debugging, log the response status and headers
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries([...response.headers.entries()]));
+      
+      // Try to get the response text first to see what's coming back
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+      
+      // Then parse it as JSON
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Error parsing JSON:', parseError);
+        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+      }
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -172,6 +194,7 @@ const WeatherTesting: React.FC = () => {
       const apiUrl = `${baseUrl}/api/admin/debug-test-history?runId=${runId}`;
       
       console.log('Fetching debug run details from:', apiUrl);
+      
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
@@ -179,6 +202,22 @@ const WeatherTesting: React.FC = () => {
           'Authorization': token ? `Bearer ${token}` : ''
         }
       });
+      
+      // For debugging, log the response status
+      console.log('Response status:', response.status);
+      
+      // Try to get the response text first
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+      
+      // Then parse it as JSON
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Error parsing JSON:', parseError);
+        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+      }
       
       if (!response.ok) {
         const errorData = await response.json();
