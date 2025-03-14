@@ -148,7 +148,6 @@ const WeatherTesting: React.FC = () => {
       
       // For debugging, log the response status and headers
       console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries([...response.headers.entries()]));
       
       // Try to get the response text first to see what's coming back
       const responseText = await response.text();
@@ -164,17 +163,15 @@ const WeatherTesting: React.FC = () => {
       }
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || errorData.message || 'Failed to fetch debug history');
+        throw new Error(data.error || data.message || 'Failed to fetch debug history');
       }
-      
-      const data = await response.json();
       console.log('Debug history data:', data);
       
-      setHistoryItems(data.history);
-      setHistoryTotal(data.total);
-      setHistoryPage(data.page);
-      setHistoryPages(data.pages);
+      // Use the parsed data
+      setHistoryItems(data.history || []);
+      setHistoryTotal(data.total || 0);
+      setHistoryPage(data.page || 1);
+      setHistoryPages(data.pages || 1);
     } catch (error) {
       console.error('Error fetching debug history:', error);
       setHistoryError(error instanceof Error ? error.message : 'An unknown error occurred');
@@ -220,13 +217,11 @@ const WeatherTesting: React.FC = () => {
       }
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || errorData.message || 'Failed to fetch debug run details');
+        throw new Error(data.error || data.message || 'Failed to fetch debug run details');
       }
-      
-      const data = await response.json();
       console.log('Debug run details:', data);
       
+      // Use the parsed data
       setSelectedHistoryItem(data);
     } catch (error) {
       console.error('Error fetching debug run details:', error);
