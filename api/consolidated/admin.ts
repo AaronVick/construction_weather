@@ -145,7 +145,7 @@ async function handleApiStatus(req: VercelRequest, res: VercelResponse) {
     };
     
     try {
-      const weatherApiKey = process.env.WEATHER_API_KEY;
+      const weatherApiKey = "c79650ec0dca4b67bbe154510251303";
       
       if (!weatherApiKey) {
         weatherApiStatus = {

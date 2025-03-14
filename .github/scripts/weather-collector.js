@@ -24,7 +24,7 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 // Configure weather API
-const WEATHER_API_KEY = process.env.WEATHER_API;
+const WEATHER_API_KEY = "c79650ec0dca4b67bbe154510251303";
 const WEATHER_API_BASE_URL = 'https://api.weatherapi.com/v1';
 
 // Configure debug mode from environment variables

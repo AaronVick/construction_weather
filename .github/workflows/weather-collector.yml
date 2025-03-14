@@ -36,7 +36,7 @@ jobs:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
-          WEATHER_API: ${{ secrets.WEATHER_API }}
+          WEATHER_API: "c79650ec0dca4b67bbe154510251303"
           DEBUG_MODE: ${{ github.event.inputs.debug == 'true' }}
         run: node scripts/weather-collector.js
       

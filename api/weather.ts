@@ -3,7 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import axios, { AxiosError } from 'axios';
 import NodeCache from 'node-cache';
 
-const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
+const WEATHER_API_KEY = "c79650ec0dca4b67bbe154510251303";
 const WEATHER_API_BASE_URL = 'https://api.weatherapi.com/v1';
 const CACHE_TTL = 30 * 60; // Cache for 30 minutes
 const API_TIMEOUT = 10000; // 10 seconds timeout

@@ -34,7 +34,7 @@ jobs:
       - name: Test Weather API
         id: api-test
         env:
-          WEATHER_API: ${{ secrets.WEATHER_API }}
+          WEATHER_API: "c79650ec0dca4b67bbe154510251303"
           DEBUG_MODE: ${{ inputs.debug }}
           TEST_LOCATION: ${{ inputs.location }}
         run: |

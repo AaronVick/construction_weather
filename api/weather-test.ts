@@ -58,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Get the Weather API key from environment variables
-    const WEATHER_API_KEY = process.env.WEATHER_API;
+    const WEATHER_API_KEY = "c79650ec0dca4b67bbe154510251303";
     
     if (!WEATHER_API_KEY) {
       throw new Error('Weather API key is not configured');

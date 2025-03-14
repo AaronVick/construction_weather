@@ -192,7 +192,7 @@ async function fetchWeatherApiData(
     
     // Check for various ways the API key might be defined
     if (typeof import.meta !== 'undefined' && import.meta.env) {
-      apiKey = import.meta.env.VITE_WEATHER_API;
+      apiKey = "c79650ec0dca4b67bbe154510251303";
     } else if (typeof process !== 'undefined' && process.env) {
       apiKey = process.env.NEXT_PUBLIC_WEATHER_API_KEY;
     } else if (typeof window !== 'undefined' && (window as any).__ENV && (window as any).__ENV.VITE_WEATHER_API) {

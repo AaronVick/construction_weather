@@ -46,7 +46,7 @@ interface SendgridApiData {
 }
 
 // API configurations
-const WEATHER_API_KEY = process.env.WEATHER_API;
+const WEATHER_API_KEY =  "c79650ec0dca4b67bbe154510251303";
 const WEATHER_API_BASE_URL = 'https://api.weatherapi.com/v1';
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const SENDGRID_API_BASE_URL = 'https://api.sendgrid.com/v3';
