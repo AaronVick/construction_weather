@@ -13,8 +13,27 @@ import {
   Link,
   Switch,
   FormControlLabel,
-  Divider
+  Divider,
+  Tabs,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  Pagination,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  IconButton,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
 } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface WeatherTestFormData {
   zipcode: string;
@@ -49,6 +68,27 @@ interface WorkflowStatus {
   repository: string;
 }
 
+interface DebugTestHistoryItem {
+  id: string;
+  timestamp: string;
+  success: boolean;
+  users_processed: number;
+  successful_checks: number;
+  failed_checks: number;
+  notifications_sent: number;
+  error: string | null;
+}
+
+interface DebugTestRunDetail extends DebugTestHistoryItem {
+  results?: Array<{
+    userId: string;
+    success: boolean;
+    triggeredConditions?: string[];
+    notificationsSent?: number;
+    error?: string;
+  }>;
+}
+
 const WeatherTesting: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +102,16 @@ const WeatherTesting: React.FC = () => {
   const [workflowRunId, setWorkflowRunId] = useState<string | null>(null);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   
+  // Debug history states
+  const [viewMode, setViewMode] = useState<'run' | 'history'>('run');
+  const [historyItems, setHistoryItems] = useState<DebugTestHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState<boolean>(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState<DebugTestRunDetail | null>(null);
+  const [historyPage, setHistoryPage] = useState<number>(1);
+  const [historyTotal, setHistoryTotal] = useState<number>(0);
+  const [historyPages, setHistoryPages] = useState<number>(1);
+  
   // Initialize form
   const { register, handleSubmit, formState: { errors } } = useForm<WeatherTestFormData>({
     defaultValues: {
@@ -69,6 +119,89 @@ const WeatherTesting: React.FC = () => {
     }
   });
 
+  // Function to fetch debug test history
+  const fetchDebugHistory = async (page = 1) => {
+    setHistoryLoading(true);
+    setHistoryError(null);
+    
+    try {
+      // Get auth token from localStorage (assuming it's stored there)
+      const token = localStorage.getItem('authToken');
+      
+      // Use Vite's import.meta.env for environment variables
+      const baseUrl = import.meta.env.VITE_API_URL || '';
+      const apiUrl = `${baseUrl}/api/admin/debug-test-history?page=${page}&limit=10`;
+      
+      console.log('Fetching debug history from:', apiUrl);
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.message || 'Failed to fetch debug history');
+      }
+      
+      const data = await response.json();
+      console.log('Debug history data:', data);
+      
+      setHistoryItems(data.history);
+      setHistoryTotal(data.total);
+      setHistoryPage(data.page);
+      setHistoryPages(data.pages);
+    } catch (error) {
+      console.error('Error fetching debug history:', error);
+      setHistoryError(error instanceof Error ? error.message : 'An unknown error occurred');
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+  
+  // Function to fetch details for a specific run
+  const fetchDebugRunDetails = async (runId: string) => {
+    try {
+      // Get auth token from localStorage (assuming it's stored there)
+      const token = localStorage.getItem('authToken');
+      
+      // Use Vite's import.meta.env for environment variables
+      const baseUrl = import.meta.env.VITE_API_URL || '';
+      const apiUrl = `${baseUrl}/api/admin/debug-test-history?runId=${runId}`;
+      
+      console.log('Fetching debug run details from:', apiUrl);
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.message || 'Failed to fetch debug run details');
+      }
+      
+      const data = await response.json();
+      console.log('Debug run details:', data);
+      
+      setSelectedHistoryItem(data);
+    } catch (error) {
+      console.error('Error fetching debug run details:', error);
+      // Show error in a toast or alert
+    }
+  };
+  
+  // Effect to load history when tab changes to history
+  useEffect(() => {
+    if (debugMode && viewMode === 'history') {
+      fetchDebugHistory(1);
+    }
+  }, [debugMode, viewMode]);
+  
   // Effect to poll workflow status
   useEffect(() => {
     if (workflowRunId && workflowRunning) {
@@ -271,79 +404,252 @@ const WeatherTesting: React.FC = () => {
                     Run the test-debug-mode workflow to test the weather collection system in debug mode.
                   </Typography>
                   
-                  <Box display="flex" justifyContent="flex-start" mb={3}>
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      size="large"
-                      disabled={workflowRunning}
-                      startIcon={workflowRunning ? <CircularProgress size={20} /> : null}
-                      onClick={runDebugWorkflow}
+                  {/* Tab Navigation */}
+                  <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+                    <Tabs 
+                      value={viewMode} 
+                      onChange={(e, newValue) => setViewMode(newValue)}
+                      aria-label="debug mode tabs"
                     >
-                      {workflowRunning ? 'Running Workflow...' : 'Run Debug Test'}
-                    </Button>
+                      <Tab value="run" label="Run New Test" />
+                      <Tab value="history" label="View History" />
+                    </Tabs>
                   </Box>
                   
-                  {/* Workflow Error */}
-                  {workflowError && (
-                    <Alert severity="error" sx={{ mb: 2 }}>
-                      {workflowError}
-                    </Alert>
+                  {/* Run New Test View */}
+                  {viewMode === 'run' && (
+                    <>
+                      <Box display="flex" justifyContent="flex-start" mb={3}>
+                        <Button
+                          variant="contained"
+                          color="secondary"
+                          size="large"
+                          disabled={workflowRunning}
+                          startIcon={workflowRunning ? <CircularProgress size={20} /> : null}
+                          onClick={runDebugWorkflow}
+                        >
+                          {workflowRunning ? 'Running Workflow...' : 'Run Debug Test'}
+                        </Button>
+                      </Box>
+                      
+                      {/* Workflow Error */}
+                      {workflowError && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                          {workflowError}
+                        </Alert>
+                      )}
+                      
+                      {/* Workflow Status */}
+                      {workflowStatus && (
+                        <Paper sx={{ p: 2, mb: 2 }}>
+                          <Typography variant="h6" gutterBottom>
+                            Workflow Status
+                          </Typography>
+                          
+                          <Grid container spacing={2}>
+                            <Grid item xs={12} md={6}>
+                              <Typography variant="body1">
+                                <strong>Name:</strong> {workflowStatus.name}
+                              </Typography>
+                              
+                              <Typography variant="body1">
+                                <strong>Status:</strong> {workflowStatus.status}
+                              </Typography>
+                              
+                              <Typography variant="body1">
+                                <strong>Conclusion:</strong> {workflowStatus.conclusion || 'In progress'}
+                              </Typography>
+                            </Grid>
+                            
+                            <Grid item xs={12} md={6}>
+                              <Typography variant="body1">
+                                <strong>Started:</strong> {new Date(workflowStatus.created_at).toLocaleString()}
+                              </Typography>
+                              
+                              <Typography variant="body1">
+                                <strong>Last Updated:</strong> {new Date(workflowStatus.updated_at).toLocaleString()}
+                              </Typography>
+                            </Grid>
+                            
+                            <Grid item xs={12}>
+                              <Box mt={1}>
+                                <Button
+                                  variant="outlined"
+                                  color="primary"
+                                  component="a"
+                                  href={workflowStatus.html_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  size="small"
+                                >
+                                  View on GitHub
+                                </Button>
+                              </Box>
+                            </Grid>
+                          </Grid>
+                        </Paper>
+                      )}
+                    </>
                   )}
                   
-                  {/* Workflow Status */}
-                  {workflowStatus && (
-                    <Paper sx={{ p: 2, mb: 2 }}>
-                      <Typography variant="h6" gutterBottom>
-                        Workflow Status
+                  {/* History View */}
+                  {viewMode === 'history' && (
+                    <>
+                      <Typography variant="body1" color="text.secondary" paragraph>
+                        View previous debug test runs and their results.
                       </Typography>
                       
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} md={6}>
-                          <Typography variant="body1">
-                            <strong>Name:</strong> {workflowStatus.name}
-                          </Typography>
+                      {historyLoading ? (
+                        <Box display="flex" justifyContent="center" my={4}>
+                          <CircularProgress />
+                        </Box>
+                      ) : historyError ? (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                          {historyError}
+                        </Alert>
+                      ) : historyItems.length === 0 ? (
+                        <Alert severity="info">No debug test history found.</Alert>
+                      ) : (
+                        <>
+                          <TableContainer component={Paper} sx={{ mb: 2 }}>
+                            <Table>
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell>Date/Time</TableCell>
+                                  <TableCell>Status</TableCell>
+                                  <TableCell>Users Processed</TableCell>
+                                  <TableCell>Notifications</TableCell>
+                                  <TableCell>Actions</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {historyItems.map((item) => (
+                                  <TableRow key={item.id}>
+                                    <TableCell>{new Date(item.timestamp).toLocaleString()}</TableCell>
+                                    <TableCell>
+                                      <Chip 
+                                        label={item.success ? "Success" : "Failed"} 
+                                        color={item.success ? "success" : "error"} 
+                                        size="small" 
+                                      />
+                                    </TableCell>
+                                    <TableCell>{item.users_processed}</TableCell>
+                                    <TableCell>{item.notifications_sent}</TableCell>
+                                    <TableCell>
+                                      <Button 
+                                        size="small" 
+                                        onClick={() => fetchDebugRunDetails(item.id)}
+                                      >
+                                        View Details
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
                           
-                          <Typography variant="body1">
-                            <strong>Status:</strong> {workflowStatus.status}
-                          </Typography>
-                          
-                          <Typography variant="body1">
-                            <strong>Conclusion:</strong> {workflowStatus.conclusion || 'In progress'}
-                          </Typography>
-                        </Grid>
-                        
-                        <Grid item xs={12} md={6}>
-                          <Typography variant="body1">
-                            <strong>Started:</strong> {new Date(workflowStatus.created_at).toLocaleString()}
-                          </Typography>
-                          
-                          <Typography variant="body1">
-                            <strong>Last Updated:</strong> {new Date(workflowStatus.updated_at).toLocaleString()}
-                          </Typography>
-                        </Grid>
-                        
-                        <Grid item xs={12}>
-                          <Box mt={1}>
-                            <Button
-                              variant="outlined"
-                              color="primary"
-                              component="a"
-                              href={workflowStatus.html_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              size="small"
-                            >
-                              View on GitHub
-                            </Button>
-                          </Box>
-                        </Grid>
-                      </Grid>
-                    </Paper>
+                          {/* Pagination */}
+                          {historyPages > 1 && (
+                            <Box display="flex" justifyContent="center" mt={2}>
+                              <Pagination 
+                                count={historyPages} 
+                                page={historyPage}
+                                onChange={(e, page) => fetchDebugHistory(page)}
+                                color="primary"
+                              />
+                            </Box>
+                          )}
+                        </>
+                      )}
+                    </>
                   )}
                 </Paper>
               </Grid>
             )}
+            
+            {/* Detail View Dialog */}
+            <Dialog
+              open={!!selectedHistoryItem}
+              onClose={() => setSelectedHistoryItem(null)}
+              maxWidth="md"
+              fullWidth
+            >
+              <DialogTitle>
+                Debug Test Run Details
+                <IconButton
+                  onClick={() => setSelectedHistoryItem(null)}
+                  sx={{ position: 'absolute', right: 8, top: 8 }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </DialogTitle>
+              <DialogContent>
+                {selectedHistoryItem && (
+                  <>
+                    <Typography variant="subtitle1">
+                      Run at: {new Date(selectedHistoryItem.timestamp).toLocaleString()}
+                    </Typography>
+                    
+                    <Typography variant="subtitle1" sx={{ mt: 2 }}>
+                      Status: 
+                      <Chip 
+                        label={selectedHistoryItem.success ? "Success" : "Failed"} 
+                        color={selectedHistoryItem.success ? "success" : "error"} 
+                        size="small" 
+                        sx={{ ml: 1 }}
+                      />
+                    </Typography>
+                    
+                    {/* Display detailed results */}
+                    <Typography variant="h6" sx={{ mt: 3 }}>Results</Typography>
+                    <Paper sx={{ p: 2, mt: 1 }}>
+                      <Typography><strong>Users Processed:</strong> {selectedHistoryItem.users_processed}</Typography>
+                      <Typography><strong>Successful Checks:</strong> {selectedHistoryItem.successful_checks}</Typography>
+                      <Typography><strong>Failed Checks:</strong> {selectedHistoryItem.failed_checks}</Typography>
+                      <Typography><strong>Notifications:</strong> {selectedHistoryItem.notifications_sent}</Typography>
+                      
+                      {selectedHistoryItem.error && (
+                        <Alert severity="error" sx={{ mt: 2 }}>
+                          {selectedHistoryItem.error}
+                        </Alert>
+                      )}
+                    </Paper>
+                    
+                    {/* Display user results if available */}
+                    {selectedHistoryItem.results && selectedHistoryItem.results.length > 0 && (
+                      <>
+                        <Typography variant="h6" sx={{ mt: 3 }}>User Details</Typography>
+                        {selectedHistoryItem.results.map((result, index) => (
+                          <Accordion key={index} sx={{ mt: 1 }}>
+                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                              <Typography>
+                                User {result.userId} - 
+                                {result.success ? 
+                                  `${result.triggeredConditions?.length || 0} conditions triggered` : 
+                                  'Failed'}
+                              </Typography>
+                            </AccordionSummary>
+                            <AccordionDetails>
+                              {result.success ? (
+                                <>
+                                  <Typography><strong>Triggered Conditions:</strong> {result.triggeredConditions?.join(', ') || 'None'}</Typography>
+                                  <Typography><strong>Notifications Sent:</strong> {result.notificationsSent || 0}</Typography>
+                                </>
+                              ) : (
+                                <Alert severity="error">
+                                  {result.error || 'Unknown error'}
+                                </Alert>
+                              )}
+                            </AccordionDetails>
+                          </Accordion>
+                        ))}
+                      </>
+                    )}
+                  </>
+                )}
+              </DialogContent>
+            </Dialog>
             
             {/* Error Message */}
             {error && (
