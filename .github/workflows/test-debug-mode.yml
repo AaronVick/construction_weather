@@ -58,7 +58,12 @@ jobs:
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           DEBUG_MODE: 'true'  # Force debug mode to be true
-        run: node ${{ steps.find-script.outputs.script_path }}
+        run: |
+          # Create a temporary file with CommonJS import syntax
+          TEMP_FILE=$(mktemp)
+          cat ${{ steps.find-script.outputs.script_path }} | sed 's/import \* as admin from/const admin = require/g' | sed 's/import { OpenAI } from/const { OpenAI } = require/g' | sed 's/import dotenv from/const dotenv = require/g' > $TEMP_FILE
+          echo "Running modified script..."
+          node $TEMP_FILE
       
       - name: Report results
         if: always()
