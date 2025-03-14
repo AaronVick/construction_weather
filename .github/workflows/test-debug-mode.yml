@@ -37,7 +37,9 @@ jobs:
           cache: 'npm'
       
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci
+          npm install openai firebase-admin dotenv
       
       - name: Find weather notifier script
         id: find-script
