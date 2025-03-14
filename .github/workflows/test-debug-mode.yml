@@ -59,11 +59,19 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           DEBUG_MODE: 'true'  # Force debug mode to be true
         run: |
-          # Create a temporary file with CommonJS import syntax
-          TEMP_FILE=$(mktemp)
-          cat ${{ steps.find-script.outputs.script_path }} | sed "s/import \* as admin from 'firebase-admin';/const admin = require('firebase-admin');/g" | sed "s/import { OpenAI } from 'openai';/const { OpenAI } = require('openai');/g" | sed "s/import dotenv from 'dotenv';/const dotenv = require('dotenv');/g" > $TEMP_FILE
-          echo "Running modified script..."
-          node $TEMP_FILE
+          # Create a temporary directory with package.json
+          TEMP_DIR=$(mktemp -d)
+          cd $TEMP_DIR
+          
+          # Initialize a new Node.js project and install dependencies
+          npm init -y
+          npm install firebase-admin openai dotenv
+          
+          # Copy the script to the temporary directory with CommonJS syntax
+          cat ${{ steps.find-script.outputs.script_path }} | sed "s/import \* as admin from 'firebase-admin';/const admin = require('firebase-admin');/g" | sed "s/import { OpenAI } from 'openai';/const { OpenAI } = require('openai');/g" | sed "s/import dotenv from 'dotenv';/const dotenv = require('dotenv');/g" > weather-notifier.js
+          
+          echo "Running modified script in temporary directory..."
+          node weather-notifier.js
       
       - name: Report results
         if: always()
