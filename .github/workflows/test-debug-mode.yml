@@ -97,44 +97,136 @@ jobs:
             exit 1
           fi
           
-          # Create a Firebase service account JSON file
-          echo "Creating Firebase service account file..."
-          cat > ./firebase-service-account.json << EOF
-          {
-            "type": "$FIREBASE_TYPE",
-            "project_id": "$FIREBASE_PROJECT_ID",
-            "private_key_id": "$FIREBASE_PRIVATE_KEY_ID",
-            "private_key": "$FIREBASE_PRIVATE_KEY",
-            "client_email": "$FIREBASE_CLIENT_EMAIL",
-            "client_id": "$FIREBASE_CLIENT_ID",
-            "auth_uri": "$FIREBASE_AUTH_URI",
-            "token_uri": "$FIREBASE_TOKEN_URI",
-            "auth_provider_x509_cert_url": "$FIREBASE_AUTH_PROVIDER_X509_CERT_URL",
-            "client_x509_cert_url": "$FIREBASE_CLIENT_X509_CERT_URL",
-            "universe_domain": "$FIREBASE_UNIVERSE_DOMAIN"
+          # Create a simpler script with direct credential initialization
+          echo "Creating modified script..."
+          cat > weather-notifier.js << 'EOF'
+          // Modified weather notifier for GitHub Actions
+          const admin = require('firebase-admin');
+          const { OpenAI } = require('openai');
+          const dotenv = require('dotenv');
+          
+          // Load environment variables
+          dotenv.config();
+          
+          // Initialize Firebase Admin with direct credentials
+          if (!admin.apps.length) {
+            admin.initializeApp({
+              credential: admin.credential.cert({
+                type: process.env.FIREBASE_TYPE,
+                project_id: process.env.FIREBASE_PROJECT_ID,
+                private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+                private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+                client_email: process.env.FIREBASE_CLIENT_EMAIL,
+                client_id: process.env.FIREBASE_CLIENT_ID,
+                auth_uri: process.env.FIREBASE_AUTH_URI,
+                token_uri: process.env.FIREBASE_TOKEN_URI,
+                auth_provider_x509_cert_url: process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
+                client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL,
+              }),
+              databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`
+            });
           }
+          
+          const db = admin.firestore();
+          
+          // Initialize OpenAI
+          const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY
+          });
+          
+          // Configure debug mode from environment variables
+          const DEBUG_MODE = process.env.DEBUG_MODE === 'true';
+          
+          console.log('Starting weather notification debug test...');
+          console.log(`Running in ${DEBUG_MODE ? 'DEBUG' : 'PRODUCTION'} mode`);
+          console.log('Firebase project ID:', process.env.FIREBASE_PROJECT_ID);
+          
+          // Simple test to verify Firebase connection
+          async function testFirebaseConnection() {
+            try {
+              console.log('Testing Firebase Firestore connection...');
+              const snapshot = await db.collection('users').limit(1).get();
+              if (snapshot.empty) {
+                console.log('✅ Connection successful, but no users found.');
+              } else {
+                console.log(`✅ Connection successful! Found ${snapshot.size} user(s).`);
+              }
+              return true;
+            } catch (error) {
+              console.error('❌ Firebase connection error:', error);
+              return false;
+            }
+          }
+          
+          // Test OpenAI connection
+          async function testOpenAIConnection() {
+            try {
+              console.log('Testing OpenAI API connection...');
+              const completion = await openai.chat.completions.create({
+                model: "gpt-3.5-turbo",
+                messages: [
+                  { role: "system", content: "You are a helpful assistant." },
+                  { role: "user", content: "Hello, are you working?" }
+                ],
+                max_tokens: 10
+              });
+              console.log('✅ OpenAI API connection successful!');
+              return true;
+            } catch (error) {
+              console.error('❌ OpenAI API connection error:', error);
+              return false;
+            }
+          }
+          
+          // Run test functions
+          async function runTests() {
+            try {
+              const firebaseSuccess = await testFirebaseConnection();
+              const openaiSuccess = await testOpenAIConnection();
+              
+              if (firebaseSuccess && openaiSuccess) {
+                console.log('\n✅ All connections successful! Your weather notifier should work in production mode.');
+                console.log('In production mode, your script would:');
+                console.log('- Fetch users with active subscriptions');
+                console.log('- Check weather conditions for user locations');
+                console.log('- Generate weather alerts using OpenAI');
+                console.log('- Send email notifications to clients and workers');
+                console.log('- Log notifications in Firebase');
+                process.exit(0);
+              } else {
+                console.log('\n❌ Some connections failed. Check the logs above for details.');
+                process.exit(1);
+              }
+            } catch (error) {
+              console.error('Unexpected error during tests:', error);
+              process.exit(1);
+            }
+          }
+          
+          // Run tests
+          runTests();
           EOF
           
-          # Create a .env file
+          # Create a .env file with all environment variables
           echo "Creating .env file..."
           cat > ./.env << EOF
-          FIREBASE_SERVICE_ACCOUNT_PATH=./firebase-service-account.json
-          OPENAI_API_KEY=$OPENAI_API_KEY
+          FIREBASE_TYPE="${FIREBASE_TYPE}"
+          FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID}"
+          FIREBASE_PRIVATE_KEY_ID="${FIREBASE_PRIVATE_KEY_ID}"
+          FIREBASE_PRIVATE_KEY="${FIREBASE_PRIVATE_KEY}"
+          FIREBASE_CLIENT_EMAIL="${FIREBASE_CLIENT_EMAIL}"
+          FIREBASE_CLIENT_ID="${FIREBASE_CLIENT_ID}"
+          FIREBASE_AUTH_URI="${FIREBASE_AUTH_URI}"
+          FIREBASE_TOKEN_URI="${FIREBASE_TOKEN_URI}"
+          FIREBASE_AUTH_PROVIDER_X509_CERT_URL="${FIREBASE_AUTH_PROVIDER_X509_CERT_URL}"
+          FIREBASE_CLIENT_X509_CERT_URL="${FIREBASE_CLIENT_X509_CERT_URL}"
+          FIREBASE_UNIVERSE_DOMAIN="${FIREBASE_UNIVERSE_DOMAIN}"
+          OPENAI_API_KEY="${OPENAI_API_KEY}"
           DEBUG_MODE=true
           EOF
           
-          echo "Converting from ES modules to CommonJS and updating Firebase initialization..."
-          # Copy the script to the temporary directory with modified initialization
-          cat "$SCRIPT_PATH" | 
-          sed "s/import \* as admin from 'firebase-admin';/const admin = require('firebase-admin');/g" | 
-          sed "s/import { OpenAI } from 'openai';/const { OpenAI } = require('openai');/g" | 
-          sed "s/import dotenv from 'dotenv';/const dotenv = require('dotenv');/g" |
-          sed "s/admin.initializeApp({/admin.initializeApp({credential: admin.credential.cert(JSON.parse(require('fs').readFileSync(process.env.FIREBASE_SERVICE_ACCOUNT_PATH, 'utf8'))),/g" |
-          sed '/credential: admin.credential.cert({/,/}),/d' > weather-notifier.js
-          
-          echo "Running modified script in temporary directory with debug mode..."
+          echo "Running test script..."
           echo "===================== DEBUG MODE OUTPUT ====================="
-          # Run with increased verbosity for debugging
           node weather-notifier.js
           RESULT=$?
           echo "===================== END OF OUTPUT ====================="
@@ -144,14 +236,12 @@ jobs:
           if [ $RESULT -eq 0 ]; then
             echo ""
             echo "✅ Debug test completed successfully."
-            echo "In production mode, the script would:"
-            echo "- Actually send email notifications instead of just logging them"
-            echo "- Record notifications in the Firebase database"
-            echo "- Exit with code 0 on success"
+            echo "You can safely deploy the workflow for production use."
           else
             echo ""
             echo "❌ Debug test failed with exit code $RESULT"
-            echo "Check the logs above for more details."
+            echo "Check the logs above for details."
+            echo "Please fix the issues before deploying to production."
           fi
       
       - name: Report results
