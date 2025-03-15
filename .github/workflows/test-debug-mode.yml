@@ -45,15 +45,22 @@ jobs:
         id: find-script
         run: |
           echo "Looking for weather-notifier.js in repository..."
-          SCRIPT_PATH=$(find . -type f -name "weather-notifier.js" | head -n 1)
+          # Use the GitHub workspace environment variable to search from the root
+          SCRIPT_PATH=$(find $GITHUB_WORKSPACE -type f -name "weather-notifier.js" | head -n 1)
+          
           if [ -z "$SCRIPT_PATH" ]; then
             echo "Error: weather-notifier.js not found in repository"
-            echo "Listing scripts directory contents for debugging:"
-            ls -la ./scripts/ || echo "scripts directory not found"
-            ls -la ./.github/scripts/ || echo ".github/scripts directory not found"
+            echo "Listing potential directories for debugging:"
+            ls -la $GITHUB_WORKSPACE/scripts/ || echo "scripts directory not found"
+            ls -la $GITHUB_WORKSPACE/.github/scripts/ || echo ".github/scripts directory not found"
             exit 1
           fi
+          
           echo "Found script at: $SCRIPT_PATH"
+          echo "Verifying file exists and is readable:"
+          ls -la "$SCRIPT_PATH"
+          
+          # Set the output variable with the full path
           echo "script_path=$SCRIPT_PATH" >> $GITHUB_OUTPUT
       
       - name: Run weather notifier in debug mode
@@ -72,23 +79,19 @@ jobs:
           npm init -y
           npm install firebase-admin openai dotenv
           
-          # Get the full path of the script and verify it exists
-          FULL_SCRIPT_PATH=$(realpath ${{ steps.find-script.outputs.script_path }} || echo "not_found")
+          # Get the script path from the output variable
+          SCRIPT_PATH="${{ steps.find-script.outputs.script_path }}"
           
-          if [ "$FULL_SCRIPT_PATH" = "not_found" ] || [ ! -f "$FULL_SCRIPT_PATH" ]; then
-            echo "Script not found at path: ${{ steps.find-script.outputs.script_path }}"
-            echo "Current working directory: $(pwd)"
-            echo "Repository root directory: $GITHUB_WORKSPACE"
-            echo "Looking for script in repository again..."
-            find $GITHUB_WORKSPACE -name "weather-notifier.js" -type f
+          echo "Using script at path: $SCRIPT_PATH"
+          echo "Verifying file exists:"
+          if [ ! -f "$SCRIPT_PATH" ]; then
+            echo "Error: File not found at $SCRIPT_PATH"
             exit 1
           fi
           
-          echo "Found script at: $FULL_SCRIPT_PATH"
           echo "Converting from ES modules to CommonJS..."
-          
           # Copy the script to the temporary directory with CommonJS syntax
-          cat "$FULL_SCRIPT_PATH" | sed "s/import \* as admin from 'firebase-admin';/const admin = require('firebase-admin');/g" | sed "s/import { OpenAI } from 'openai';/const { OpenAI } = require('openai');/g" | sed "s/import dotenv from 'dotenv';/const dotenv = require('dotenv');/g" > weather-notifier.js
+          cat "$SCRIPT_PATH" | sed "s/import \* as admin from 'firebase-admin';/const admin = require('firebase-admin');/g" | sed "s/import { OpenAI } from 'openai';/const { OpenAI } = require('openai');/g" | sed "s/import dotenv from 'dotenv';/const dotenv = require('dotenv');/g" > weather-notifier.js
           
           echo "Running modified script in temporary directory with debug mode..."
           echo "===================== DEBUG MODE OUTPUT ====================="
