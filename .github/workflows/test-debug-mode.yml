@@ -65,9 +65,17 @@ jobs:
       
       - name: Run weather notifier in debug mode
         env:
+          FIREBASE_TYPE: ${{ secrets.FIREBASE_TYPE }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY_ID: ${{ secrets.FIREBASE_PRIVATE_KEY_ID }}
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_CLIENT_ID: ${{ secrets.FIREBASE_CLIENT_ID }}
+          FIREBASE_AUTH_URI: ${{ secrets.FIREBASE_AUTH_URI }}
+          FIREBASE_TOKEN_URI: ${{ secrets.FIREBASE_TOKEN_URI }}
+          FIREBASE_AUTH_PROVIDER_X509_CERT_URL: ${{ secrets.FIREBASE_AUTH_PROVIDER_X509_CERT_URL }}
+          FIREBASE_CLIENT_X509_CERT_URL: ${{ secrets.FIREBASE_CLIENT_X509_CERT_URL }}
+          FIREBASE_UNIVERSE_DOMAIN: ${{ secrets.FIREBASE_UNIVERSE_DOMAIN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           DEBUG_MODE: 'true'  # Force debug mode to be true
         run: |
@@ -89,14 +97,45 @@ jobs:
             exit 1
           fi
           
-          echo "Converting from ES modules to CommonJS..."
-          # Copy the script to the temporary directory with CommonJS syntax
-          cat "$SCRIPT_PATH" | sed "s/import \* as admin from 'firebase-admin';/const admin = require('firebase-admin');/g" | sed "s/import { OpenAI } from 'openai';/const { OpenAI } = require('openai');/g" | sed "s/import dotenv from 'dotenv';/const dotenv = require('dotenv');/g" > weather-notifier.js
+          # Create a Firebase service account JSON file
+          echo "Creating Firebase service account file..."
+          cat > ./firebase-service-account.json << EOF
+          {
+            "type": "$FIREBASE_TYPE",
+            "project_id": "$FIREBASE_PROJECT_ID",
+            "private_key_id": "$FIREBASE_PRIVATE_KEY_ID",
+            "private_key": "$FIREBASE_PRIVATE_KEY",
+            "client_email": "$FIREBASE_CLIENT_EMAIL",
+            "client_id": "$FIREBASE_CLIENT_ID",
+            "auth_uri": "$FIREBASE_AUTH_URI",
+            "token_uri": "$FIREBASE_TOKEN_URI",
+            "auth_provider_x509_cert_url": "$FIREBASE_AUTH_PROVIDER_X509_CERT_URL",
+            "client_x509_cert_url": "$FIREBASE_CLIENT_X509_CERT_URL",
+            "universe_domain": "$FIREBASE_UNIVERSE_DOMAIN"
+          }
+          EOF
+          
+          # Create a .env file
+          echo "Creating .env file..."
+          cat > ./.env << EOF
+          FIREBASE_SERVICE_ACCOUNT_PATH=./firebase-service-account.json
+          OPENAI_API_KEY=$OPENAI_API_KEY
+          DEBUG_MODE=true
+          EOF
+          
+          echo "Converting from ES modules to CommonJS and updating Firebase initialization..."
+          # Copy the script to the temporary directory with modified initialization
+          cat "$SCRIPT_PATH" | 
+          sed "s/import \* as admin from 'firebase-admin';/const admin = require('firebase-admin');/g" | 
+          sed "s/import { OpenAI } from 'openai';/const { OpenAI } = require('openai');/g" | 
+          sed "s/import dotenv from 'dotenv';/const dotenv = require('dotenv');/g" |
+          sed "s/admin.initializeApp({/admin.initializeApp({credential: admin.credential.cert(JSON.parse(require('fs').readFileSync(process.env.FIREBASE_SERVICE_ACCOUNT_PATH, 'utf8'))),/g" |
+          sed '/credential: admin.credential.cert({/,/}),/d' > weather-notifier.js
           
           echo "Running modified script in temporary directory with debug mode..."
           echo "===================== DEBUG MODE OUTPUT ====================="
           # Run with increased verbosity for debugging
-          DEBUG_MODE=true node weather-notifier.js
+          node weather-notifier.js
           RESULT=$?
           echo "===================== END OF OUTPUT ====================="
           echo "Script exited with code: $RESULT"
