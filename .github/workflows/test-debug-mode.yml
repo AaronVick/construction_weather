@@ -41,6 +41,17 @@ jobs:
           npm ci
           npm install openai firebase-admin dotenv
       
+      # Add these new steps here
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_KEY }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+      # End of new steps
+      
+      
       - name: Find weather notifier script
         id: find-script
         run: |
