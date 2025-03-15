@@ -63,186 +63,175 @@ jobs:
           # Set the output variable with the full path
           echo "script_path=$SCRIPT_PATH" >> $GITHUB_OUTPUT
       
-      - name: Run weather notifier in debug mode
-        env:
-          FIREBASE_TYPE: ${{ secrets.FIREBASE_TYPE }}
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_PRIVATE_KEY_ID: ${{ secrets.FIREBASE_PRIVATE_KEY_ID }}
-          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
-          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
-          FIREBASE_CLIENT_ID: ${{ secrets.FIREBASE_CLIENT_ID }}
-          FIREBASE_AUTH_URI: ${{ secrets.FIREBASE_AUTH_URI }}
-          FIREBASE_TOKEN_URI: ${{ secrets.FIREBASE_TOKEN_URI }}
-          FIREBASE_AUTH_PROVIDER_X509_CERT_URL: ${{ secrets.FIREBASE_AUTH_PROVIDER_X509_CERT_URL }}
-          FIREBASE_CLIENT_X509_CERT_URL: ${{ secrets.FIREBASE_CLIENT_X509_CERT_URL }}
-          FIREBASE_UNIVERSE_DOMAIN: ${{ secrets.FIREBASE_UNIVERSE_DOMAIN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          DEBUG_MODE: 'true'  # Force debug mode to be true
-        run: |
-          # Create a temporary directory with package.json
-          TEMP_DIR=$(mktemp -d)
-          cd $TEMP_DIR
-          
-          # Initialize a new Node.js project and install dependencies
-          npm init -y
-          npm install firebase-admin openai dotenv
-          
-          # Get the script path from the output variable
-          SCRIPT_PATH="${{ steps.find-script.outputs.script_path }}"
-          
-          echo "Using script at path: $SCRIPT_PATH"
-          echo "Verifying file exists:"
-          if [ ! -f "$SCRIPT_PATH" ]; then
-            echo "Error: File not found at $SCRIPT_PATH"
-            exit 1
-          fi
-          
-          # Create a simpler script with direct credential initialization
-          echo "Creating modified script..."
-          cat > weather-notifier.js << 'EOF'
-          // Modified weather notifier for GitHub Actions
-          const admin = require('firebase-admin');
-          const { OpenAI } = require('openai');
-          const dotenv = require('dotenv');
-          
-          // Load environment variables
-          dotenv.config();
-          
-          // Initialize Firebase Admin with direct credentials
-          if (!admin.apps.length) {
-            admin.initializeApp({
-              credential: admin.credential.cert({
-                type: process.env.FIREBASE_TYPE,
-                project_id: process.env.FIREBASE_PROJECT_ID,
-                private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
-                private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-                client_email: process.env.FIREBASE_CLIENT_EMAIL,
-                client_id: process.env.FIREBASE_CLIENT_ID,
-                auth_uri: process.env.FIREBASE_AUTH_URI,
-                token_uri: process.env.FIREBASE_TOKEN_URI,
-                auth_provider_x509_cert_url: process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
-                client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL,
-              }),
-              databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`
-            });
-          }
-          
-          const db = admin.firestore();
-          
-          // Initialize OpenAI
-          const openai = new OpenAI({
-            apiKey: process.env.OPENAI_API_KEY
-          });
-          
-          // Configure debug mode from environment variables
-          const DEBUG_MODE = process.env.DEBUG_MODE === 'true';
-          
-          console.log('Starting weather notification debug test...');
-          console.log(`Running in ${DEBUG_MODE ? 'DEBUG' : 'PRODUCTION'} mode`);
-          console.log('Firebase project ID:', process.env.FIREBASE_PROJECT_ID);
-          
-          // Simple test to verify Firebase connection
-          async function testFirebaseConnection() {
+          - name: Run weather notifier in debug mode
+          env:
+            FIREBASE_SERVICE_KEY: ${{ secrets.FIREBASE_SERVICE_KEY }}
+            OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+            DEBUG_MODE: 'true'  # Force debug mode to be true
+          run: |
+            # Create a temporary directory with package.json
+            TEMP_DIR=$(mktemp -d)
+            cd $TEMP_DIR
+            
+            # Initialize a new Node.js project and install dependencies
+            npm init -y
+            npm install firebase-admin openai dotenv fs
+            
+            # Get the script path from the output variable
+            SCRIPT_PATH="${{ steps.find-script.outputs.script_path }}"
+            
+            echo "Using script at path: $SCRIPT_PATH"
+            echo "Verifying file exists:"
+            if [ ! -f "$SCRIPT_PATH" ]; then
+              echo "Error: File not found at $SCRIPT_PATH"
+              exit 1
+            fi
+            
+            # Save Firebase service key to a file
+            echo "Creating Firebase service account file..."
+            echo '${{ secrets.FIREBASE_SERVICE_KEY }}' > ./firebase-service-account.json
+            
+            # Create a simpler script that uses the full service account file
+            echo "Creating modified script..."
+            cat > weather-notifier.js << 'EOF'
+            // Modified weather notifier for GitHub Actions
+            const admin = require('firebase-admin');
+            const { OpenAI } = require('openai');
+            const dotenv = require('dotenv');
+            const fs = require('fs');
+            
+            // Load environment variables
+            dotenv.config();
+            
+            // Load Firebase service account
+            console.log('Loading Firebase service account...');
+            let serviceAccount;
             try {
-              console.log('Testing Firebase Firestore connection...');
-              const snapshot = await db.collection('users').limit(1).get();
-              if (snapshot.empty) {
-                console.log('✅ Connection successful, but no users found.');
-              } else {
-                console.log(`✅ Connection successful! Found ${snapshot.size} user(s).`);
-              }
-              return true;
+              const serviceAccountFile = './firebase-service-account.json';
+              const serviceAccountJson = fs.readFileSync(serviceAccountFile, 'utf8');
+              serviceAccount = JSON.parse(serviceAccountJson);
+              console.log('✅ Service account JSON loaded successfully');
             } catch (error) {
-              console.error('❌ Firebase connection error:', error);
-              return false;
-            }
-          }
-          
-          // Test OpenAI connection
-          async function testOpenAIConnection() {
-            try {
-              console.log('Testing OpenAI API connection...');
-              const completion = await openai.chat.completions.create({
-                model: "gpt-3.5-turbo",
-                messages: [
-                  { role: "system", content: "You are a helpful assistant." },
-                  { role: "user", content: "Hello, are you working?" }
-                ],
-                max_tokens: 10
-              });
-              console.log('✅ OpenAI API connection successful!');
-              return true;
-            } catch (error) {
-              console.error('❌ OpenAI API connection error:', error);
-              return false;
-            }
-          }
-          
-          // Run test functions
-          async function runTests() {
-            try {
-              const firebaseSuccess = await testFirebaseConnection();
-              const openaiSuccess = await testOpenAIConnection();
-              
-              if (firebaseSuccess && openaiSuccess) {
-                console.log('\n✅ All connections successful! Your weather notifier should work in production mode.');
-                console.log('In production mode, your script would:');
-                console.log('- Fetch users with active subscriptions');
-                console.log('- Check weather conditions for user locations');
-                console.log('- Generate weather alerts using OpenAI');
-                console.log('- Send email notifications to clients and workers');
-                console.log('- Log notifications in Firebase');
-                process.exit(0);
-              } else {
-                console.log('\n❌ Some connections failed. Check the logs above for details.');
-                process.exit(1);
-              }
-            } catch (error) {
-              console.error('Unexpected error during tests:', error);
+              console.error('❌ Error loading service account:', error.message);
               process.exit(1);
             }
-          }
-          
-          // Run tests
-          runTests();
-          EOF
-          
-          # Create a .env file with all environment variables
-          echo "Creating .env file..."
-          
-          # Special handling for private key to maintain newlines
-          echo "FIREBASE_TYPE=\"${FIREBASE_TYPE}\"" > ./.env
-          echo "FIREBASE_PROJECT_ID=\"${FIREBASE_PROJECT_ID}\"" >> ./.env
-          echo "FIREBASE_PRIVATE_KEY_ID=\"${FIREBASE_PRIVATE_KEY_ID}\"" >> ./.env
-          echo "FIREBASE_PRIVATE_KEY='${FIREBASE_PRIVATE_KEY}'" >> ./.env
-          echo "FIREBASE_CLIENT_EMAIL=\"${FIREBASE_CLIENT_EMAIL}\"" >> ./.env
-          echo "FIREBASE_CLIENT_ID=\"${FIREBASE_CLIENT_ID}\"" >> ./.env
-          echo "FIREBASE_AUTH_URI=\"${FIREBASE_AUTH_URI}\"" >> ./.env
-          echo "FIREBASE_TOKEN_URI=\"${FIREBASE_TOKEN_URI}\"" >> ./.env
-          echo "FIREBASE_AUTH_PROVIDER_X509_CERT_URL=\"${FIREBASE_AUTH_PROVIDER_X509_CERT_URL}\"" >> ./.env
-          echo "FIREBASE_CLIENT_X509_CERT_URL=\"${FIREBASE_CLIENT_X509_CERT_URL}\"" >> ./.env
-          echo "FIREBASE_UNIVERSE_DOMAIN=\"${FIREBASE_UNIVERSE_DOMAIN}\"" >> ./.env
-          echo "OPENAI_API_KEY=\"${OPENAI_API_KEY}\"" >> ./.env
-          echo "DEBUG_MODE=true" >> ./.env
-          
-          echo "Running test script..."
-          echo "===================== DEBUG MODE OUTPUT ====================="
-          node weather-notifier.js
-          RESULT=$?
-          echo "===================== END OF OUTPUT ====================="
-          echo "Script exited with code: $RESULT"
-          
-          # If the script runs successfully, summarize what would happen in production
-          if [ $RESULT -eq 0 ]; then
-            echo ""
-            echo "✅ Debug test completed successfully."
-            echo "You can safely deploy the workflow for production use."
-          else
-            echo ""
-            echo "❌ Debug test failed with exit code $RESULT"
-            echo "Check the logs above for details."
-            echo "Please fix the issues before deploying to production."
-          fi
+            
+            // Initialize Firebase Admin with service account
+            console.log('\nInitializing Firebase...');
+            try {
+              admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+              });
+              console.log('✅ Firebase Admin SDK initialized successfully');
+            } catch (error) {
+              console.error('❌ Firebase initialization error:', error);
+              process.exit(1);
+            }
+            
+            const db = admin.firestore();
+            
+            // Initialize OpenAI
+            const openai = new OpenAI({
+              apiKey: process.env.OPENAI_API_KEY
+            });
+            
+            // Configure debug mode from environment variables
+            const DEBUG_MODE = process.env.DEBUG_MODE === 'true';
+            
+            console.log('Starting weather notification debug test...');
+            console.log(`Running in ${DEBUG_MODE ? 'DEBUG' : 'PRODUCTION'} mode`);
+            console.log('Firebase project ID:', serviceAccount.project_id);
+            
+            // Test functions
+            async function testFirebaseConnection() {
+              try {
+                console.log('Testing Firebase Firestore connection...');
+                const snapshot = await db.collection('users').limit(1).get();
+                if (snapshot.empty) {
+                  console.log('✅ Connection successful, but no users found in database.');
+                } else {
+                  console.log(`✅ Connection successful! Found ${snapshot.size} user(s) in database.`);
+                }
+                return true;
+              } catch (error) {
+                console.error('❌ Firebase connection error:', error);
+                return false;
+              }
+            }
+            
+            async function testOpenAIConnection() {
+              try {
+                console.log('Testing OpenAI API connection...');
+                const completion = await openai.chat.completions.create({
+                  model: "gpt-3.5-turbo",
+                  messages: [
+                    { role: "system", content: "You are a helpful assistant." },
+                    { role: "user", content: "Hello, are you working?" }
+                  ],
+                  max_tokens: 10
+                });
+                console.log('✅ OpenAI API connection successful!');
+                return true;
+              } catch (error) {
+                console.error('❌ OpenAI API connection error:', error);
+                return false;
+              }
+            }
+            
+            // Run tests
+            async function runTests() {
+              try {
+                const firebaseSuccess = await testFirebaseConnection();
+                const openaiSuccess = await testOpenAIConnection();
+                
+                if (firebaseSuccess && openaiSuccess) {
+                  console.log('\n✅ All connections successful! Your weather notifier should work in production mode.');
+                  console.log('In production mode, your script would:');
+                  console.log('- Fetch users with active subscriptions');
+                  console.log('- Check weather conditions for user locations');
+                  console.log('- Generate weather alerts using OpenAI');
+                  console.log('- Send email notifications to clients and workers');
+                  console.log('- Log notifications in Firebase');
+                  process.exit(0);
+                } else {
+                  console.log('\n❌ Some connections failed. Check the logs above for details.');
+                  process.exit(1);
+                }
+              } catch (error) {
+                console.error('Unexpected error during tests:', error);
+                process.exit(1);
+              }
+            }
+            
+            // Run the tests
+            runTests();
+            EOF
+            
+            # Create a .env file
+            echo "Creating .env file..."
+            cat > ./.env << EOF
+            OPENAI_API_KEY="${OPENAI_API_KEY}"
+            DEBUG_MODE=true
+            EOF
+            
+            echo "Running test script..."
+            echo "===================== DEBUG MODE OUTPUT ====================="
+            node weather-notifier.js
+            RESULT=$?
+            echo "===================== END OF OUTPUT ====================="
+            echo "Script exited with code: $RESULT"
+            
+            # If the script runs successfully, summarize what would happen in production
+            if [ $RESULT -eq 0 ]; then
+              echo ""
+              echo "✅ Debug test completed successfully."
+              echo "You can safely deploy the workflow for production use."
+            else
+              echo ""
+              echo "❌ Debug test failed with exit code $RESULT"
+              echo "Check the logs above for details."
+              echo "Please fix the issues before deploying to production."
+            fi
       
       - name: Report results
         if: always()
