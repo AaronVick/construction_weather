@@ -209,21 +209,21 @@ jobs:
           
           # Create a .env file with all environment variables
           echo "Creating .env file..."
-          cat > ./.env << EOF
-          FIREBASE_TYPE="${FIREBASE_TYPE}"
-          FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID}"
-          FIREBASE_PRIVATE_KEY_ID="${FIREBASE_PRIVATE_KEY_ID}"
-          FIREBASE_PRIVATE_KEY="${FIREBASE_PRIVATE_KEY}"
-          FIREBASE_CLIENT_EMAIL="${FIREBASE_CLIENT_EMAIL}"
-          FIREBASE_CLIENT_ID="${FIREBASE_CLIENT_ID}"
-          FIREBASE_AUTH_URI="${FIREBASE_AUTH_URI}"
-          FIREBASE_TOKEN_URI="${FIREBASE_TOKEN_URI}"
-          FIREBASE_AUTH_PROVIDER_X509_CERT_URL="${FIREBASE_AUTH_PROVIDER_X509_CERT_URL}"
-          FIREBASE_CLIENT_X509_CERT_URL="${FIREBASE_CLIENT_X509_CERT_URL}"
-          FIREBASE_UNIVERSE_DOMAIN="${FIREBASE_UNIVERSE_DOMAIN}"
-          OPENAI_API_KEY="${OPENAI_API_KEY}"
-          DEBUG_MODE=true
-          EOF
+          
+          # Special handling for private key to maintain newlines
+          echo "FIREBASE_TYPE=\"${FIREBASE_TYPE}\"" > ./.env
+          echo "FIREBASE_PROJECT_ID=\"${FIREBASE_PROJECT_ID}\"" >> ./.env
+          echo "FIREBASE_PRIVATE_KEY_ID=\"${FIREBASE_PRIVATE_KEY_ID}\"" >> ./.env
+          echo "FIREBASE_PRIVATE_KEY='${FIREBASE_PRIVATE_KEY}'" >> ./.env
+          echo "FIREBASE_CLIENT_EMAIL=\"${FIREBASE_CLIENT_EMAIL}\"" >> ./.env
+          echo "FIREBASE_CLIENT_ID=\"${FIREBASE_CLIENT_ID}\"" >> ./.env
+          echo "FIREBASE_AUTH_URI=\"${FIREBASE_AUTH_URI}\"" >> ./.env
+          echo "FIREBASE_TOKEN_URI=\"${FIREBASE_TOKEN_URI}\"" >> ./.env
+          echo "FIREBASE_AUTH_PROVIDER_X509_CERT_URL=\"${FIREBASE_AUTH_PROVIDER_X509_CERT_URL}\"" >> ./.env
+          echo "FIREBASE_CLIENT_X509_CERT_URL=\"${FIREBASE_CLIENT_X509_CERT_URL}\"" >> ./.env
+          echo "FIREBASE_UNIVERSE_DOMAIN=\"${FIREBASE_UNIVERSE_DOMAIN}\"" >> ./.env
+          echo "OPENAI_API_KEY=\"${OPENAI_API_KEY}\"" >> ./.env
+          echo "DEBUG_MODE=true" >> ./.env
           
           echo "Running test script..."
           echo "===================== DEBUG MODE OUTPUT ====================="
